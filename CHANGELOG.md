@@ -15,5 +15,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   ESLint, Prettier and Vitest.
 - Invitation and reply codes (`WSI1.…` / `WSR1.…`) that carry a compressed WebRTC session
   description and tolerate line breaks added by messengers.
+- Data-channel protocol between host and viewers (welcome, participant list, chat) with strict
+  validation of every incoming message.
 
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
