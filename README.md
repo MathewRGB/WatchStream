@@ -1,62 +1,63 @@
 # WatchStream
 
-Gemeinsam Streams schauen – direkt von Browser zu Browser, ohne eigenen Medienserver.
+Watch streams together, browser to browser, without your own media server.
 
-WatchStream ist eine Browser-Extension für Chrome, Brave und Firefox. Ein Host lädt bis zu drei
-Zuschauer ein, und alle schauen synchron dasselbe: Netflix, YouTube oder andere Videos im Browser.
+WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
+viewers, and everyone watches the same thing in sync: Netflix, YouTube or any other video in the
+browser.
 
-> **Status:** Konzeptphase. Es gibt noch keinen lauffähigen Code. Die Architektur ist in
-> [ADR-0001](docs/adr/ADR-0001-p2p-watchparty-browser-extension.md) beschrieben.
+> **Status:** concept phase. There is no runnable code yet. The architecture is described in
+> [ADR-0001](docs/adr/ADR-0001-p2p-watchparty-browser-extension.md).
 
-## Wie es funktioniert
+## How it works
 
-WatchStream hat zwei Modi und wählt automatisch den passenden:
+WatchStream has two modes and picks the right one automatically:
 
-| Modus | Wofür | Qualität | Voraussetzung |
+| Mode | Use case | Quality | Requirement |
 |---|---|---|---|
-| **Sync** (Standard) | Netflix, Disney+, Prime Video, YouTube und alles, was jeder selbst öffnen kann | Original | Jeder Zuschauer hat eigenen Zugang zum Inhalt |
-| **Stream** | Inhalte ohne DRM, die nur der Host öffnen kann | Neu kodiert, nahezu verlustfrei | Nur der Host braucht Zugang |
+| **Sync** (default) | Netflix, Disney+, Prime Video, YouTube and anything every viewer can open themselves | Original | Every viewer has their own access to the content |
+| **Stream** | Non-DRM content that only the host can open | Re-encoded, near-transparent | Only the host needs access |
 
-- **Direktverbindung:** Die Teilnehmer verbinden sich per WebRTC direkt mit dem Host. Video, Ton
-  und Steuerdaten laufen Ende-zu-Ende verschlüsselt und über keinen WatchStream-Server.
-- **Einladung per Code:** Der Host schickt einen Einladungscode über einen beliebigen Messenger,
-  der Zuschauer schickt einen Antwortcode zurück.
-- **Host steuert:** Play, Pause und Spulen macht nur der Host, die Zuschauer folgen automatisch.
+- **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
+  control data are end-to-end encrypted and never pass through a WatchStream server.
+- **Invitation by code:** the host sends an invitation code through any messenger, and the viewer
+  sends a reply code back.
+- **Host controls:** only the host plays, pauses and seeks; viewers follow automatically.
 
-## Einschränkungen
+## Limitations
 
-- Bei Diensten mit Kopierschutz (Netflix, Disney+ usw.) braucht jeder Zuschauer ein eigenes Abo.
-  WatchStream umgeht keinen Kopierschutz.
-- Im Stream-Modus begrenzt der Upload des Hosts die Qualität. Gedacht ist er für 2–3 Zuschauer.
-- Firefox kann als Host im Stream-Modus keinen Ton aufnehmen.
-- Hinter manchen Routern (z. B. Carrier-Grade-NAT) kommt ohne zusätzlichen Relay-Server (TURN)
-  keine Direktverbindung zustande.
-- Für die Adressermittlung wird ein öffentlicher STUN-Server genutzt. Er sieht die öffentlichen
-  IP-Adressen der Teilnehmer, aber keine Inhalte.
+- For services with copy protection (Netflix, Disney+, etc.) every viewer needs their own
+  subscription. WatchStream does not circumvent copy protection.
+- In stream mode the host's upload bandwidth limits the quality. It is designed for 2-3 viewers.
+- Firefox cannot capture audio as a host in stream mode.
+- Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
+  additional relay server (TURN).
+- A public STUN server is used for address discovery. It sees the participants' public IP
+  addresses, but no content.
 
-## Geplante Technik
+## Planned stack
 
-- TypeScript, [WXT](https://wxt.dev) als Cross-Browser-Framework
+- TypeScript, [WXT](https://wxt.dev) as the cross-browser framework
 - Manifest V3
-- WebRTC (Data Channel für Sync und Chat, Medien-Tracks für den Stream-Modus)
+- WebRTC (data channel for sync and chat, media tracks for stream mode)
 
 ## Roadmap
 
-- [ ] **M1:** Verbindungsaufbau per Code, Chat, getestet in Chrome, Brave und Firefox
-- [ ] **M2:** Sync-Modus mit generischem Video-Adapter, YouTube
-- [ ] **M3:** Netflix-Adapter
-- [ ] **M4:** Stream-Modus
-- [ ] **M5:** Weitere Dienste, optionaler TURN- und Signaling-Dienst
+- [ ] **M1:** connection setup by code, chat, tested in Chrome, Brave and Firefox
+- [ ] **M2:** sync mode with a generic video adapter, YouTube
+- [ ] **M3:** Netflix adapter
+- [ ] **M4:** stream mode
+- [ ] **M5:** more services, optional TURN and signaling service
 
-## Dokumentation
+## Documentation
 
-- [Architekturentscheidungen (ADRs)](docs/adr/)
+- [Architecture decision records (ADRs)](docs/adr/)
 
-## Hinweis
+## Disclaimer
 
-WatchStream steht in keiner Verbindung zu Netflix, YouTube, Disney+, Amazon oder anderen
-genannten Diensten. Alle Marken gehören ihren jeweiligen Inhabern.
+WatchStream is not affiliated with Netflix, YouTube, Disney+, Amazon or any other service
+mentioned. All trademarks belong to their respective owners.
 
-## Lizenz
+## License
 
 [MIT](LICENSE) © 2026 Mathias Kuhlmey

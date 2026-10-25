@@ -1,13 +1,13 @@
 # Changelog
 
-Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei festgehalten.
+All notable changes to this project are documented in this file.
 
-Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und das Projekt
-verwendet [Semantic Versioning](https://semver.org/lang/de/).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
 ### Added
 
-- ADR-0001: Architektur als P2P-Browser-Extension mit Sync- und Stream-Modus.
-- README, CHANGELOG, MIT-Lizenz, `.gitignore`, `.editorconfig` und `.gitattributes`.
+- ADR-0001: architecture as a P2P browser extension with sync and stream modes.
+- README, CHANGELOG, MIT license, `.gitignore`, `.editorconfig` and `.gitattributes`.
