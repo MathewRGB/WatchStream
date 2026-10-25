@@ -12,6 +12,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - ADR-0001: architecture as a P2P browser extension with sync and stream modes.
 - ADR-0002: the session tab page holds the connections; handshake code format and data-channel
   protocol v1.
+- README sections on usage, privacy, development, tests and project layout.
 - README, CHANGELOG, MIT license, `.gitignore`, `.editorconfig` and `.gitattributes`.
 - Project tooling: WXT with Manifest V3 builds for Chrome/Brave and Firefox, TypeScript (strict),
   ESLint, Prettier and Vitest.
