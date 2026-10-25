@@ -19,5 +19,8 @@ adheres to [Semantic Versioning](https://semver.org/).
   validation of every incoming message.
 - Direct WebRTC data channel between two browsers with non-trickle signaling, so one invitation
   and one reply code are enough to connect.
+- Host and viewer sessions: single-use invitations for up to three viewers, a shared participant
+  list and a chat that the host relays to everyone. A viewer that cannot be reached directly
+  within 20 seconds is reported as a failed connection.
 
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
