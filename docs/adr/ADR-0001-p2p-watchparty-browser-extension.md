@@ -22,14 +22,14 @@ and is therefore not adopted.
 
 ### Requirements (from shaping, 2026-10-25)
 
-| Topic | Decision |
-|---|---|
-| Viewers per session | 2-3 (plus host) |
-| DRM services (Netflix, Disney+, Prime, Max) | Required |
-| Non-DRM content that only the host can open | Required |
-| Invitation | Copied code, manual handshake accepted |
-| Control | Host only |
-| Browsers | Chrome, Brave, Firefox |
+| Topic                                       | Decision                               |
+| ------------------------------------------- | -------------------------------------- |
+| Viewers per session                         | 2-3 (plus host)                        |
+| DRM services (Netflix, Disney+, Prime, Max) | Required                               |
+| Non-DRM content that only the host can open | Required                               |
+| Invitation                                  | Copied code, manual handshake accepted |
+| Control                                     | Host only                              |
+| Browsers                                    | Chrome, Brave, Firefox                 |
 
 ### Technical constraints
 
@@ -51,13 +51,13 @@ and is therefore not adopted.
 
 ### 1. Two operating modes, chosen automatically
 
-| | Sync mode | Stream mode |
-|---|---|---|
-| Principle | Everyone plays the content themselves, only the playback state is synchronized | The host captures the tab and sends video/audio over WebRTC |
-| Use | DRM services, plus anything every viewer can open themselves (e.g. YouTube) | Non-DRM content that only the host can open |
-| Quality | Original, no loss | Re-encoded, goal: near-transparent |
-| Requirement | Every viewer has their own access to the content | Only the host needs access |
-| Load | Negligible (control messages) | Host upload x number of viewers, one encode per viewer |
+|             | Sync mode                                                                      | Stream mode                                                 |
+| ----------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Principle   | Everyone plays the content themselves, only the playback state is synchronized | The host captures the tab and sends video/audio over WebRTC |
+| Use         | DRM services, plus anything every viewer can open themselves (e.g. YouTube)    | Non-DRM content that only the host can open                 |
+| Quality     | Original, no loss                                                              | Re-encoded, goal: near-transparent                          |
+| Requirement | Every viewer has their own access to the content                               | Only the host needs access                                  |
+| Load        | Negligible (control messages)                                                  | Host upload x number of viewers, one encode per viewer      |
 
 The extension detects DRM through the `<video>` element (`video.mediaKeys !== null`). With DRM
 only sync mode is offered; otherwise the host can choose. Sync mode is the default.

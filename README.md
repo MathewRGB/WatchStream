@@ -13,10 +13,10 @@ browser.
 
 WatchStream has two modes and picks the right one automatically:
 
-| Mode | Use case | Quality | Requirement |
-|---|---|---|---|
-| **Sync** (default) | Netflix, Disney+, Prime Video, YouTube and anything every viewer can open themselves | Original | Every viewer has their own access to the content |
-| **Stream** | Non-DRM content that only the host can open | Re-encoded, near-transparent | Only the host needs access |
+| Mode               | Use case                                                                             | Quality                      | Requirement                                      |
+| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------ |
+| **Sync** (default) | Netflix, Disney+, Prime Video, YouTube and anything every viewer can open themselves | Original                     | Every viewer has their own access to the content |
+| **Stream**         | Non-DRM content that only the host can open                                          | Re-encoded, near-transparent | Only the host needs access                       |
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
   control data are end-to-end encrypted and never pass through a WatchStream server.
