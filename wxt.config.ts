@@ -14,8 +14,12 @@ export default defineConfig({
       browser_specific_settings: {
         gecko: {
           id: 'watchstream@mathewrgb.github.io',
-          strict_min_version: '128.0',
+          // 140 (ESR) is the first version that knows data_collection_permissions.
+          strict_min_version: '140.0',
           data_collection_permissions: { required: ['none'] },
+        },
+        gecko_android: {
+          strict_min_version: '142.0',
         },
       },
     }),
