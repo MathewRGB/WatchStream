@@ -121,6 +121,8 @@ media-free signaling service can be added later without changing the rest.
 - TypeScript, one codebase, built for Chrome, Brave and Firefox with WXT.
 - Manifest V3. Chrome/Brave: WebRTC and capture in an offscreen document, because the service
   worker cannot hold an `RTCPeerConnection`. Firefox: event page with DOM access.
+  **Amended by [ADR-0002](ADR-0002-session-page-and-handshake-protocol.md):** the connections
+  live in an extension tab page in all browsers.
 
 ## Consequences
 
@@ -166,9 +168,11 @@ media-free signaling service can be added later without changing the rest.
 
 ## Open points
 
-- Concrete public STUN server and a note about it in the privacy policy.
-- Check the maximum code length in messengers (SDP size after compression).
-- Measure Brave's behavior with default Shields in M1.
+- Concrete public STUN server and a note about it in the privacy policy. M1 uses
+  `stun:stun.l.google.com:19302`.
+- ~~Check the maximum code length in messengers.~~ Measured in M1: invitation and reply codes are
+  below 900 characters (see ADR-0002).
+- Measure Brave's behavior with default Shields (not automated in M1; part of the manual test).
 - Name "WatchStream": a web search (2026-10-25) found neither an extension of the same name nor a
   trademark, but it was not exhaustive. Before submitting, search the Chrome Web Store and AMO
   directly, as well as TMview and the USPTO. The name will not be protected. No third-party
