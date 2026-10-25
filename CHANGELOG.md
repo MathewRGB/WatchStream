@@ -17,5 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   description and tolerate line breaks added by messengers.
 - Data-channel protocol between host and viewers (welcome, participant list, chat) with strict
   validation of every incoming message.
+- Direct WebRTC data channel between two browsers with non-trickle signaling, so one invitation
+  and one reply code are enough to connect.
 
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
