@@ -13,5 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - README, CHANGELOG, MIT license, `.gitignore`, `.editorconfig` and `.gitattributes`.
 - Project tooling: WXT with Manifest V3 builds for Chrome/Brave and Firefox, TypeScript (strict),
   ESLint, Prettier and Vitest.
+- Invitation and reply codes (`WSI1.…` / `WSR1.…`) that carry a compressed WebRTC session
+  description and tolerate line breaks added by messengers.
 
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
