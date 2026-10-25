@@ -6,6 +6,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'WatchStream',
     description: 'Watch streams together, browser to browser, without a media server.',
+    permissions: ['storage'],
     action: {
       default_title: 'Open WatchStream',
     },

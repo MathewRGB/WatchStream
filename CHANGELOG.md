@@ -22,5 +22,6 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Host and viewer sessions: single-use invitations for up to three viewers, a shared participant
   list and a chat that the host relays to everyone. A viewer that cannot be reached directly
   within 20 seconds is reported as a failed connection.
+- Clicking the toolbar icon opens the WatchStream page, or focuses it if it is already open.
 
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
