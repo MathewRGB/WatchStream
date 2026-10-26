@@ -45,6 +45,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 - End-to-end tests with Playwright: the real Chrome extension, and Chromium ↔ Firefox sessions
   with chat between all participants.
 
+### Changed
+
+- The WatchStream page is now built with React, Tailwind CSS and shadcn/ui instead of hand-written
+  DOM code. It keeps all behavior and gets a consistent look: cards, badges, a copy button with
+  icon and an Enter key shortcut for sending chat and starting a session.
+
 ### Fixed
 
 - A place in the session stays reserved while a reply is still connecting. Before, the host could

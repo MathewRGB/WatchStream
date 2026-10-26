@@ -40,7 +40,7 @@ export class SessionPage {
   }
 
   async expectParticipants(names: string[]): Promise<void> {
-    await expect(this.byTestId('participant').locator('span:first-child')).toHaveText(names);
+    await expect(this.byTestId('participant-name')).toHaveText(names);
   }
 
   async sendChat(text: string): Promise<void> {
@@ -51,7 +51,7 @@ export class SessionPage {
   async expectChatMessage(sender: string, text: string): Promise<void> {
     const message = this.byTestId('chat-message').filter({ hasText: text });
     await expect(message).toHaveCount(1);
-    await expect(message.locator('.sender')).toHaveText(sender);
+    await expect(message.getByTestId('chat-sender')).toHaveText(sender);
   }
 }
 

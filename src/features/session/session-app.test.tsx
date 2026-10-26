@@ -1,0 +1,199 @@
+// @vitest-environment happy-dom
+import { render, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { FakeNetwork } from '@/core/testing/fake-network';
+import { SessionApp } from './session-app';
+
+function memoryStorage() {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => void values.set(key, value),
+  };
+}
+
+/** One browser tab: its own page with its own container. */
+function openPage(network: FakeNetwork, storage = memoryStorage()) {
+  const container = document.body.appendChild(document.createElement('div'));
+  render(<SessionApp connector={network} storage={storage} />, { container });
+  return within(container);
+}
+
+type Page = ReturnType<typeof openPage>;
+
+async function start(page: Page, name: string, as: 'host' | 'join') {
+  const input = page.getByTestId('name-input');
+  await userEvent.clear(input);
+  await userEvent.type(input, name);
+  await userEvent.click(page.getByTestId(as === 'host' ? 'host-button' : 'join-button'));
+}
+
+async function createInvitation(host: Page): Promise<string> {
+  const before = host.queryAllByTestId('invitation').length;
+  await userEvent.click(host.getByTestId('invite-button'));
+  await waitFor(() => expect(host.queryAllByTestId('invitation')).toHaveLength(before + 1));
+  return (host.getAllByTestId('invitation-code').at(-1) as HTMLTextAreaElement).value;
+}
+
+async function paste(field: HTMLElement, text: string) {
+  await userEvent.click(field);
+  await userEvent.paste(text);
+}
+
+async function joinWith(viewer: Page, invitationCode: string): Promise<string> {
+  await paste(viewer.getByTestId('invitation-input'), invitationCode);
+  await userEvent.click(viewer.getByTestId('join-session-button'));
+  const replyCode = await viewer.findByTestId<HTMLTextAreaElement>('reply-code');
+  return replyCode.value;
+}
+
+async function pasteReply(host: Page, replyCode: string) {
+  const card = within(host.getAllByTestId('invitation').at(-1)!);
+  await paste(card.getByTestId('reply-input'), replyCode);
+  await userEvent.click(card.getByTestId('connect-button'));
+}
+
+async function connect(network: FakeNetwork, host: Page, name: string): Promise<Page> {
+  const viewer = openPage(network);
+  await start(viewer, name, 'join');
+  await pasteReply(host, await joinWith(viewer, await createInvitation(host)));
+  await waitFor(() => expect(viewer.getByTestId('viewer-state')).toHaveTextContent('Connected'));
+  return viewer;
+}
+
+const names = (page: Page) => page.getAllByTestId('participant-name').map((n) => n.textContent);
+
+describe('WatchStream app', () => {
+  let network: FakeNetwork;
+
+  beforeEach(() => {
+    document.body.replaceChildren();
+    network = new FakeNetwork();
+  });
+
+  it('asks for a name before starting', async () => {
+    const page = openPage(network);
+
+    await userEvent.click(page.getByTestId('host-button'));
+
+    expect(page.getByTestId('start-status')).toHaveTextContent('enter a name');
+    expect(page.queryByTestId('host-view')).toBeNull();
+  });
+
+  it('starts hosting with Enter in the name field', async () => {
+    const page = openPage(network);
+
+    await userEvent.type(page.getByTestId('name-input'), 'Mathias{Enter}');
+
+    expect(page.getByTestId('host-view')).toBeInTheDocument();
+  });
+
+  it('remembers the name for the next time', async () => {
+    const storage = memoryStorage();
+    await start(openPage(network, storage), 'Mathias', 'host');
+
+    const again = openPage(network, storage);
+
+    expect(again.getByTestId('name-input')).toHaveValue('Mathias');
+  });
+
+  it('connects a viewer through invitation and reply codes', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+
+    const viewer = await connect(network, host, 'Julia');
+
+    await waitFor(() => {
+      expect(names(host)).toEqual(['Mathias', 'Julia']);
+      expect(names(viewer)).toEqual(['Mathias', 'Julia']);
+    });
+    expect(host.queryAllByTestId('invitation')).toHaveLength(0);
+    expect(viewer.queryByTestId('reply-step')).toBeNull();
+  });
+
+  it('exchanges chat messages between host and viewer', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+    const viewer = await connect(network, host, 'Julia');
+
+    await userEvent.type(viewer.getByTestId('chat-input'), 'Ready!{Enter}');
+
+    await waitFor(() => {
+      expect(host.getByTestId('chat-messages')).toHaveTextContent('Ready!');
+      const own = viewer.getByTestId('chat-message');
+      expect(own).toHaveTextContent('Ready!');
+      expect(within(own).getByTestId('chat-sender')).toHaveTextContent('You');
+    });
+  });
+
+  it('shows how many places are left and disables inviting when all are taken', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
+
+    await createInvitation(host);
+    await createInvitation(host);
+    await createInvitation(host);
+
+    expect(host.getByTestId('invite-button')).toBeDisabled();
+    expect(host.getByTestId('open-slots')).toHaveTextContent('The session is full.');
+  });
+
+  it('frees a place when an invitation is cancelled', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+    await createInvitation(host);
+
+    await userEvent.click(host.getByTestId('cancel-invitation'));
+
+    expect(host.queryAllByTestId('invitation')).toHaveLength(0);
+    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
+  });
+
+  it('explains a damaged invitation code to the viewer', async () => {
+    const viewer = openPage(network);
+    await start(viewer, 'Julia', 'join');
+
+    await paste(viewer.getByTestId('invitation-input'), 'WSI1.broken');
+    await userEvent.click(viewer.getByTestId('join-session-button'));
+
+    expect(await viewer.findByTestId('join-status')).toHaveTextContent('incomplete or damaged');
+    expect(viewer.getByTestId('join-session-button')).toBeEnabled();
+  });
+
+  it('explains to the host when an invitation code is pasted as reply', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+    const invitationCode = await createInvitation(host);
+
+    await pasteReply(host, invitationCode);
+
+    expect(await host.findByTestId('invitation-status')).toHaveTextContent('Expected a reply code');
+    expect(host.getByTestId('connect-button')).toBeEnabled();
+  });
+
+  it('tells the viewer when the host ends the session', async () => {
+    const host = openPage(network);
+    await start(host, 'Mathias', 'host');
+    const viewer = await connect(network, host, 'Julia');
+
+    await userEvent.click(host.getByTestId('end-button'));
+
+    await waitFor(() =>
+      expect(viewer.getByTestId('viewer-state')).toHaveTextContent('The session has ended.'),
+    );
+    await userEvent.click(viewer.getByTestId('back-button'));
+    expect(viewer.getByTestId('start-view')).toBeInTheDocument();
+    expect(host.getByTestId('start-view')).toBeInTheDocument();
+  });
+
+  it('returns to the start when a viewer leaves before connecting', async () => {
+    const viewer = openPage(network);
+    await start(viewer, 'Julia', 'join');
+
+    await userEvent.click(viewer.getByTestId('leave-button'));
+
+    expect(viewer.getByTestId('start-view')).toBeInTheDocument();
+  });
+});
