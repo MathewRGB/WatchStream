@@ -78,7 +78,7 @@ To load a build manually:
 
 | Command                    | What it runs                                                           |
 | -------------------------- | ---------------------------------------------------------------------- |
-| `npm test`                 | Unit and DOM tests (Vitest, Node and happy-dom)                        |
+| `npm test`                 | Unit and component tests (Vitest, Testing Library, happy-dom)          |
 | `npm run test:integration` | WebRTC integration tests in real Chromium and Firefox (Vitest browser) |
 | `npm run test:e2e`         | Builds both targets, then Playwright end-to-end tests                  |
 | `npm run check`            | Typecheck, lint, format check, unit and integration tests              |
@@ -86,17 +86,31 @@ To load a build manually:
 
 The browser tests need Playwright's browsers once: `npx playwright install chromium firefox`.
 
+### Tech stack
+
+[WXT](https://wxt.dev) (Manifest V3, one codebase for Chrome, Brave and Firefox), TypeScript,
+React 19, Tailwind CSS 4 and [shadcn/ui](https://ui.shadcn.com). Connections use WebRTC. See
+[ADR-0003](docs/adr/ADR-0003-react-tailwind-shadcn-ui-stack.md) for the reasons and the rules
+that keep the stack tidy.
+
 ### Project layout
 
 ```
-src/core/        connection, handshake codes, protocol and sessions (no UI, no extension APIs)
-src/ui/          the WatchStream page (plain TypeScript and DOM)
-src/background/  toolbar icon handling
-src/entrypoints/ WXT entry points (background script, session page)
-tests/           integration tests in real browsers
-e2e/             Playwright end-to-end tests
-docs/adr/        architecture decision records
+src/core/          connection, handshake codes, protocol and sessions (no React, no extension APIs)
+src/background/    toolbar icon handling (no React)
+src/entrypoints/   thin WXT entry points: background script, session page
+src/features/      product UI, one folder per feature (session: start, host, viewer, chat)
+src/components/ui/ shadcn/ui components
+src/hooks/         React hooks that bind core objects to components
+src/lib/           small helpers such as cn()
+src/styles/        Tailwind import and design tokens (globals.css)
+tests/             integration tests in real browsers
+e2e/               Playwright end-to-end tests
+docs/adr/          architecture decision records
 ```
+
+Add a shadcn/ui component with `npx shadcn@latest add <name>`. It lands in `src/components/ui/`.
+Check the generated file's imports afterwards: they have to point at `@/lib/utils`.
 
 ## Roadmap
 

@@ -40,13 +40,15 @@ src/
   background/           background logic (no React)
   entrypoints/          thin WXT entry points: HTML, mount code
     background.ts
-    session/            index.html, main.tsx, style.css
+    session/            index.html, main.tsx
   components/
     ui/                 shadcn/ui components (generated, minimal edits)
   features/             product UI, one folder per feature
     session/            start, host and viewer views, chat, participants
   hooks/                React bindings for core objects (e.g. useHostSession)
   lib/                  small helpers such as `cn()`
+  styles/               globals.css: Tailwind import and design tokens
+  testing/              shared test setup (jest-dom, cleanup)
 ```
 
 Rules:
@@ -62,7 +64,13 @@ Rules:
 
 Sessions are plain objects with an event emitter. Components read them through hooks built on
 `useSyncExternalStore`, so there is one subscription per consumer and no duplicated state.
-Sessions are created and closed by the component that owns them, inside an effect.
+Because the sessions are mutable and hand out fresh arrays from their getters, the store snapshot
+is a change counter (`useChangeCounter`) and components read the getters while rendering.
+
+Sessions are not created in effects. `SessionApp` creates a `HostSession` in the event handler that
+starts hosting, keeps it in its screen state and closes it in the handler that ends the session. An
+effect-based lifecycle would close and recreate the session when React Strict Mode runs effects
+twice in development, which would silently drop open invitations.
 
 ### 4. Content scripts stay free of React
 
