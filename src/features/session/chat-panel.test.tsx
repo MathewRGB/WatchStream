@@ -1,0 +1,96 @@
+// @vitest-environment happy-dom
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import type { ChatMessage } from '@/core/protocol/messages';
+import { SessionError } from '@/core/session/session-error';
+import { ChatPanel } from './chat-panel';
+
+const message = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
+  id: 'm1',
+  senderId: 'other',
+  senderName: 'Julia',
+  text: 'hello',
+  sentAt: 0,
+  ...overrides,
+});
+
+describe('ChatPanel', () => {
+  it('shows each message with its sender', () => {
+    render(<ChatPanel messages={[message()]} selfId="me" onSend={vi.fn()} />);
+
+    const item = screen.getByTestId('chat-message');
+    expect(within(item).getByTestId('chat-sender')).toHaveTextContent('Julia');
+    expect(item).toHaveTextContent('hello');
+  });
+
+  it('labels own messages as "You"', () => {
+    render(<ChatPanel messages={[message({ senderId: 'me' })]} selfId="me" onSend={vi.fn()} />);
+
+    const item = screen.getByTestId('chat-message');
+    expect(item).toHaveAttribute('data-own', 'true');
+    expect(within(item).getByTestId('chat-sender')).toHaveTextContent('You');
+  });
+
+  it('renders message text as text, never as markup', () => {
+    const text = '<img src=x onerror=alert(1)>';
+    const { container } = render(
+      <ChatPanel
+        messages={[message({ text, senderName: '<b>x</b>' })]}
+        selfId="me"
+        onSend={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector('img, b')).toBeNull();
+    expect(screen.getByTestId('chat-message')).toHaveTextContent(text);
+  });
+
+  it('sends the typed text and clears the input', async () => {
+    const onSend = vi.fn();
+    render(<ChatPanel messages={[]} selfId="me" onSend={onSend} />);
+
+    await userEvent.type(screen.getByTestId('chat-input'), 'popcorn?');
+    await userEvent.click(screen.getByTestId('chat-send'));
+
+    expect(onSend).toHaveBeenCalledWith('popcorn?');
+    expect(screen.getByTestId('chat-input')).toHaveValue('');
+  });
+
+  it('sends on Enter', async () => {
+    const onSend = vi.fn();
+    render(<ChatPanel messages={[]} selfId="me" onSend={onSend} />);
+
+    await userEvent.type(screen.getByTestId('chat-input'), 'hi{Enter}');
+
+    expect(onSend).toHaveBeenCalledWith('hi');
+  });
+
+  it('does not send blank text', async () => {
+    const onSend = vi.fn();
+    render(<ChatPanel messages={[]} selfId="me" onSend={onSend} />);
+
+    await userEvent.type(screen.getByTestId('chat-input'), '   {Enter}');
+
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('shows an error and keeps the text when sending fails', async () => {
+    const onSend = () => {
+      throw new SessionError('not-connected', 'Not connected to the host.');
+    };
+    render(<ChatPanel messages={[]} selfId="me" onSend={onSend} />);
+
+    await userEvent.type(screen.getByTestId('chat-input'), 'hello?{Enter}');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Not connected to the host.');
+    expect(screen.getByTestId('chat-input')).toHaveValue('hello?');
+  });
+
+  it('can be disabled', () => {
+    render(<ChatPanel messages={[]} selfId="me" onSend={vi.fn()} disabled />);
+
+    expect(screen.getByTestId('chat-input')).toBeDisabled();
+    expect(screen.getByTestId('chat-send')).toBeDisabled();
+  });
+});

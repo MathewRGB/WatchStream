@@ -21,6 +21,8 @@ adheres to [Semantic Versioning](https://semver.org/).
   correct without polling.
 - React hooks that bind sessions to components: `useHostSession`, `useViewerSession` and
   `useChatMessages`.
+- React components for the shared parts of the WatchStream page: code box with copy button, code
+  input, participant list and chat panel, with plain-language error messages.
 - README sections on usage, privacy, development, tests and project layout.
 - README, CHANGELOG, MIT license, `.gitignore`, `.editorconfig` and `.gitattributes`.
 - Project tooling: WXT with Manifest V3 builds for Chrome/Brave and Firefox, TypeScript (strict),
