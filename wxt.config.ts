@@ -1,8 +1,13 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
   srcDir: 'src',
   manifestVersion: 3,
+  modules: ['@wxt-dev/module-react'],
+  vite: () => ({
+    plugins: [tailwindcss()],
+  }),
   manifest: ({ browser }) => ({
     name: 'WatchStream',
     description: 'Watch streams together, browser to browser, without a media server.',

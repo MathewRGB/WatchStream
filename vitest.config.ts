@@ -9,8 +9,9 @@ export default defineConfig({
         plugins: [WxtVitest()],
         test: {
           name: 'unit',
-          include: ['src/**/*.test.ts'],
+          include: ['src/**/*.test.{ts,tsx}'],
           environment: 'node',
+          setupFiles: ['src/testing/setup.ts'],
         },
       },
       {

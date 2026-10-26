@@ -2,9 +2,15 @@
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "strict": true,
+    "jsx": "react-jsx",
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    // Declared here as well (not only in .wxt/) so tools such as the shadcn CLI
+    // resolve "@/" relative to this project and not relative to .wxt/.
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": [".wxt/wxt.d.ts", "src", "tests", "e2e", "*.config.ts"]
 }
