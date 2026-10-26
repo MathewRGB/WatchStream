@@ -39,4 +39,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 - End-to-end tests with Playwright: the real Chrome extension, and Chromium ↔ Firefox sessions
   with chat between all participants.
 
+### Fixed
+
+- A place in the session stays reserved while a reply is still connecting. Before, the host could
+  create a fourth invitation during those up to 20 seconds and end up with too many viewers.
+
 [unreleased]: https://github.com/MathewRGB/WatchStream/commits/main

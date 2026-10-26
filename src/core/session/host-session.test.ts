@@ -74,6 +74,21 @@ describe('HostSession', () => {
     expect(host.participants).toHaveLength(1);
   });
 
+  it('keeps the place reserved while a reply is still connecting', async () => {
+    const { host, network } = createHost({ maxViewers: 1, connectTimeoutMs: 200 });
+    network.blockConnections = true;
+    const { code } = await host.createInvitation();
+    const { replyCode } = await ViewerSession.join(code, { viewerName: 'J', connector: network });
+
+    const accepting = host.acceptReply(replyCode).catch(() => undefined);
+    await flush();
+
+    expect(host.openSlots).toBe(0);
+    await expect(host.createInvitation()).rejects.toMatchObject({ reason: 'session-full' });
+    await accepting;
+    expect(host.openSlots).toBe(1);
+  });
+
   it('accepts a reply only once', async () => {
     const { host, network } = createHost();
     const { code } = await host.createInvitation();

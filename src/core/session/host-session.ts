@@ -42,6 +42,8 @@ export class HostSession {
   readonly hostId: string;
   private readonly emitter = new Emitter<HostSessionEvents>();
   private readonly pending = new Map<string, OfferingLink>();
+  /** Links whose reply was accepted but that are not open yet; they still hold a place. */
+  private readonly connecting = new Set<MessageLink>();
   private readonly viewers = new Map<string, Viewer>();
   private readonly maxViewers: number;
   private readonly connectTimeoutMs: number;
@@ -69,7 +71,7 @@ export class HostSession {
   }
 
   get openSlots(): number {
-    return this.maxViewers - this.viewers.size - this.pending.size;
+    return this.maxViewers - this.viewers.size - this.pending.size - this.connecting.size;
   }
 
   /** Creates a single-use invitation code for one viewer. */
@@ -100,6 +102,7 @@ export class HostSession {
       );
     }
     this.pending.delete(reply.inviteId);
+    this.connecting.add(link);
     const participant: Participant = {
       id: this.createId(),
       name: reply.viewerName,
@@ -114,6 +117,8 @@ export class HostSession {
       throw error instanceof SessionError
         ? error
         : new SessionError('connection-failed', 'The reply could not be applied.');
+    } finally {
+      this.connecting.delete(link);
     }
 
     this.addViewer({ participant, link });
@@ -126,8 +131,10 @@ export class HostSession {
 
   close(): void {
     for (const link of this.pending.values()) link.close();
+    for (const link of this.connecting) link.close();
     for (const { link } of this.viewers.values()) link.close();
     this.pending.clear();
+    this.connecting.clear();
     this.viewers.clear();
     this.emitter.clear();
   }
