@@ -23,6 +23,8 @@ export interface HostSessionOptions {
 
 export interface HostSessionEvents {
   roster: Participant[];
+  /** The number of free places changed (payload: the new number). */
+  slots: number;
   chat: ChatMessage;
 }
 
@@ -82,13 +84,17 @@ export class HostSession {
     const inviteId = this.createId();
     const { link, sdp } = await this.options.connector.createOffer();
     this.pending.set(inviteId, link);
+    this.publishSlots();
     const code = await encodeInvitation({ inviteId, hostName: this.options.hostName, sdp });
     return { inviteId, code };
   }
 
   cancelInvitation(inviteId: string): void {
-    this.pending.get(inviteId)?.close();
+    const link = this.pending.get(inviteId);
+    if (!link) return;
+    link.close();
     this.pending.delete(inviteId);
+    this.publishSlots();
   }
 
   /** Applies a viewer's reply code and resolves once the viewer has joined. */
@@ -114,11 +120,11 @@ export class HostSession {
       await this.waitUntilOpen(link);
     } catch (error) {
       link.close();
+      this.connecting.delete(link);
+      this.publishSlots();
       throw error instanceof SessionError
         ? error
         : new SessionError('connection-failed', 'The reply could not be applied.');
-    } finally {
-      this.connecting.delete(link);
     }
 
     this.addViewer({ participant, link });
@@ -141,13 +147,19 @@ export class HostSession {
 
   private addViewer(viewer: Viewer): void {
     const { participant, link } = viewer;
+    // The place changes hands in one step, so nobody ever sees it as free.
+    this.connecting.delete(link);
     this.viewers.set(participant.id, viewer);
     link.events.on('message', (raw) => this.handleViewerMessage(participant, raw));
     link.events.on('close', () => {
-      if (this.viewers.delete(participant.id)) this.publishRoster();
+      if (this.viewers.delete(participant.id)) {
+        this.publishRoster();
+        this.publishSlots();
+      }
     });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
     this.publishRoster();
+    this.publishSlots();
   }
 
   private handleViewerMessage(sender: Participant, raw: string): void {
@@ -171,6 +183,10 @@ export class HostSession {
     };
     this.broadcast({ type: 'chat', message });
     this.emitter.emit('chat', message);
+  }
+
+  private publishSlots(): void {
+    this.emitter.emit('slots', this.openSlots);
   }
 
   private publishRoster(): void {

@@ -89,6 +89,66 @@ describe('HostSession', () => {
     expect(host.openSlots).toBe(1);
   });
 
+  describe('slots event', () => {
+    it('reports the free places whenever an invitation is created or cancelled', async () => {
+      const { host } = createHost();
+      const onSlots = vi.fn();
+      host.events.on('slots', onSlots);
+
+      const { inviteId } = await host.createInvitation();
+      host.cancelInvitation(inviteId);
+
+      expect(onSlots.mock.calls).toEqual([[2], [3]]);
+    });
+
+    it('does not report cancelling an unknown invitation', () => {
+      const { host } = createHost();
+      const onSlots = vi.fn();
+      host.events.on('slots', onSlots);
+
+      host.cancelInvitation('unknown');
+
+      expect(onSlots).not.toHaveBeenCalled();
+    });
+
+    it('reports the final value once a viewer has joined, never a transient one', async () => {
+      const { host, network } = createHost();
+      const { code } = await host.createInvitation();
+      const { replyCode } = await ViewerSession.join(code, { viewerName: 'J', connector: network });
+      const onSlots = vi.fn();
+      host.events.on('slots', onSlots);
+
+      await host.acceptReply(replyCode);
+
+      expect(onSlots.mock.calls).toEqual([[2]]);
+    });
+
+    it('gives the place back when connecting fails', async () => {
+      const { host, network } = createHost({ connectTimeoutMs: 20 });
+      network.blockConnections = true;
+      const { code } = await host.createInvitation();
+      const { replyCode } = await ViewerSession.join(code, { viewerName: 'J', connector: network });
+      const onSlots = vi.fn();
+      host.events.on('slots', onSlots);
+
+      await host.acceptReply(replyCode).catch(() => undefined);
+
+      expect(onSlots.mock.calls).toEqual([[3]]);
+    });
+
+    it('reports a place freed by a leaving viewer', async () => {
+      const { host, network } = createHost();
+      const { viewer } = await joinViewer(host, network, 'Julia');
+      const onSlots = vi.fn();
+      host.events.on('slots', onSlots);
+
+      viewer.leave();
+      await flush();
+
+      expect(onSlots.mock.calls).toEqual([[3]]);
+    });
+  });
+
   it('accepts a reply only once', async () => {
     const { host, network } = createHost();
     const { code } = await host.createInvitation();

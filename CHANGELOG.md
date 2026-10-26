@@ -17,6 +17,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
   scroll-area, alert, separator) with a dark design-token theme, plus Testing Library for
   component tests.
+- The host session reports changes of the free places through a `slots` event, so the UI stays
+  correct without polling.
 - README sections on usage, privacy, development, tests and project layout.
 - README, CHANGELOG, MIT license, `.gitignore`, `.editorconfig` and `.gitattributes`.
 - Project tooling: WXT with Manifest V3 builds for Chrome/Brave and Firefox, TypeScript (strict),
