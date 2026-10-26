@@ -24,6 +24,18 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       eqeqeq: ['error', 'always'],
+      // Chat text and names come from other people: never render them as HTML.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message: 'Render user-provided text as text, never as HTML.',
+        },
+        {
+          selector: 'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]',
+          message: 'Render user-provided text as text, never as HTML.',
+        },
+      ],
     },
   },
 );

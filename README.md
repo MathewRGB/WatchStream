@@ -86,6 +86,10 @@ To load a build manually:
 
 The browser tests need Playwright's browsers once: `npx playwright install chromium firefox`.
 
+`npm run lint:firefox` reports two `innerHTML` warnings. They come from React DOM inside the
+bundle, not from this repository: ESLint forbids `innerHTML` and `dangerouslySetInnerHTML` in our
+own code, because chat text and names come from other people.
+
 ### Tech stack
 
 [WXT](https://wxt.dev) (Manifest V3, one codebase for Chrome, Brave and Firefox), TypeScript,

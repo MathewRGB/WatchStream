@@ -45,6 +45,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - End-to-end tests with Playwright: the real Chrome extension, and Chromium ↔ Firefox sessions
   with chat between all participants.
 
+### Security
+
+- ESLint forbids `innerHTML`, `outerHTML` and `dangerouslySetInnerHTML` in the source, so chat text
+  and names from other people can never be rendered as HTML.
+
 ### Changed
 
 - The WatchStream page is now built with React, Tailwind CSS and shadcn/ui instead of hand-written
