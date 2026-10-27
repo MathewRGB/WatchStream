@@ -64,12 +64,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       id: 'settings',
       label: 'Settings',
       icon: <SlidersHorizontal />,
-      content: (
-        <SettingsTab
-          quality={quality}
-          onQualityChange={(id) => session.setQuality(id)}
-        />
-      ),
+      content: <SettingsTab quality={quality} onQualityChange={(id) => session.setQuality(id)} />,
     },
   ];
 
