@@ -26,21 +26,25 @@ export function SessionApp({ connector, storage }: SessionAppProps) {
   switch (screen.kind) {
     case 'start':
       return (
-        <StartView
-          initialName={storage.getItem(NAME_KEY) ?? ''}
-          onHost={(name) => {
-            remember(name);
-            setScreen({
-              kind: 'host',
-              name,
-              session: new HostSession({ hostName: name, connector }),
-            });
-          }}
-          onJoin={(name) => {
-            remember(name);
-            setScreen({ kind: 'viewer', name });
-          }}
-        />
+        <div className="grid h-dvh place-items-center overflow-y-auto p-4">
+          <div className="w-full max-w-md">
+            <StartView
+              initialName={storage.getItem(NAME_KEY) ?? ''}
+              onHost={(name) => {
+                remember(name);
+                setScreen({
+                  kind: 'host',
+                  name,
+                  session: new HostSession({ hostName: name, connector }),
+                });
+              }}
+              onJoin={(name) => {
+                remember(name);
+                setScreen({ kind: 'viewer', name });
+              }}
+            />
+          </div>
+        </div>
       );
     case 'host':
       return (

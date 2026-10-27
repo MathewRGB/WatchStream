@@ -5,8 +5,9 @@ Watch streams together, browser to browser, without your own media server.
 WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
 viewers, and everyone watches the same thing: YouTube, Netflix or any other video in the browser.
 
-> **Status:** milestone M1. Host and viewers connect directly and can chat. Watching together
-> (stream and sync mode) follows in M3 and M4. The extension is not yet published in any store.
+> **Status:** milestone M2. Host and viewers connect directly, chat, and have a one-window layout
+> with a stage and a sidebar. Watching together (stream and sync mode) follows in M3 and M4. The
+> extension is not yet published in any store.
 
 ## How it works
 
@@ -28,15 +29,20 @@ be blocked for individual viewers by region or age. See
   sends a reply code back.
 - **Host controls:** only the host plays, pauses and seeks; viewers follow automatically.
 
-## Using it (M1)
+## Using it
 
 1. Click the WatchStream icon in the toolbar. The WatchStream page opens in a tab.
-2. **Host:** enter your name, choose **Host a session**, then **Invite a viewer**. Send the
-   invitation code to one person via any messenger.
+2. **Host:** enter your name, choose **Host a session**, open the **Invite** tab in the sidebar and
+   choose **Invite a viewer**. Send the invitation code to one person via any messenger.
 3. **Viewer:** enter your name, choose **Join a session**, paste the invitation code and choose
-   **Join**. Send the reply code back to the host.
+   **Join**. The reply code is copied to your clipboard automatically and a notice says so; paste
+   it into your chat with the host.
 4. **Host:** paste the reply code into the invitation and choose **Connect**.
-5. Once connected, everyone sees the participant list and can chat.
+5. Once connected, the sidebar shows **People** and **Chat**.
+
+The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
+tabs on the right, which you can hide with the button in the header. Nothing is shared on the stage
+yet; that arrives with stream mode.
 
 Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
 open: closing it ends the session.
@@ -107,7 +113,8 @@ that keep the stack tidy.
 src/core/          connection, handshake codes, protocol and sessions (no React, no extension APIs)
 src/background/    toolbar icon handling (no React)
 src/entrypoints/   thin WXT entry points: background script, session page
-src/features/      product UI, one folder per feature (session: start, host, viewer, chat)
+src/features/      product UI, one folder per feature (session: app shell, stage, sidebar tabs,
+                   start, host and viewer screens, chat)
 src/components/ui/ shadcn/ui components
 src/hooks/         React hooks that bind core objects to components
 src/lib/           small helpers such as cn()
@@ -118,14 +125,15 @@ docs/adr/          architecture decision records
 ```
 
 Add a shadcn/ui component with `npx shadcn@latest add <name>`. It lands in `src/components/ui/`.
-Check the generated file's imports afterwards: they have to point at `@/lib/utils`.
+The CLI currently imports `cn` from an unrelated npm package named `cn` and adds it to
+`package.json`. Point the import at `@/lib/utils` and run `npm uninstall cn` afterwards.
 
 ## Roadmap
 
 - [ ] **M1:** connection setup by code, chat — tested automatically in Chromium and Firefox and
       manually by the maintainer in Chrome, Brave and Firefox; a test across two different
       networks is still to be confirmed
-- [ ] **M2:** app shell: one window without page scrolling, stage with full-screen mode, sidebar
+- [x] **M2:** app shell: one window without page scrolling, stage with full-screen mode, sidebar
       with tabs, reply code copied automatically
 - [ ] **M3:** stream mode
 - [ ] **M4:** sync mode for protected sites: generic adapter, Netflix

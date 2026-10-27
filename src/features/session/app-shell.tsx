@@ -13,6 +13,8 @@ interface AppShellProps {
   stage: ReactNode;
   /** Optional right-hand sidebar that can be collapsed. */
   sidebar?: ReactNode;
+  /** `data-testid` of the outermost element. */
+  testId?: string;
 }
 
 /**
@@ -20,12 +22,19 @@ interface AppShellProps {
  * the right. Only inner areas scroll. In a narrow window an open sidebar takes
  * the whole width, so it also fits a browser side panel.
  */
-export function AppShell({ title, status, actions, stage, sidebar }: AppShellProps) {
+export function AppShell({
+  title,
+  status,
+  actions,
+  stage,
+  sidebar,
+  testId = 'app-shell',
+}: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showSidebar = sidebar !== undefined && sidebarOpen;
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden" data-testid="app-shell">
+    <div className="flex h-dvh flex-col overflow-hidden" data-testid={testId}>
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
         <h1 className="text-base font-semibold">{title}</h1>
         {status && <div className="min-w-0 truncate text-sm text-muted-foreground">{status}</div>}

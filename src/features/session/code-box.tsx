@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-const CODE_CLASSES = 'min-h-24 font-mono text-xs break-all';
+// A code is long and not meant to be read: a few lines, scrolling inside, keep the sidebar compact.
+const CODE_CLASSES = 'min-h-20 max-h-28 font-mono text-xs break-all';
 
 interface CodeBoxProps {
   label: string;

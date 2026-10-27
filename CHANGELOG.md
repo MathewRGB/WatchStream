@@ -46,6 +46,12 @@ adheres to [Semantic Versioning](https://semver.org/).
   or newer is required.
 - End-to-end tests with Playwright: the real Chrome extension, and Chromium ↔ Firefox sessions
   with chat between all participants.
+- One-window layout: header, a stage with a full-screen button on the left and a sidebar with tabs
+  on the right (Invite, People, Chat for the host; People and Chat for viewers). The page never
+  scrolls, only the chat list and the tab contents do. The sidebar can be hidden, and in a narrow
+  window an open sidebar takes the whole width. Tabs keep their content while another tab is shown.
+- End-to-end layout tests at three window sizes, including a control that proves the scroll check
+  detects a page that is too tall or too wide.
 - The viewer's reply code is copied to the clipboard as soon as they join, with a visible notice
   ("Reply code copied to your clipboard. Paste it into your chat with <host>."). If the browser
   refuses, the notice asks them to copy it by hand and the copy button stands out.
@@ -57,6 +63,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Invitation and reply codes are shown in compact fields that scroll inside instead of growing to
+  fill the sidebar.
 - The WatchStream page is now built with React, Tailwind CSS and shadcn/ui instead of hand-written
   DOM code. It keeps all behavior and gets a consistent look: cards, badges, a copy button with
   icon and an Enter key shortcut for sending chat and starting a session.

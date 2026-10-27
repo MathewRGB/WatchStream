@@ -8,8 +8,6 @@ const connector = createPeerConnector({ iceServers: DEFAULT_ICE_SERVERS });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <main className="mx-auto max-w-3xl p-4 pb-12">
-      <SessionApp connector={connector} storage={localStorage} />
-    </main>
+    <SessionApp connector={connector} storage={localStorage} />
   </StrictMode>,
 );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clipboard, ClipboardCheck } from 'lucide-react';
+import { Clipboard, ClipboardCheck, MessageSquare, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,14 @@ import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useViewerSession } from '@/hooks/use-viewer-session';
 import { copyText } from '@/lib/clipboard';
+import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
 import { CodeBox, CodeInput } from './code-box';
 import { describeError } from './describe-error';
 import { ParticipantList } from './participant-list';
+import { SetupArea } from './setup-area';
+import { Sidebar, type SidebarTab } from './sidebar';
+import { Stage } from './stage';
 
 interface ViewerViewProps {
   connector: PeerConnector;
@@ -35,27 +39,37 @@ export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) 
     onLeave();
   };
 
+  if (joined) {
+    return (
+      <JoinedSession
+        session={joined.session}
+        replyCode={joined.replyCode}
+        copied={joined.copied}
+        onLeave={leave}
+      />
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4" data-testid="viewer-view">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">
-          {joined ? `Joining ${joined.session.hostName}'s session` : 'Join a session'}
-        </h1>
-        <Button variant="outline" onClick={leave} data-testid="leave-button">
-          Leave
-        </Button>
-      </header>
-      {joined ? (
-        <JoinedSession
-          session={joined.session}
-          replyCode={joined.replyCode}
-          copied={joined.copied}
-          onLeave={leave}
-        />
-      ) : (
-        <JoinForm connector={connector} viewerName={viewerName} onJoined={setJoined} />
-      )}
-    </div>
+    <AppShell
+      testId="viewer-view"
+      title="WatchStream"
+      status="Join a session"
+      actions={<LeaveButton onClick={leave} />}
+      stage={
+        <SetupArea>
+          <JoinForm connector={connector} viewerName={viewerName} onJoined={setJoined} />
+        </SetupArea>
+      }
+    />
+  );
+}
+
+function LeaveButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="outline" size="sm" onClick={onClick} data-testid="leave-button">
+      Leave
+    </Button>
   );
 }
 
@@ -88,6 +102,10 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
 
   return (
     <Card>
+      <CardHeader>
+        <CardTitle>Join a session</CardTitle>
+        <CardDescription>Paste the invitation code you received from the host.</CardDescription>
+      </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <CodeInput
           label="Invitation code from the host"
@@ -122,60 +140,101 @@ function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionPro
   const messages = useChatMessages(session);
   const { hostName } = session;
 
-  return (
-    <>
-      {state === 'waiting-for-host' && (
-        <Card data-testid="reply-step">
-          <CardHeader>
-            <CardTitle>Send your reply</CardTitle>
-            <CardDescription data-testid="viewer-state">
-              Waiting for {hostName} to paste your reply code…
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Alert data-testid="reply-copy-notice">
-              {copied ? <ClipboardCheck /> : <Clipboard />}
-              <AlertDescription>
-                {copied
-                  ? `Reply code copied to your clipboard. Paste it into your chat with ${hostName}.`
-                  : `Copy the reply code below and send it to ${hostName}.`}
-              </AlertDescription>
-            </Alert>
-            <CodeBox
-              label="Send this reply code back to the host"
-              code={replyCode}
-              testId="reply-code"
-              initiallyCopied={copied}
-              emphasizeCopy={!copied}
-            />
-          </CardContent>
-        </Card>
-      )}
-      {state === 'connected' && (
-        <>
-          <p className="text-sm text-muted-foreground" data-testid="viewer-state">
-            Connected to {hostName}.
-          </p>
-          <ParticipantList participants={participants} selfId={participantId} />
+  if (state === 'connected') {
+    const tabs: SidebarTab[] = [
+      {
+        id: 'people',
+        label: 'People',
+        icon: <Users />,
+        count: participants.length,
+        content: <ParticipantList participants={participants} selfId={participantId} />,
+      },
+      {
+        id: 'chat',
+        label: 'Chat',
+        icon: <MessageSquare />,
+        content: (
           <ChatPanel
             messages={messages}
             selfId={participantId}
             onSend={(text) => session.sendChat(text)}
           />
-        </>
-      )}
-      {state === 'disconnected' && (
-        <Card>
-          <CardContent className="flex flex-col items-start gap-3">
-            <p role="alert" className="text-destructive" data-testid="viewer-state">
-              The session has ended.
-            </p>
-            <Button onClick={onLeave} data-testid="back-button">
-              Back to start
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </>
+        ),
+      },
+    ];
+
+    return (
+      <AppShell
+        testId="viewer-view"
+        title="WatchStream"
+        status={<span data-testid="viewer-state">Connected to {hostName}</span>}
+        actions={<LeaveButton onClick={onLeave} />}
+        stage={<Stage emptyMessage={`Waiting for ${hostName} to share something.`} />}
+        sidebar={<Sidebar tabs={tabs} defaultTab="chat" />}
+      />
+    );
+  }
+
+  if (state === 'disconnected') {
+    return (
+      <AppShell
+        testId="viewer-view"
+        title="WatchStream"
+        status="Disconnected"
+        actions={<LeaveButton onClick={onLeave} />}
+        stage={
+          <SetupArea>
+            <Card>
+              <CardContent className="flex flex-col items-start gap-3">
+                <p role="alert" className="text-destructive" data-testid="viewer-state">
+                  The session has ended.
+                </p>
+                <Button onClick={onLeave} data-testid="back-button">
+                  Back to start
+                </Button>
+              </CardContent>
+            </Card>
+          </SetupArea>
+        }
+      />
+    );
+  }
+
+  return (
+    <AppShell
+      testId="viewer-view"
+      title="WatchStream"
+      status={`Joining ${hostName}'s session`}
+      actions={<LeaveButton onClick={onLeave} />}
+      stage={
+        <SetupArea>
+          <Card data-testid="reply-step">
+            <CardHeader>
+              <CardTitle>Send your reply</CardTitle>
+              <CardDescription data-testid="viewer-state">
+                Waiting for {hostName} to paste your reply code…
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Alert data-testid="reply-copy-notice">
+                {copied ? <ClipboardCheck /> : <Clipboard />}
+                <AlertDescription>
+                  {copied
+                    ? `Reply code copied to your clipboard. Paste it into your chat with ${hostName}.`
+                    : `Copy the reply code below and send it to ${hostName}.`}
+                </AlertDescription>
+              </Alert>
+              <CodeBox
+                label="Send this reply code back to the host"
+                code={replyCode}
+                testId="reply-code"
+                initiallyCopied={copied}
+                emphasizeCopy={!copied}
+              />
+            </CardContent>
+          </Card>
+        </SetupArea>
+      }
+    />
   );
 }

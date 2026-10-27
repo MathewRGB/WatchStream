@@ -1,11 +1,19 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+export type SidebarTabId = 'invite' | 'people' | 'chat';
+
 /** Drives the WatchStream page the way a person would. */
 export class SessionPage {
   constructor(readonly page: Page) {}
 
   byTestId(testId: string): Locator {
     return this.page.getByTestId(testId);
+  }
+
+  /** Switches the sidebar to a tab; inactive tabs are hidden, so a person has to do this too. */
+  async openTab(id: SidebarTabId): Promise<void> {
+    await this.byTestId(`tab-${id}`).click();
+    await expect(this.byTestId(`tab-panel-${id}`)).toBeVisible();
   }
 
   async start(name: string, as: 'host' | 'join'): Promise<void> {
@@ -15,6 +23,7 @@ export class SessionPage {
 
   /** Host: creates an invitation and returns its code. */
   async createInvitation(): Promise<string> {
+    await this.openTab('invite');
     const count = await this.byTestId('invitation').count();
     await this.byTestId('invite-button').click();
     await expect(this.byTestId('invitation')).toHaveCount(count + 1);
@@ -30,6 +39,7 @@ export class SessionPage {
 
   /** Host: pastes a reply into the newest invitation. */
   async pasteReply(code: string): Promise<void> {
+    await this.openTab('invite');
     const card = this.byTestId('invitation').last();
     await card.getByTestId('reply-input').fill(code);
     await card.getByTestId('connect-button').click();
@@ -40,18 +50,29 @@ export class SessionPage {
   }
 
   async expectParticipants(names: string[]): Promise<void> {
+    await this.openTab('people');
     await expect(this.byTestId('participant-name')).toHaveText(names);
   }
 
   async sendChat(text: string): Promise<void> {
+    await this.openTab('chat');
     await this.byTestId('chat-input').fill(text);
     await this.byTestId('chat-send').click();
   }
 
   async expectChatMessage(sender: string, text: string): Promise<void> {
+    await this.openTab('chat');
     const message = this.byTestId('chat-message').filter({ hasText: text });
     await expect(message).toHaveCount(1);
     await expect(message.getByTestId('chat-sender')).toHaveText(sender);
+  }
+
+  /** True when the page itself would show a scroll bar (nothing may scroll but inner areas). */
+  async pageScrolls(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      return root.scrollHeight > root.clientHeight || root.scrollWidth > root.clientWidth;
+    });
   }
 }
 
