@@ -17,7 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - ADR-0004: sync mode only for protected sites, stream mode for everything else (YouTube
   included), and a new roadmap with the app shell and stream mode ahead of sync mode.
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
-  scroll-area, alert, separator) with a dark design-token theme, plus Testing Library for
+  scroll-area, alert, separator, tabs) with a dark design-token theme, plus Testing Library for
   component tests.
 - The host session reports changes of the free places through a `slots` event, so the UI stays
   correct without polling.
