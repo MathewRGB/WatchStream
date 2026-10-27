@@ -223,6 +223,39 @@ describe('AppShell full screen', () => {
       expect(screen.getByTestId('draft')).toHaveValue('still writing');
     });
 
+    it('shows a handle at the edge only while the sidebar is away, and it opens the sidebar', async () => {
+      renderShell();
+      expect(screen.queryByTestId('sidebar-handle')).toBeNull();
+
+      await userEvent.click(screen.getByTestId('fullscreen-button'));
+      const handle = screen.getByTestId('sidebar-handle');
+      expect(handle).toHaveAccessibleName('Show sidebar');
+      expect(handle).toHaveAttribute('title', 'Show sidebar (S)');
+
+      await userEvent.click(handle);
+
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+      expect(screen.queryByTestId('sidebar-handle')).toBeNull();
+    });
+
+    it('opens and closes with the S key, but not while typing in the sidebar', async () => {
+      await enterFullscreen();
+
+      await userEvent.keyboard('s');
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+
+      await userEvent.type(screen.getByTestId('draft'), 'sss');
+      expect(screen.getByTestId('draft')).toHaveValue('sss');
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+
+      await userEvent.click(screen.getByTestId('stage'));
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+      await userEvent.keyboard('s');
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+      await userEvent.keyboard('s');
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+    });
+
     it('closes on a press on the picture', async () => {
       await enterFullscreen();
       fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));

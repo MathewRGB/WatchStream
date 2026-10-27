@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreen } from '@/hooks/use-fullscreen';
-import { useSidebarPeek } from '@/hooks/use-sidebar-peek';
+import { SHORTCUT_KEY, useSidebarPeek } from '@/hooks/use-sidebar-peek';
 import { cn } from '@/lib/utils';
 import { StageFullscreenContext } from './stage-fullscreen';
 
@@ -98,6 +98,21 @@ export function AppShell({
               {...hoverProps}
               data-testid="sidebar-edge"
             />
+          )}
+          {floating && !peek.open && (
+            // For touch and for screens where the pointer cannot reach this edge (a second
+            // monitor on the right). A real button, so the keyboard reaches it too.
+            <button
+              type="button"
+              className="absolute top-1/2 right-0 z-10 flex h-16 w-5 -translate-y-1/2 items-center justify-center rounded-l-md bg-secondary/70 text-secondary-foreground opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              aria-label="Show sidebar"
+              title={`Show sidebar (${SHORTCUT_KEY.toUpperCase()})`}
+              onClick={peek.reveal}
+              {...hoverProps}
+              data-testid="sidebar-handle"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
           )}
           {(docked || floating) && (
             <aside

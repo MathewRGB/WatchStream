@@ -14,6 +14,9 @@ adheres to [Semantic Versioning](https://semver.org/).
   picture, without moving it, and slides out a moment after the pointer left. It stays while
   something in it has focus, so a half-typed chat message is not lost, and a click on the picture
   closes it. It is the same sidebar as outside full screen, with the same tabs and state.
+- For full screen where the pointer cannot reach the edge (touch, a second monitor on the right):
+  a small handle at the right edge, reachable by keyboard too, and the `S` key, which shows and
+  hides the sidebar (ignored while typing in a field and with Ctrl, Alt or Cmd held).
 - A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
   checklist for the open points before the first store submission (Brave Shields, name search,
   privacy text, packaging) in `docs/release-checklist.md`.

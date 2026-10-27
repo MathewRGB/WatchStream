@@ -257,3 +257,35 @@ test('in full screen the sidebar slides in at the right edge and stays while typ
   await host.page.close();
   await viewer.page.close();
 });
+
+test('in full screen the sidebar also opens with the handle and the S key', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  const viewer = await openSessionPage(SIZES[0]!);
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+  const screen = viewer.page.viewportSize()!;
+  const isShown = async () =>
+    (await viewer.byTestId('sidebar').boundingBox())!.x < screen.width - 300;
+
+  await viewer.byTestId('fullscreen-button').click();
+  await expect(viewer.byTestId('sidebar-handle')).toBeVisible();
+  await viewer.page.mouse.move(screen.width / 2, screen.height / 2);
+
+  // The handle: a click brings the sidebar in, and the handle makes room for it.
+  await viewer.byTestId('sidebar-handle').click();
+  await expect.poll(isShown).toBe(true);
+  await expect(viewer.byTestId('sidebar-handle')).toHaveCount(0);
+
+  // The key opens and closes it with no pointer near, and it stays open meanwhile.
+  await viewer.page.mouse.move(screen.width / 2, screen.height / 2);
+  await expect.poll(isShown).toBe(false);
+  await viewer.page.keyboard.press('s');
+  await expect.poll(isShown).toBe(true);
+  await viewer.page.waitForTimeout(1_000);
+  expect(await isShown()).toBe(true);
+  await viewer.page.keyboard.press('s');
+  await expect.poll(isShown).toBe(false);
+
+  await host.page.close();
+  await viewer.page.close();
+});

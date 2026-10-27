@@ -155,3 +155,88 @@ describe('useSidebarPeek', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+describe('useSidebarPeek shortcut and toggle', () => {
+  const press = (key: string, init: KeyboardEventInit = {}, target: EventTarget = document) =>
+    act(
+      () =>
+        void target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init })),
+    );
+
+  it('toggles with the S key', () => {
+    const { result } = setup();
+
+    press('s');
+    expect(result.current.open).toBe(true);
+
+    press('s');
+    expect(result.current.open).toBe(false);
+  });
+
+  it('stays open after the key, with no pointer around, until it is pressed again', () => {
+    const { result } = setup();
+    press('s');
+
+    act(() => vi.advanceTimersByTime(HIDE_DELAY_MS * 10));
+
+    expect(result.current.open).toBe(true);
+  });
+
+  it('closes with the key even while the pointer is over it, and then closes on leaving as usual', () => {
+    const { result } = setup();
+    act(() => result.current.hoverProps.onPointerEnter(pointer()));
+    press('s');
+    expect(result.current.open).toBe(false);
+
+    act(() => result.current.hoverProps.onPointerEnter(pointer()));
+    act(() => result.current.hoverProps.onPointerLeave(pointer()));
+    act(() => vi.advanceTimersByTime(HIDE_DELAY_MS));
+
+    expect(result.current.open).toBe(false);
+  });
+
+  it('ignores the key while typing in a field', () => {
+    const { result } = setup();
+    const field = document.body.appendChild(document.createElement('textarea'));
+
+    press('s', {}, field);
+
+    expect(result.current.open).toBe(false);
+  });
+
+  it.each([{ ctrlKey: true }, { metaKey: true }, { altKey: true }])(
+    'ignores the key with %j (a browser shortcut)',
+    (modifier) => {
+      const { result } = setup();
+
+      press('s', modifier);
+
+      expect(result.current.open).toBe(false);
+    },
+  );
+
+  it('ignores other keys', () => {
+    const { result } = setup();
+
+    press('a');
+
+    expect(result.current.open).toBe(false);
+  });
+
+  it('does nothing where it is not enabled', () => {
+    const { result } = setup(false);
+
+    press('s');
+
+    expect(result.current.open).toBe(false);
+  });
+
+  it('stops listening after being unmounted', () => {
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const { unmount } = setup();
+
+    unmount();
+
+    expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function));
+  });
+});
