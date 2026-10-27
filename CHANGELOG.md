@@ -16,6 +16,8 @@ adheres to [Semantic Versioning](https://semver.org/).
   that goes with it.
 - ADR-0004: sync mode only for protected sites, stream mode for everything else (YouTube
   included), and a new roadmap with the app shell and stream mode ahead of sync mode.
+- ADR-0005 (proposed): stream mode adds media to the open connection and renegotiates over the
+  data channel. A spike showed this works between Chromium and Firefox in both directions.
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
   scroll-area, alert, separator, tabs) with a dark design-token theme, plus Testing Library for
   component tests.
