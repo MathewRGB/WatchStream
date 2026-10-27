@@ -49,9 +49,29 @@ YouTube goes through stream mode. There are no per-site adapters and no sync mod
    automatically with a visible notice (done).
 3. **M3:** stream mode. A short spike first: tab capture into the session page in Chrome and
    Brave, display capture without tab audio in Firefox (done).
-4. **M4:** side panel or in-page panel next to the streaming tab (needs its own investigation of
-   Chrome, Brave and Firefox), optional TURN service.
+4. **M4:** the sidebar in full screen: full screen takes the stage and the sidebar, and the
+   sidebar slides in over the picture when the pointer touches the right edge (built, section 3);
+   optional TURN service (waits for the test across two networks).
 5. **Later, required:** viewers can share too (see ADR-0005 section 5). Not scheduled yet.
+
+### 3. The sidebar in full screen
+
+The host wants chat and the list of people while the picture fills the screen. The answer is the
+existing sidebar, not a second one:
+
+- The app shell owns full screen and puts its workspace (stage and sidebar, not the header) into
+  it. The sidebar is the same element in and out of full screen, so typed text, scroll position and
+  the chosen tab survive.
+- In full screen the sidebar waits off-screen, inert. It slides in over the picture, which does not
+  move, when the pointer touches a 16 px strip at the right edge, and slides out 400 ms after the
+  pointer left. It stays while something inside has focus, and a click on the picture closes it.
+- For screens where the pointer cannot reach the edge (touch, a second monitor on the right) a
+  handle at the edge, which is a real button, and the `S` key show and hide it. `S` is ignored while
+  typing in a field and with Ctrl, Alt or Cmd held.
+- Anything that has to be visible in full screen must live inside the workspace: popups that
+  render into `body` (Radix portals) would be hidden by full screen. The sidebar has none today.
+
+Not done: a hint on the handle when a new chat message arrives.
 
 ## Consequences
 
@@ -60,11 +80,19 @@ YouTube goes through stream mode. There are no per-site adapters and no sync mod
 - Viewers need no access of their own and cannot be blocked individually.
 - Protected services cannot be watched together; the README says so.
 - No quality is lossless: every picture is re-encoded.
-- The sidebar has to work in a narrow window, because M4 may reuse it next to the streaming tab.
+- The sidebar still has to work in a narrow window; it takes the whole width there.
 - No per-site adapters to maintain.
 
 ## Rejected alternatives
 
+- **A browser side panel next to the streaming tab** (Chrome `sidePanel`, Firefox `sidebar_action`),
+  mirroring chat and people from the session page. A prototype on 2026-10-28 worked in Chromium
+  (chat both ways, history for a late panel, Firefox loaded the manifest) but needed a second UI
+  that mirrors the first, a channel between them, a bridge that must keep one session apart from
+  another, and a window or screen share would show the panel to the viewers. The maintainer
+  preferred the single-window layout. Discarded, not kept.
+- **A panel injected into the streaming page** (content script): needs access to arbitrary
+  websites, because the host can share any site. Not built.
 - **Sync mode for YouTube:** a blocked viewer is left out silently.
 - **Offering two modes for the same content:** two ways to do the same thing, and more UI choices
   before anyone has used either.

@@ -162,7 +162,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       with tabs, reply code copied automatically
 - [x] **M3:** stream mode: share a tab, window or screen, sound in stereo, quality presets,
       volume control, technical details for connection problems
-- [ ] **M4:** panel next to the streaming tab, optional TURN service
+- [ ] **M4:** the sidebar in full screen (built, manual check open), optional TURN service
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
 - **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004)
 
@@ -171,6 +171,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [Changelog](CHANGELOG.md)
 - [Architecture decision records (ADRs)](docs/adr/)
 - [Manual test guide for stream mode](docs/manual-tests/m3-stream-mode.md)
+- [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
 - [Checklist before the first store submission](docs/release-checklist.md)
 
 ## Disclaimer

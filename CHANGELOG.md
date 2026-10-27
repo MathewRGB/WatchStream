@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 - For full screen where the pointer cannot reach the edge (touch, a second monitor on the right):
   a small handle at the right edge, reachable by keyboard too, and the `S` key, which shows and
   hides the sidebar (ignored while typing in a field and with Ctrl, Alt or Cmd held).
+- A manual test guide for the sidebar in full screen (`docs/manual-tests/m4-fullscreen-sidebar.md`).
 - A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
   checklist for the open points before the first store submission (Brave Shields, name search,
   privacy text, packaging) in `docs/release-checklist.md`.
@@ -111,7 +112,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - Sync mode and services with copy protection (Netflix, Disney+, Prime Video, Max) are no longer
   planned. ADR-0001 and ADR-0004 describe stream mode only and keep sync mode as future work at
-  their end; M4 is now the panel next to the streaming tab and the optional TURN service.
+  their end; M4 is now the sidebar in full screen and the optional TURN service.
 - The stage and the sidebar are inset panels with a thin border, rounded corners and a small gap
   to the window edge, so scrolling content visibly ends there instead of looking cut off.
 - Invitation and reply codes are shown in compact fields that scroll inside instead of growing to

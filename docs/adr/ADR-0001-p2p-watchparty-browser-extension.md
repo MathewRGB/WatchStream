@@ -212,7 +212,7 @@ single viewer by region or age and that viewer would be left out silently.
     (its API shape was never verified).
   - Later: Disney+, Prime Video, Max.
 
-### Learned from a first slice (built in M4, then removed, 2026-10-27)
+### Learned from a first slice (built as the first step of a former M4, then removed, 2026-10-27)
 
 A working slice with the generic adapter existed and passed end-to-end tests in the real
 extension (local page with a real video: play, seek, pause, a late joiner, a different title).

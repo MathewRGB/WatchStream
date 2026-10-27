@@ -80,7 +80,7 @@ to 1000 characters. Invalid messages are dropped without a reply.
 ## Consequences
 
 - Closing the WatchStream tab ends the session. This is visible and predictable for users.
-- Content scripts, if any are added (an in-page panel in M4, or sync mode, which is future work in
+- Content scripts, if any are added (sync mode, which is future work in
   ADR-0001), talk to the session tab through extension messaging.
 - M3 has to verify that tab capture can feed a peer connection held by the session tab. If it
   cannot, the stream mode needs its own decision.

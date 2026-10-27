@@ -74,7 +74,7 @@ twice in development, which would silently drop open invitations.
 
 ### 4. Content scripts stay free of React
 
-Scripts injected into third-party pages (none yet; an in-page panel in M4 would be one) are written in plain TypeScript. They must
+Scripts injected into third-party pages (none yet; sync mode, future work in ADR-0001, would add some) are written in plain TypeScript. They must
 stay small and must not bring a UI framework, a stylesheet reset or global CSS into someone else's
 page. If such a script needs UI, it uses a Shadow DOM via WXT's `createShadowRootUi`.
 
