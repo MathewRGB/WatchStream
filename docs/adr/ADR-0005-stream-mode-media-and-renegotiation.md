@@ -1,7 +1,7 @@
 ---
 id: ADR-0005
 title: Stream mode adds media to the live connection and renegotiates over the data channel
-status: proposed
+status: accepted
 date: 2026-10-27
 deciders: [Mathias Kuhlmey]
 amends: [ADR-0002]
@@ -115,8 +115,9 @@ integration test reads the values back from the real senders.
 - The icon keeps its meaning: it opens or focuses the session page.
 - Every viewer gets its own encoded copy of the stream; host upload scales with the viewer count
   (max 3).
-- Status stays `proposed` until the manual run on Chrome, Brave and Firefox has confirmed section 3
-  and the quality control of section 4 exists.
+- Accepted at the end of M3 (2026-10-27) after the maintainer's manual runs with real pickers, tab
+  audio and the quality presets on two devices in one network. Not yet covered: a run across two
+  different public networks, which decides whether a relay (TURN) is needed in M5.
 
 ### 5. Streaming by clients is planned, not built in M3
 
