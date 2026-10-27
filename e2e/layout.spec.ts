@@ -172,15 +172,22 @@ test('in a narrow window the open sidebar takes the whole width', async () => {
   await host.page.close();
 });
 
-test('the stage goes into full screen and back', async () => {
+test('the workspace goes into full screen and back', async () => {
   const host = await openSessionPage(SIZES[0]!);
   await host.start('user1', 'host');
   const fullscreenId = () =>
     host.page.evaluate(() => document.fullscreenElement?.getAttribute('data-testid') ?? null);
 
   await host.byTestId('fullscreen-button').click();
-  await expect.poll(fullscreenId).toBe('stage');
+  await expect.poll(fullscreenId).toBe('workspace');
   await expect(host.byTestId('fullscreen-button')).toHaveAccessibleName('Exit full screen');
+  // The stage fills the screen; the sidebar waits outside the visible area at the right edge.
+  const screen = host.page.viewportSize()!;
+  const stage = (await host.byTestId('stage').boundingBox())!;
+  expect(stage.width).toBe(screen.width);
+  expect(stage.height).toBe(screen.height);
+  const sidebar = (await host.byTestId('sidebar').boundingBox())!;
+  expect(sidebar.x).toBeGreaterThanOrEqual(screen.width);
 
   await host.byTestId('fullscreen-button').click();
   await expect.poll(fullscreenId).toBeNull();

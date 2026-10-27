@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useFullscreen } from '@/hooks/use-fullscreen';
+import { useStageFullscreen } from './stage-fullscreen';
 
 interface StageProps {
   /** What is shown on the stage. Without children an empty state with `emptyMessage` appears. */
@@ -12,14 +12,14 @@ interface StageProps {
 }
 
 /**
- * The big area for the shared picture. It owns the full-screen mode: only the
- * stage fills the screen, the sidebar and header stay out of it.
+ * The big area for the shared picture. Its full-screen button asks the app shell
+ * around it, which puts the whole workspace (stage and sidebar) into full screen.
  */
 export function Stage({ children, emptyMessage, overlay }: StageProps) {
-  const { ref, active, supported, toggle } = useFullscreen<HTMLElement>();
+  const { active, supported, toggle } = useStageFullscreen();
 
   return (
-    <section ref={ref} className="relative size-full bg-black" data-testid="stage">
+    <section className="relative size-full bg-black" data-testid="stage">
       {children ?? (
         <div className="grid size-full place-items-center p-6 text-center text-muted-foreground">
           <p data-testid="stage-empty">{emptyMessage}</p>

@@ -1,36 +1,17 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Stage } from './stage';
+import { StageFullscreenContext, type StageFullscreen } from './stage-fullscreen';
 
-let fullscreenElement: Element | null = null;
-
-function setFullscreen(element: Element | null) {
-  fullscreenElement = element;
-  document.dispatchEvent(new Event('fullscreenchange'));
+function renderInShell(fullscreen: StageFullscreen) {
+  return render(
+    <StageFullscreenContext.Provider value={fullscreen}>
+      <Stage emptyMessage="x" />
+    </StageFullscreenContext.Provider>,
+  );
 }
-
-beforeEach(() => {
-  fullscreenElement = null;
-  Object.defineProperty(document, 'fullscreenElement', {
-    configurable: true,
-    get: () => fullscreenElement,
-  });
-  Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true });
-  Object.defineProperty(document, 'exitFullscreen', {
-    configurable: true,
-    value: vi.fn(async () => setFullscreen(null)),
-  });
-  HTMLElement.prototype.requestFullscreen = vi.fn(async function (this: Element) {
-    setFullscreen(this);
-  });
-});
-
-afterEach(() => {
-  // @ts-expect-error - remove the stub again
-  delete HTMLElement.prototype.requestFullscreen;
-});
 
 describe('Stage', () => {
   it('shows the empty message when nothing is shared', () => {
@@ -50,23 +31,29 @@ describe('Stage', () => {
     expect(screen.queryByTestId('stage-empty')).toBeNull();
   });
 
-  it('puts the stage itself into full screen and back', async () => {
-    render(<Stage emptyMessage="x" />);
-    const button = screen.getByTestId('fullscreen-button');
-    expect(button).toHaveAccessibleName('Full screen');
+  it('asks the shell for full screen and names the button after the state', async () => {
+    const toggle = vi.fn(async () => {});
+    const { rerender } = renderInShell({ active: false, supported: true, toggle });
+    expect(screen.getByTestId('fullscreen-button')).toHaveAccessibleName('Full screen');
 
-    await userEvent.click(button);
-    expect(fullscreenElement).toBe(screen.getByTestId('stage'));
-    expect(button).toHaveAccessibleName('Exit full screen');
+    await userEvent.click(screen.getByTestId('fullscreen-button'));
+    expect(toggle).toHaveBeenCalledOnce();
 
-    await userEvent.click(button);
-    expect(fullscreenElement).toBeNull();
-    expect(button).toHaveAccessibleName('Full screen');
+    rerender(
+      <StageFullscreenContext.Provider value={{ active: true, supported: true, toggle }}>
+        <Stage emptyMessage="x" />
+      </StageFullscreenContext.Provider>,
+    );
+    expect(screen.getByTestId('fullscreen-button')).toHaveAccessibleName('Exit full screen');
   });
 
-  it('hides the full-screen button where the browser does not offer it', () => {
-    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: false });
+  it('has no full-screen button where the browser does not offer it', () => {
+    renderInShell({ active: false, supported: false, toggle: async () => {} });
 
+    expect(screen.queryByTestId('fullscreen-button')).toBeNull();
+  });
+
+  it('has no full-screen button without a shell around it', () => {
     render(<Stage emptyMessage="x" />);
 
     expect(screen.queryByTestId('fullscreen-button')).toBeNull();
