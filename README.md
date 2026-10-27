@@ -138,6 +138,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [ ] **M3:** stream mode
 - [ ] **M4:** sync mode for protected sites: generic adapter, Netflix
 - [ ] **M5:** more protected sites, panel next to the streaming tab, optional TURN service
+- [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
 
 ## Documentation
 

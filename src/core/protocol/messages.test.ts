@@ -85,3 +85,37 @@ describe('parseHostMessage', () => {
     expect(parseHostMessage(raw)).toBeNull();
   });
 });
+
+describe('media messages', () => {
+  const SDP = 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n';
+
+  it('round-trips a media offer and a media stop from the host', () => {
+    const offer: HostMessage = { type: 'media-offer', sourceId: 'p1', sdp: SDP };
+    const stopped: HostMessage = { type: 'media-stopped', sourceId: 'p1' };
+
+    expect(parseHostMessage(serialize(offer))).toEqual(offer);
+    expect(parseHostMessage(serialize(stopped))).toEqual(stopped);
+  });
+
+  it('round-trips a media answer from a viewer', () => {
+    const answer = { type: 'media-answer', sourceId: 'p1', sdp: SDP } as const;
+
+    expect(parseViewerMessage(serialize(answer))).toEqual(answer);
+  });
+
+  it.each([
+    ['no source id', { type: 'media-offer', sdp: SDP }],
+    ['an empty source id', { type: 'media-offer', sourceId: '', sdp: SDP }],
+    ['no sdp', { type: 'media-offer', sourceId: 'p1' }],
+    ['an sdp that is not a description', { type: 'media-offer', sourceId: 'p1', sdp: 'hello' }],
+    ['an oversized sdp', { type: 'media-offer', sourceId: 'p1', sdp: 'v=0' + 'x'.repeat(40_000) }],
+  ])('rejects a media offer with %s', (_, message) => {
+    expect(parseHostMessage(JSON.stringify(message))).toBeNull();
+  });
+
+  it('rejects a media answer without a valid description', () => {
+    expect(
+      parseViewerMessage(JSON.stringify({ type: 'media-answer', sourceId: 'p1', sdp: 'x' })),
+    ).toBeNull();
+  });
+});

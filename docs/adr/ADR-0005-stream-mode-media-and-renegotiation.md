@@ -42,20 +42,25 @@ Not established by the spike:
 
 ### 1. Renegotiation runs over the existing data channel
 
-The host owns the media. When it starts or stops sharing, it creates a new offer for each viewer
-and sends it over that viewer's data channel; the viewer answers on the same channel. Viewers
-never offer media in M3.
+A participant who shares creates a new offer for the connection and sends it over the data
+channel; the other side answers on the same channel. Stopping a share ends the stream the same
+way. In M3 only the host shares, but nothing in the protocol or in the link ties sharing to the
+host (see section 5).
 
 New protocol messages (data-channel protocol stays v1, because unknown types are already dropped
-by `parseHostMessage` / `parseViewerMessage`, so an older viewer simply ignores sharing):
+by `parseHostMessage` / `parseViewerMessage`, so an older peer simply ignores sharing). `sourceId`
+is the participant id of the sharer, so the stage can say who is sharing.
 
-| Direction     | Message                         |
-| ------------- | ------------------------------- |
-| host → viewer | `{ type: "media-offer", sdp }`  |
-| viewer → host | `{ type: "media-answer", sdp }` |
-| host → viewer | `{ type: "media-stopped" }`     |
+| Direction     | Message                                   |
+| ------------- | ----------------------------------------- |
+| host → viewer | `{ type: "media-offer", sourceId, sdp }`  |
+| viewer → host | `{ type: "media-answer", sourceId, sdp }` |
+| host → viewer | `{ type: "media-stopped", sourceId }`     |
 
-The host serializes negotiations per viewer (one at a time) so offers cannot cross.
+Negotiation is symmetric on the link: the host side is the impolite peer and the viewer side the
+polite one (the "perfect negotiation" pattern), so two offers that cross resolve themselves. In
+M3 this never triggers, because only the host offers; it is built in now because it is hard to
+add once links are in use. Negotiations on one link run one at a time.
 
 ### 2. `MessageLink` gains media
 
@@ -84,9 +89,24 @@ The host chooses a maximum resolution and bitrate (settings tab). It is applied 
   (max 3).
 - Status stays `proposed` until the manual run on Chrome, Brave and Firefox has confirmed section 3.
 
+### 5. Streaming by clients is planned, not built in M3
+
+Clients must be able to share too (maintainer requirement, later milestone). The planned design
+keeps the star topology: a client asks the host, the host approves (the host stays authoritative),
+the client sends its stream to the host, and the host forwards it to the other viewers. Mesh
+connections between viewers are rejected: they need new codes for every pair and show viewers each
+other's IP addresses, which the privacy statement rules out.
+
+Costs, accepted: the host decodes and re-encodes the forwarded stream, so quality drops a little
+and the host's CPU and upload rise; at most one stream is on the stage at a time.
+
+What M3 does now to keep this open: messages carry `sourceId`, negotiation is symmetric, and the
+stage shows who is sharing. What it does not do: request/approve messages, forwarding, or any
+viewer-side capture.
+
 ## Rejected alternatives
 
 - **New handshake codes for media:** repeats the messenger round trip for every share.
+- **Mesh between viewers for client streams:** see section 5.
 - **A second peer connection for media:** more codes or a second negotiation path; renegotiation
   on the existing connection is simpler and the spike shows it works.
-- **Viewers offering media:** not needed for watching; keeps the host authoritative (ADR-0002).

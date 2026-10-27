@@ -52,6 +52,7 @@ for unprotected content is wanted later, it becomes an explicit opt-in and gets 
 4. **M4:** sync mode for protected sites: generic adapter, Netflix adapter.
 5. **M5:** more protected sites, side panel or in-page panel next to the streaming tab (needs its
    own investigation of Chrome, Brave and Firefox), optional TURN service.
+6. **Later, required:** viewers can share too (see ADR-0005 section 5). Not scheduled yet.
 
 ## Consequences
 

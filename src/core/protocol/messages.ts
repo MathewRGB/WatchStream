@@ -21,15 +21,20 @@ export interface ChatMessage {
 }
 
 /** Sent by a viewer to the host. */
-export type ViewerMessage = { type: 'chat'; text: string };
+export type ViewerMessage =
+  { type: 'chat'; text: string } | { type: 'media-answer'; sourceId: string; sdp: string };
 
 /** Sent by the host to a viewer. */
 export type HostMessage =
   | { type: 'welcome'; participantId: string }
   | { type: 'roster'; participants: Participant[] }
-  | { type: 'chat'; message: ChatMessage };
+  | { type: 'chat'; message: ChatMessage }
+  /** `sourceId` is the participant who shares; a new offer replaces the stream before it. */
+  | { type: 'media-offer'; sourceId: string; sdp: string }
+  | { type: 'media-stopped'; sourceId: string };
 
 export const MAX_CHAT_LENGTH = 1000;
+const MAX_SDP_LENGTH = 20_000;
 
 /** Returns the trimmed text, or `null` when it is empty or too long. */
 export function normalizeChatText(text: string): string | null {
@@ -47,6 +52,9 @@ export function parseViewerMessage(raw: string): ViewerMessage | null {
     const text = normalizeChatText(data.text);
     return text === null ? null : { type: 'chat', text };
   }
+  if (data?.type === 'media-answer' && isNonEmptyString(data.sourceId) && isSdp(data.sdp)) {
+    return { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp };
+  }
   return null;
 }
 
@@ -63,6 +71,14 @@ export function parseHostMessage(raw: string): HostMessage | null {
         : null;
     case 'chat':
       return isChatMessage(data.message) ? { type: 'chat', message: data.message } : null;
+    case 'media-offer':
+      return isNonEmptyString(data.sourceId) && isSdp(data.sdp)
+        ? { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp }
+        : null;
+    case 'media-stopped':
+      return isNonEmptyString(data.sourceId)
+        ? { type: 'media-stopped', sourceId: data.sourceId }
+        : null;
     default:
       return null;
   }
@@ -81,6 +97,10 @@ function parseObject(raw: string): Record<string, unknown> | null {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value !== '';
+}
+
+function isSdp(value: unknown): value is string {
+  return typeof value === 'string' && value.startsWith('v=0') && value.length <= MAX_SDP_LENGTH;
 }
 
 function isParticipant(value: unknown): value is Participant {
