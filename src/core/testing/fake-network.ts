@@ -1,4 +1,5 @@
 import { Emitter } from '../events/emitter';
+import type { VideoLimits } from '../media/quality';
 import type {
   LinkEvents,
   LinkSignal,
@@ -21,6 +22,8 @@ export class FakeLink implements OfferingLink {
   outgoing: MediaStream | null = null;
   /** Descriptions received through `receiveSignal`, in order. */
   readonly received: LinkSignal[] = [];
+  /** The latest limits set through `setVideoLimits`. */
+  limits: VideoLimits | null = null;
   private currentState: LinkState = 'connecting';
 
   constructor(
@@ -64,6 +67,10 @@ export class FakeLink implements OfferingLink {
     // Like `negotiationneeded` in a browser, the offer comes after the caller has returned.
     const sdp = `v=0\r\nfake-media-${this.network.nextMedia++}\r\n`;
     queueMicrotask(() => this.emitter.emit('signal', { type: 'offer', sdp }));
+  }
+
+  async setVideoLimits(limits: VideoLimits): Promise<void> {
+    this.limits = limits;
   }
 
   async receiveSignal(signal: LinkSignal): Promise<void> {

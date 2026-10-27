@@ -1,4 +1,5 @@
 import { Emitter } from '../events/emitter';
+import type { VideoLimits } from '../media/quality';
 import type {
   LinkEvents,
   LinkSignal,
@@ -29,6 +30,7 @@ export class PeerLink implements OfferingLink {
   private currentState: LinkState = 'connecting';
   private readonly senders: RTCRtpSender[] = [];
   private outgoing: MediaStream | null = null;
+  private limits: VideoLimits | null = null;
   private makingOffer = false;
   private ignoreOffer = false;
   /**
@@ -122,7 +124,15 @@ export class PeerLink implements OfferingLink {
     if (signal.type === 'offer') {
       await this.connection.setLocalDescription();
       this.emitLocalDescription('answer');
+    } else {
+      // Encodings only exist once the negotiation is complete.
+      await this.applyLimits();
     }
+  }
+
+  async setVideoLimits(limits: VideoLimits): Promise<void> {
+    this.limits = limits;
+    await this.applyLimits();
   }
 
   close(): void {
@@ -145,6 +155,28 @@ export class PeerLink implements OfferingLink {
       }
     });
     channel.addEventListener('close', () => this.markClosed());
+  }
+
+  private async applyLimits(): Promise<void> {
+    const limits = this.limits;
+    if (!limits) return;
+    for (const sender of this.senders) {
+      const track = sender.track;
+      if (track?.kind !== 'video') continue;
+      const parameters = sender.getParameters();
+      if (!parameters.encodings || parameters.encodings.length === 0) continue;
+      const height = track.getSettings().height ?? limits.maxHeight;
+      for (const encoding of parameters.encodings) {
+        encoding.maxBitrate = limits.maxBitrateBps;
+        encoding.maxFramerate = limits.maxFramerate;
+        encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);
+      }
+      try {
+        await sender.setParameters(parameters);
+      } catch {
+        // The sender changed meanwhile (a renegotiation); the next answer applies the limits again.
+      }
+    }
   }
 
   private receiveTrack(event: RTCTrackEvent): void {

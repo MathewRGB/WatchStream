@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-export type SidebarTabId = 'invite' | 'people' | 'chat';
+export type SidebarTabId = 'invite' | 'people' | 'chat' | 'settings';
 
 /** Drives the WatchStream page the way a person would. */
 export class SessionPage {

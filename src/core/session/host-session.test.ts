@@ -375,4 +375,44 @@ describe('HostSession', () => {
       expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
     });
   });
+
+  describe('quality', () => {
+    it('starts balanced and limits every viewer link to the chosen preset', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+      await joinViewer(host, network, 'user3');
+      expect(host.quality).toBe('balanced');
+
+      host.setQuality('saver');
+      await flush();
+
+      expect(host.quality).toBe('saver');
+      expect(network.offers.map((link) => link.limits)).toEqual([
+        expect.objectContaining({ maxHeight: 480, maxBitrateBps: 1_500_000 }),
+        expect.objectContaining({ maxHeight: 480, maxBitrateBps: 1_500_000 }),
+      ]);
+    });
+
+    it('applies the current preset to a viewer who joins later', async () => {
+      const { host, network } = createHost();
+      host.setQuality('sharp');
+
+      await joinViewer(host, network, 'user2');
+
+      expect(network.offers[0]!.limits).toMatchObject({ maxHeight: 1080 });
+    });
+
+    it('keeps a viewer when limits cannot be set on its link', async () => {
+      const { host, network } = createHost();
+      const { viewer } = await joinViewer(host, network, 'user2');
+      network.offers[0]!.setVideoLimits = async () => {
+        throw new Error('no encodings yet');
+      };
+
+      host.setQuality('saver');
+      await flush();
+
+      expect(viewer.state).toBe('connected');
+    });
+  });
 });

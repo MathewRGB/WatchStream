@@ -90,12 +90,16 @@ permissions, and its only advantage over the picker, tab audio, `getDisplayMedia
 in Chromium. It can be added later as a shortcut if the picker proves too clumsy.
 
 The part that automation cannot cover is the real picker and the real audio. That is a manual
-check on Chrome, Brave and Firefox (steps in the README).
+check on Chrome, Brave and Firefox (the step-by-step guide that closes the milestone).
 
 ### 4. Quality control
 
-The host chooses a maximum resolution and bitrate (settings tab). It is applied through
-`RTCRtpSender.setParameters`, so it can change while sharing.
+The host chooses one of three presets in the Settings tab: Saver (480p, 24 fps, 1.5 Mbit/s),
+Balanced (720p, 30 fps, 3.5 Mbit/s, the default) and Sharp (1080p, 30 fps, 6 Mbit/s). They are
+applied per viewer link through `RTCRtpSender.setParameters` (`maxBitrate`, `maxFramerate`,
+`scaleResolutionDownBy`), at once and while sharing. The browser only allows this once the
+negotiation is complete, so a link keeps its limits and applies them after every answer. The
+integration test reads the values back from the real senders.
 
 ## Consequences
 

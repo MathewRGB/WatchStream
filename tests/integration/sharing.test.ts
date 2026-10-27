@@ -2,6 +2,17 @@ import { describe, expect, it } from 'vitest';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
 import { createTestStream, join, startHost, waitFor } from './helpers';
 
+/** The encoder settings the browser really holds, read from the host's RTCRtpSenders. */
+function videoEncodings(host: ReturnType<typeof startHost>) {
+  const links = (host as unknown as { viewers: Map<string, { link: { senders: RTCRtpSender[] } }> })
+    .viewers;
+  return [...links.values()].flatMap(({ link }) =>
+    link.senders
+      .filter((sender) => sender.track?.kind === 'video')
+      .flatMap((sender) => sender.getParameters().encodings ?? []),
+  );
+}
+
 function nextMedia(session: ViewerSession) {
   return waitFor<SharedMedia | null>((resolve) => {
     const off = session.events.on('media', (media) => {
@@ -96,5 +107,29 @@ describe('sharing over WebRTC', () => {
     host.startSharing(createTestStream());
 
     expect(await plays((await second)!.stream)).toBe(true);
+  });
+
+  it('limits what the browser sends, now and when the preset changes', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    await arrived;
+
+    await waitFor<void>((resolve) => {
+      const check = () =>
+        videoEncodings(host)[0]?.maxBitrate === 3_500_000 ? resolve() : setTimeout(check, 50);
+      check();
+    });
+    expect(videoEncodings(host)[0]).toMatchObject({ maxBitrate: 3_500_000, maxFramerate: 30 });
+
+    host.setQuality('saver');
+
+    await waitFor<void>((resolve) => {
+      const check = () =>
+        videoEncodings(host)[0]?.maxBitrate === 1_500_000 ? resolve() : setTimeout(check, 50);
+      check();
+    });
+    expect(videoEncodings(host)[0]).toMatchObject({ maxBitrate: 1_500_000, maxFramerate: 24 });
   });
 });

@@ -25,6 +25,9 @@ adheres to [Semantic Versioning](https://semver.org/).
   also when they join later or when the host shares again after a stop. Connections negotiate
   media over the data channel, with crossing offers resolved by the viewer yielding. Tested with
   real WebRTC in Chromium and Firefox.
+- Settings tab for the host with three picture quality presets (Saver 480p, Balanced 720p,
+  Sharp 1080p). They cap bitrate, frame rate and resolution of what goes out to each viewer, also
+  while sharing and for viewers who join later.
 - Stream mode on the stage: the host chooses **Share** and picks a tab, window or screen in the
   browser's own picker (Chrome and Brave can add tab audio). Viewers see and hear it, with a name
   label, a mute button and a note when the browser had to start it without sound. The host sees a

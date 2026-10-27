@@ -1,4 +1,5 @@
 import { Emitter } from '../events/emitter';
+import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
@@ -54,6 +55,7 @@ export class HostSession {
   private readonly createId: () => string;
   private readonly now: () => number;
   private shared: MediaStream | null = null;
+  private currentQuality: QualityId = DEFAULT_QUALITY;
 
   constructor(private readonly options: HostSessionOptions) {
     this.maxViewers = options.maxViewers ?? DEFAULT_MAX_VIEWERS;
@@ -138,6 +140,16 @@ export class HostSession {
     this.publishChat(this.self, text);
   }
 
+  get quality(): QualityId {
+    return this.currentQuality;
+  }
+
+  /** Sets how much of the picture goes out; takes effect at once and for later viewers. */
+  setQuality(id: QualityId): void {
+    this.currentQuality = id;
+    for (const { link } of this.viewers.values()) this.applyQuality(link);
+  }
+
   /** The stream the host currently shares, or `null`. */
   get sharedStream(): MediaStream | null {
     return this.shared;
@@ -188,6 +200,8 @@ export class HostSession {
       }
     });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
+    // The link keeps the limits and applies them whenever a video track gets negotiated.
+    this.applyQuality(link);
     if (this.shared) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
@@ -206,6 +220,11 @@ export class HostSession {
   private startSharingWith(link: MediaLink): void {
     this.sendTo(link, { type: 'media-started', sourceId: this.hostId });
     this.guardMedia(link, () => link.setOutgoing(this.shared));
+  }
+
+  private applyQuality(link: MediaLink): void {
+    // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
+    void link.setVideoLimits(qualityPreset(this.currentQuality)).catch(() => {});
   }
 
   private unshareWith(link: MediaLink): void {

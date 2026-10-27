@@ -1,4 +1,12 @@
-import { MessageSquare, MonitorUp, MonitorX, UserPlus, Users } from 'lucide-react';
+import {
+  MessageSquare,
+  MonitorUp,
+  MonitorX,
+  SlidersHorizontal,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { HostSession } from '@/core/session/host-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
@@ -10,6 +18,7 @@ import { ChatPanel } from './chat-panel';
 import { InviteTab } from './invite-tab';
 import { ParticipantList } from './participant-list';
 import { Sidebar, type SidebarTab } from './sidebar';
+import { SettingsTab } from './settings-tab';
 import { Stage } from './stage';
 import { StageVideo } from './stage-video';
 
@@ -23,6 +32,7 @@ interface HostViewProps {
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   const { participants, openSlots, sharedStream } = useHostSession(session);
   const share = useScreenShare(session, capture);
+  const [quality, setQuality] = useState(session.quality);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
 
@@ -49,6 +59,20 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
           messages={messages}
           selfId={session.hostId}
           onSend={(text) => session.sendChat(text)}
+        />
+      ),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <SlidersHorizontal />,
+      content: (
+        <SettingsTab
+          quality={quality}
+          onQualityChange={(id) => {
+            session.setQuality(id);
+            setQuality(id);
+          }}
         />
       ),
     },

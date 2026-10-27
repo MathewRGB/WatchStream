@@ -1,4 +1,5 @@
 import type { Emitter } from '../events/emitter';
+import type { VideoLimits } from '../media/quality';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
 
@@ -35,6 +36,8 @@ export interface MessageLink {
 export interface MediaLink extends MessageLink {
   /** Sends this stream to the other side; `null` stops sending. Only works once the link is open. */
   setOutgoing(stream: MediaStream | null): void;
+  /** Caps what is sent of the video: now, and again after every renegotiation. */
+  setVideoLimits(limits: VideoLimits): Promise<void>;
   /** Applies a description from the other side. May emit an answer as `signal`. */
   receiveSignal(signal: LinkSignal): Promise<void>;
 }

@@ -103,3 +103,18 @@ test('the host shares a picture and the viewer plays it, in the real extension',
   await host.page.close();
   await viewer.page.close();
 });
+
+test('the host chooses the picture quality in the settings tab', async () => {
+  const host = await openSessionPage();
+  await host.start('user1', 'host');
+
+  await host.openTab('settings');
+  await expect(host.byTestId('quality-balanced')).toBeChecked();
+  await host.byTestId('quality-saver').check();
+
+  await host.openTab('chat');
+  await host.openTab('settings');
+  await expect(host.byTestId('quality-saver')).toBeChecked();
+  expect(await host.pageScrolls()).toBe(false);
+  await host.page.close();
+});

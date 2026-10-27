@@ -6,8 +6,8 @@ WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites
 viewers, and everyone watches the same thing: YouTube, Netflix or any other video in the browser.
 
 > **Status:** milestone M3 is in progress. Host and viewers connect directly, chat, and the host
-> can share a tab, window or screen that the viewers see. A quality setting and the manual checks
-> in Chrome, Brave and Firefox are still open. Sync mode for protected sites follows in M4. The
+> can share a tab, window or screen that the viewers see, with a quality setting. The manual
+> checks in Chrome, Brave and Firefox are still open. Sync mode for protected sites follows in M4. The
 > extension is not yet published in any store.
 
 ## How it works
@@ -42,7 +42,8 @@ be blocked for individual viewers by region or age. See
 5. Once connected, the sidebar shows **People** and **Chat**.
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
-   it on their stage; **Stop sharing** (or the browser's own stop button) ends it.
+   it on their stage; **Stop sharing** (or the browser's own stop button) ends it. The host can
+   lower or raise the picture quality in the **Settings** tab.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.
@@ -55,6 +56,8 @@ open: closing it ends the session.
 - For services with copy protection (Netflix, Disney+, etc.) every viewer needs their own
   subscription. WatchStream does not circumvent copy protection.
 - In stream mode the host's upload bandwidth limits the quality. It is designed for 2-3 viewers.
+  The host sends a separate copy to each viewer, so Sharp needs about 6 Mbit/s of upload per
+  viewer.
 - Firefox cannot capture audio as a host in stream mode.
 - Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
   additional relay server (TURN).
