@@ -116,6 +116,17 @@ describe('useSidebarPeek', () => {
     expect(result.current.open).toBe(false);
   });
 
+  it('says whether the pointer rests on the edge or the sidebar', () => {
+    const { result } = setup();
+    expect(result.current.isHovering()).toBe(false);
+
+    act(() => result.current.hoverProps.onPointerEnter(pointer()));
+    expect(result.current.isHovering()).toBe(true);
+
+    act(() => result.current.hoverProps.onPointerLeave(pointer()));
+    expect(result.current.isHovering()).toBe(false);
+  });
+
   it('can be revealed by other means', () => {
     const { result } = setup();
 

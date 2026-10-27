@@ -68,10 +68,27 @@ trigger by accident? Is the delay too short or too long? Does the sidebar cover 
    whether the viewers see anything odd (sharing a window that is itself in full screen).
 2. Tab sharing is the case this was built for; it should show no sign of the sidebar to viewers.
 
+## 8. Only the picture
+
+1. In full screen, leave the pointer still and do not touch anything for about three seconds.
+2. Expect: the full-screen button, the Share or Stop sharing button, the sound controls, the name
+   of who shares and the handle fade out, and so does the mouse pointer.
+3. Move the pointer a little. Expect: everything is back at once. Wait again: it goes again.
+4. Leave it hidden and press a key (not `S`). Expect: the controls come back.
+5. Open the sidebar and rest the pointer on it without moving. Expect: nothing fades, even after
+   ten seconds. Move the pointer off it. Expect: after a moment everything fades, the sidebar too.
+6. Let it fade with the pointer over the picture. Expect: the pointer really is gone, not just
+   invisible: nothing flickers back by itself while you do not touch the mouse.
+7. Watch for the opposite: does the pointer or a control come back without you touching anything?
+   (Some systems send a mouse move when the picture under the pointer changes.)
+8. Leave full screen. Expect: nothing fades in the normal window.
+
+Judge: is three seconds right? Does fading feel smooth and not abrupt?
+
 ## Record the result
 
-| Browser | Edge | Delay feels right | Typing keeps it open | `S` | Handle | Notes |
-| ------- | ---- | ----------------- | -------------------- | --- | ------ | ----- |
-| Chrome  |      |                   |                      |     |        |       |
-| Brave   |      |                   |                      |     |        |       |
-| Firefox |      |                   |                      |     |        |       |
+| Browser | Edge | Delay feels right | Typing keeps it open | `S` | Handle | Fades when idle | Notes |
+| ------- | ---- | ----------------- | -------------------- | --- | ------ | --------------- | ----- |
+| Chrome  |      |                   |                      |     |        |                 |       |
+| Brave   |      |                   |                      |     |        |                 |       |
+| Firefox |      |                   |                      |     |        |                 |       |

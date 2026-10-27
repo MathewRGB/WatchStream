@@ -2,9 +2,10 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreen } from '@/hooks/use-fullscreen';
+import { useIdle } from '@/hooks/use-idle';
 import { SHORTCUT_KEY, useSidebarPeek } from '@/hooks/use-sidebar-peek';
 import { cn } from '@/lib/utils';
-import { StageFullscreenContext } from './stage-fullscreen';
+import { FADE_WHEN_IDLE, HIDE_WHEN_IDLE, StageFullscreenContext } from './stage-fullscreen';
 
 interface AppShellProps {
   title: string;
@@ -29,6 +30,10 @@ interface AppShellProps {
  * the sidebar leaves its column and waits off-screen at the right edge until
  * the pointer touches the edge; it is the same element, so what is typed in it
  * and where it scrolled survive. It slides over the picture and does not move it.
+ *
+ * In full screen, a few seconds without activity leave only the picture: the controls fade out
+ * and so does the mouse pointer, and the first move brings them back. The pointer resting on the
+ * sidebar counts as activity, because that is someone reading.
  */
 export function AppShell({
   title,
@@ -45,6 +50,7 @@ export function AppShell({
   const floating = sidebar !== undefined && fullscreen.active;
   const peek = useSidebarPeek(floating);
   const { panelRef, hoverProps, focusProps } = peek;
+  const idle = useIdle(fullscreen.active, peek.isHovering);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden" data-testid={testId}>
@@ -75,9 +81,12 @@ export function AppShell({
         <div
           ref={ref}
           className={cn(
-            'flex min-h-0 flex-1 gap-2 p-2',
+            'group/workspace flex min-h-0 flex-1 gap-2 p-2',
             fullscreen.active && 'relative gap-0 overflow-hidden bg-background p-0',
+            // The pointer goes too, also over the controls whose own cursor would show it.
+            idle && 'cursor-none **:cursor-none!',
           )}
+          data-idle={idle}
           data-testid="workspace"
         >
           <main
@@ -104,7 +113,10 @@ export function AppShell({
             // monitor on the right). A real button, so the keyboard reaches it too.
             <button
               type="button"
-              className="absolute top-1/2 right-0 z-10 flex h-16 w-5 -translate-y-1/2 items-center justify-center rounded-l-md bg-secondary/70 text-secondary-foreground opacity-60 hover:opacity-100 focus-visible:opacity-100"
+              className={cn(
+                'absolute top-1/2 right-0 z-10 flex h-16 w-5 -translate-y-1/2 items-center justify-center rounded-l-md bg-secondary/70 text-secondary-foreground opacity-60 hover:opacity-100 focus-visible:opacity-100',
+                FADE_WHEN_IDLE,
+              )}
               aria-label="Show sidebar"
               title={`Show sidebar (${SHORTCUT_KEY.toUpperCase()})`}
               onClick={peek.reveal}
@@ -120,7 +132,10 @@ export function AppShell({
               className={cn(
                 'flex w-[22rem] flex-col overflow-hidden bg-card/40',
                 floating
-                  ? 'absolute inset-y-0 right-0 z-20 max-w-full border-l bg-card shadow-xl transition-transform duration-150 motion-reduce:transition-none'
+                  ? cn(
+                      'absolute inset-y-0 right-0 z-20 max-w-full border-l bg-card shadow-xl transition-[transform,opacity] duration-300 motion-reduce:transition-none',
+                      HIDE_WHEN_IDLE,
+                    )
                   : 'shrink-0 rounded-lg border max-sm:w-full',
                 floating && (peek.open ? 'translate-x-0' : 'translate-x-full'),
               )}

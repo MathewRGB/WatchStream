@@ -30,6 +30,8 @@ export interface SidebarPeek {
   reveal: () => void;
   /** Show it, or close it when it is shown. */
   toggle: () => void;
+  /** The pointer rests on the edge strip, the handle or the sidebar. */
+  isHovering: () => boolean;
   /** Handlers for the edge strip and for the sidebar itself. */
   hoverProps: {
     onPointerEnter: (event: PointerEvent<HTMLElement>) => void;
@@ -115,6 +117,7 @@ export function useSidebarPeek(enabled: boolean, hideDelayMs = HIDE_DELAY_MS): S
     panelRef,
     reveal,
     toggle,
+    isHovering: () => hovering.current,
     hoverProps: {
       onPointerEnter: () => {
         hovering.current = true;

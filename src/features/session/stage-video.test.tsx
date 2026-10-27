@@ -26,6 +26,17 @@ describe('StageVideo', () => {
     expect(screen.getByTestId('stage-video')).not.toHaveProperty('muted', true);
   });
 
+  it('lets its label and its sound controls fade out when the workspace is idle', () => {
+    stubPlay(async () => {});
+
+    render(<StageVideo stream={stream} label="user1 is sharing" />);
+
+    const fade = 'group-data-[idle=true]/workspace:opacity-0';
+    expect(screen.getByTestId('stage-label')).toHaveClass(fade);
+    expect(screen.getByTestId('sound-button').parentElement).toHaveClass(fade);
+    expect(screen.getByTestId('stage-video')).not.toHaveClass(fade);
+  });
+
   it('mutes and unmutes with the sound button', async () => {
     stubPlay(async () => {});
     render(<StageVideo stream={stream} />);

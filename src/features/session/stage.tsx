@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Maximize, Minimize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useStageFullscreen } from './stage-fullscreen';
+import { cn } from '@/lib/utils';
+import { FADE_WHEN_IDLE, useStageFullscreen } from './stage-fullscreen';
 
 interface StageProps {
   /** What is shown on the stage. Without children an empty state with `emptyMessage` appears. */
@@ -25,13 +26,17 @@ export function Stage({ children, emptyMessage, overlay }: StageProps) {
           <p data-testid="stage-empty">{emptyMessage}</p>
         </div>
       )}
-      {overlay && <div className="absolute top-3 left-3 flex items-center gap-2">{overlay}</div>}
+      {overlay && (
+        <div className={cn('absolute top-3 left-3 flex items-center gap-2', FADE_WHEN_IDLE)}>
+          {overlay}
+        </div>
+      )}
       {supported && (
         <Button
           type="button"
           variant="secondary"
           size="icon-sm"
-          className="absolute top-3 right-3 opacity-80 hover:opacity-100"
+          className={cn('absolute top-3 right-3 opacity-80 hover:opacity-100', FADE_WHEN_IDLE)}
           aria-label={active ? 'Exit full screen' : 'Full screen'}
           title={active ? 'Exit full screen' : 'Full screen'}
           onClick={() => void toggle()}

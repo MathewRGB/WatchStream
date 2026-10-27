@@ -256,6 +256,69 @@ describe('AppShell full screen', () => {
       expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
     });
 
+    describe('when nothing happens', () => {
+      /** The clock must be fake before full screen starts the wait, so it is entered by event. */
+      async function enterFullscreenOnFakeClock() {
+        renderShell();
+        vi.useFakeTimers();
+        fireEvent.click(screen.getByTestId('fullscreen-button'));
+        await act(async () => {});
+      }
+
+      const IDLE_FADE = 'group-data-[idle=true]/workspace:opacity-0';
+
+      it('leaves only the picture after a few seconds, and brings everything back on a move', async () => {
+        await enterFullscreenOnFakeClock();
+        const workspace = screen.getByTestId('workspace');
+        expect(workspace).toHaveAttribute('data-idle', 'false');
+
+        act(() => void vi.advanceTimersByTime(2_999));
+        expect(workspace).toHaveAttribute('data-idle', 'false');
+        act(() => void vi.advanceTimersByTime(1));
+
+        expect(workspace).toHaveAttribute('data-idle', 'true');
+        expect(workspace).toHaveClass('cursor-none');
+
+        act(() => {
+          document.dispatchEvent(
+            new MouseEvent('pointermove', { clientX: 5, clientY: 5, bubbles: true }),
+          );
+        });
+
+        expect(workspace).toHaveAttribute('data-idle', 'false');
+        expect(workspace).not.toHaveClass('cursor-none');
+      });
+
+      it('lets go of every control, the stage buttons and the handle and the sidebar', async () => {
+        await enterFullscreen();
+
+        expect(screen.getByTestId('fullscreen-button')).toHaveClass(IDLE_FADE);
+        expect(screen.getByTestId('sidebar-handle')).toHaveClass(IDLE_FADE);
+        expect(screen.getByTestId('sidebar')).toHaveClass(IDLE_FADE);
+      });
+
+      it('does not start while the pointer rests on the sidebar, where someone reads', async () => {
+        await enterFullscreenOnFakeClock();
+        fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+
+        act(() => void vi.advanceTimersByTime(30_000));
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'false');
+
+        fireEvent.pointerLeave(screen.getByTestId('sidebar'));
+        act(() => void vi.advanceTimersByTime(3_000));
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'true');
+      });
+
+      it('never starts outside full screen', () => {
+        renderShell();
+        vi.useFakeTimers();
+
+        act(() => void vi.advanceTimersByTime(60_000));
+
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'false');
+      });
+    });
+
     it('closes on a press on the picture', async () => {
       await enterFullscreen();
       fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));

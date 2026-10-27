@@ -289,3 +289,55 @@ test('in full screen the sidebar also opens with the handle and the S key', asyn
   await host.page.close();
   await viewer.page.close();
 });
+
+test('in full screen the controls and the pointer go when idle and come back on a move', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  await host.start('user1', 'host');
+  const style = (testId: string, property: 'opacity' | 'cursor' | 'pointerEvents') =>
+    host.byTestId(testId).evaluate((el, name) => {
+      if (name !== 'opacity') return getComputedStyle(el)[name];
+      // What is seen is the opacity of the element times that of everything around it.
+      let seen = 1;
+      for (let node: Element | null = el; node; node = node.parentElement) {
+        seen *= Number(getComputedStyle(node).opacity);
+      }
+      return String(Math.round(seen * 100) / 100);
+    }, property);
+  const screen = host.page.viewportSize()!;
+
+  await host.byTestId('fullscreen-button').click();
+  await expect.poll(() => host.page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+  expect(await style('fullscreen-button', 'opacity')).toBe('0.8');
+  expect(await style('share-button', 'opacity')).toBe('1');
+  await expect(host.byTestId('sidebar-handle')).toBeVisible();
+
+  // A few seconds with the pointer still: only the picture is left, and no pointer over it.
+  await expect.poll(() => style('fullscreen-button', 'opacity'), { timeout: 10_000 }).toBe('0');
+  expect(await style('share-button', 'opacity')).toBe('0');
+  expect(await style('sidebar-handle', 'opacity')).toBe('0');
+  expect(await style('fullscreen-button', 'pointerEvents')).toBe('none');
+  await expect(host.byTestId('workspace')).toHaveAttribute('data-idle', 'true');
+  expect(await style('workspace', 'cursor')).toBe('none');
+  // Also where a control would show its own pointer.
+  expect(await style('share-button', 'cursor')).toBe('none');
+
+  // The first move brings everything back.
+  await host.page.mouse.move(screen.width / 2, screen.height / 2);
+  await expect.poll(() => style('fullscreen-button', 'opacity')).toBe('0.8');
+  expect(await style('share-button', 'opacity')).toBe('1');
+  expect(await style('sidebar-handle', 'opacity')).toBe('0.6');
+  await expect(host.byTestId('workspace')).toHaveAttribute('data-idle', 'false');
+  expect(await style('workspace', 'cursor')).not.toBe('none');
+
+  // And it goes again when nothing happens.
+  await expect.poll(() => style('fullscreen-button', 'opacity'), { timeout: 10_000 }).toBe('0');
+
+  // Outside full screen nothing ever fades.
+  await host.page.mouse.move(screen.width / 2 + 5, screen.height / 2);
+  await host.byTestId('fullscreen-button').click();
+  await expect.poll(() => host.page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+  await host.page.waitForTimeout(4_000);
+  await expect(host.byTestId('workspace')).toHaveAttribute('data-idle', 'false');
+  expect(await style('fullscreen-button', 'opacity')).toBe('0.8');
+  await host.page.close();
+});

@@ -51,6 +51,10 @@ while you are typing in it, and a click on the picture closes it. If the pointer
 edge (touch screen, a second monitor on the right), use the small handle at the right edge, or
 press `S` to show and hide the sidebar.
 
+In full screen, three seconds without moving the pointer, pressing a key, clicking or scrolling
+leave only the picture: all controls fade out and the mouse pointer disappears. Moving the pointer
+brings them back. The sidebar stays while the pointer rests on it.
+
 Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
 open: closing it ends the session.
 

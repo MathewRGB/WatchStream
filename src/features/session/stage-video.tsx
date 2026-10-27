@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { FADE_WHEN_IDLE } from './stage-fullscreen';
 
 interface StageVideoProps {
   stream: MediaStream;
@@ -84,14 +86,17 @@ export function StageVideo({
       />
       {label && (
         <p
-          className="absolute bottom-3 left-3 rounded-md bg-background/70 px-2 py-1 text-sm"
+          className={cn(
+            'absolute bottom-3 left-3 rounded-md bg-background/70 px-2 py-1 text-sm',
+            FADE_WHEN_IDLE,
+          )}
           data-testid="stage-label"
         >
           {label}
         </p>
       )}
       {!silent && (
-        <div className="absolute right-3 bottom-3 flex items-center gap-2">
+        <div className={cn('absolute right-3 bottom-3 flex items-center gap-2', FADE_WHEN_IDLE)}>
           {blocked && (
             <p
               className="rounded-md bg-background/70 px-2 py-1 text-sm"

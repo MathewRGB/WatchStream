@@ -17,6 +17,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - For full screen where the pointer cannot reach the edge (touch, a second monitor on the right):
   a small handle at the right edge, reachable by keyboard too, and the `S` key, which shows and
   hides the sidebar (ignored while typing in a field and with Ctrl, Alt or Cmd held).
+- Only the picture in full screen: after three seconds without a move of the pointer, a key, a
+  click or scrolling, every control fades out (the full-screen and share buttons, the sound
+  controls, the name of who shares, the handle, an open sidebar) and so does the mouse pointer.
+  The first move brings them back. The sidebar stays while the pointer rests on it, because that
+  is someone reading. Outside full screen nothing fades.
 - A manual test guide for the sidebar in full screen (`docs/manual-tests/m4-fullscreen-sidebar.md`).
 - A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
   checklist for the open points before the first store submission (Brave Shields, name search,

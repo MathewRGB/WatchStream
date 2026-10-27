@@ -70,6 +70,14 @@ existing sidebar, not a second one:
   typing in a field and with Ctrl, Alt or Cmd held.
 - Anything that has to be visible in full screen must live inside the workspace: popups that
   render into `body` (Radix portals) would be hidden by full screen. The sidebar has none today.
+- Only the picture when idle: three seconds without a pointer move, key, click or scroll make the
+  workspace idle (`data-idle`). Every control fades out and stops taking clicks, and the mouse
+  pointer is hidden everywhere in the workspace, also over controls that set their own pointer. The
+  first sign of activity ends it. The pointer resting on the sidebar or the edge strip is not idle,
+  because that is someone reading. A pointer move to the position the pointer already has is
+  ignored: a browser sends one when the element under a resting pointer changes, which hiding the
+  controls does. A new control that should go with the rest takes the classes in
+  `stage-fullscreen.ts`; there is no list to keep.
 
 Not done: a hint on the handle when a new chat message arrives.
 
