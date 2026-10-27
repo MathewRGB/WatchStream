@@ -6,7 +6,6 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { HostSession } from '@/core/session/host-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
@@ -30,9 +29,8 @@ interface HostViewProps {
 }
 
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
-  const { participants, openSlots, sharedStream } = useHostSession(session);
+  const { participants, openSlots, sharedStream, quality } = useHostSession(session);
   const share = useScreenShare(session, capture);
-  const [quality, setQuality] = useState(session.quality);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
 
@@ -69,10 +67,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       content: (
         <SettingsTab
           quality={quality}
-          onQualityChange={(id) => {
-            session.setQuality(id);
-            setQuality(id);
-          }}
+          onQualityChange={(id) => session.setQuality(id)}
         />
       ),
     },

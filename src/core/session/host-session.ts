@@ -32,6 +32,8 @@ export interface HostSessionEvents {
   chat: ChatMessage;
   /** The host started (stream) or stopped (`null`) sharing. */
   sharing: MediaStream | null;
+  /** The picture quality changed (payload: the new preset). */
+  quality: QualityId;
 }
 
 interface Viewer {
@@ -166,6 +168,7 @@ export class HostSession {
   setQuality(id: QualityId): void {
     this.currentQuality = id;
     for (const { link } of this.viewers.values()) this.applyQuality(link);
+    this.emitter.emit('quality', id);
   }
 
   /** The stream the host currently shares, or `null`. */

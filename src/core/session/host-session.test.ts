@@ -394,6 +394,16 @@ describe('HostSession', () => {
       ]);
     });
 
+    it('announces a changed preset', () => {
+      const { host } = createHost();
+      const seen: string[] = [];
+      host.events.on('quality', (id) => seen.push(id));
+
+      host.setQuality('saver');
+
+      expect(seen).toEqual(['saver']);
+    });
+
     it('applies the current preset to a viewer who joins later', async () => {
       const { host, network } = createHost();
       host.setQuality('sharp');
