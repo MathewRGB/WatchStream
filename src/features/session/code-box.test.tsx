@@ -21,6 +21,24 @@ describe('CodeBox', () => {
     expect(field).toHaveAttribute('readonly');
   });
 
+  it('shows "Copied" right away when the code was copied automatically', () => {
+    render(<CodeBox label="Code" code="WSR1.abc" testId="code" initiallyCopied />);
+
+    expect(screen.getByTestId('code-copy')).toHaveTextContent('Copied');
+  });
+
+  it('can make the copy button stand out until the code was copied', async () => {
+    stubClipboard(vi.fn().mockResolvedValue(undefined));
+    render(<CodeBox label="Code" code="WSR1.abc" testId="code" emphasizeCopy />);
+    const button = screen.getByTestId('code-copy');
+    expect(button).toHaveAttribute('data-variant', 'default');
+
+    await userEvent.click(button);
+
+    expect(await screen.findByText('Copied')).toBeInTheDocument();
+    expect(button).toHaveAttribute('data-variant', 'secondary');
+  });
+
   it('copies the code and confirms it', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     stubClipboard(writeText);

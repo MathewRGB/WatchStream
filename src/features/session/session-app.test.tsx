@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeNetwork } from '@/core/testing/fake-network';
 import { SessionApp } from './session-app';
 
@@ -149,6 +149,44 @@ describe('WatchStream app', () => {
 
     expect(host.queryAllByTestId('invitation')).toHaveLength(0);
     expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
+  });
+
+  describe('reply code on the clipboard', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    async function joinOnly(writeText: (text: string) => Promise<void>) {
+      vi.stubGlobal('navigator', { clipboard: { writeText } });
+      const host = openPage(network);
+      await start(host, 'Mathias', 'host');
+      const viewer = openPage(network);
+      await start(viewer, 'Julia', 'join');
+      const replyCode = await joinWith(viewer, await createInvitation(host));
+      return { viewer, replyCode };
+    }
+
+    it('copies the reply code as soon as the viewer has joined and says so', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+
+      const { viewer, replyCode } = await joinOnly(writeText);
+
+      expect(writeText).toHaveBeenCalledWith(replyCode);
+      expect(viewer.getByTestId('reply-copy-notice')).toHaveTextContent(
+        'Reply code copied to your clipboard. Paste it into your chat with Mathias.',
+      );
+      expect(viewer.getByTestId('reply-code-copy')).toHaveTextContent('Copied');
+    });
+
+    it('asks the viewer to copy by hand when the browser refuses', async () => {
+      const { viewer } = await joinOnly(() => Promise.reject(new Error('NotAllowedError')));
+
+      expect(viewer.getByTestId('reply-copy-notice')).toHaveTextContent(
+        'Copy the reply code below and send it to Mathias.',
+      );
+      expect(viewer.getByTestId('reply-code-copy')).toHaveTextContent('Copy');
+      expect(viewer.getByTestId('reply-code-copy')).not.toHaveTextContent('Copied');
+    });
   });
 
   it('explains a damaged invitation code to the viewer', async () => {

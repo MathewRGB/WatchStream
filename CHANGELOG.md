@@ -46,6 +46,9 @@ adheres to [Semantic Versioning](https://semver.org/).
   or newer is required.
 - End-to-end tests with Playwright: the real Chrome extension, and Chromium ↔ Firefox sessions
   with chat between all participants.
+- The viewer's reply code is copied to the clipboard as soon as they join, with a visible notice
+  ("Reply code copied to your clipboard. Paste it into your chat with <host>."). If the browser
+  refuses, the notice asks them to copy it by hand and the copy button stands out.
 
 ### Security
 

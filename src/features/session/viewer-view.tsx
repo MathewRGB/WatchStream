@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { Clipboard, ClipboardCheck } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useViewerSession } from '@/hooks/use-viewer-session';
+import { copyText } from '@/lib/clipboard';
 import { ChatPanel } from './chat-panel';
 import { CodeBox, CodeInput } from './code-box';
 import { describeError } from './describe-error';
@@ -20,6 +23,8 @@ interface ViewerViewProps {
 interface Joined {
   session: ViewerSession;
   replyCode: string;
+  /** The reply code was put on the clipboard automatically. */
+  copied: boolean;
 }
 
 export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) {
@@ -41,7 +46,12 @@ export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) 
         </Button>
       </header>
       {joined ? (
-        <JoinedSession session={joined.session} replyCode={joined.replyCode} onLeave={leave} />
+        <JoinedSession
+          session={joined.session}
+          replyCode={joined.replyCode}
+          copied={joined.copied}
+          onLeave={leave}
+        />
       ) : (
         <JoinForm connector={connector} viewerName={viewerName} onJoined={setJoined} />
       )}
@@ -64,7 +74,12 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
     setJoining(true);
     setError(null);
     try {
-      onJoined(await ViewerSession.join(invitation, { viewerName, connector }));
+      const { session, replyCode } = await ViewerSession.join(invitation, {
+        viewerName,
+        connector,
+      });
+      // Right after the click, so the browser still counts it as a user action.
+      onJoined({ session, replyCode, copied: await copyText(replyCode) });
     } catch (caught) {
       setError(describeError(caught));
       setJoining(false);
@@ -98,10 +113,11 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
 interface JoinedSessionProps {
   session: ViewerSession;
   replyCode: string;
+  copied: boolean;
   onLeave: () => void;
 }
 
-function JoinedSession({ session, replyCode, onLeave }: JoinedSessionProps) {
+function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionProps) {
   const { state, participants, participantId } = useViewerSession(session);
   const messages = useChatMessages(session);
   const { hostName } = session;
@@ -116,11 +132,21 @@ function JoinedSession({ session, replyCode, onLeave }: JoinedSessionProps) {
               Waiting for {hostName} to paste your reply code…
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4">
+            <Alert data-testid="reply-copy-notice">
+              {copied ? <ClipboardCheck /> : <Clipboard />}
+              <AlertDescription>
+                {copied
+                  ? `Reply code copied to your clipboard. Paste it into your chat with ${hostName}.`
+                  : `Copy the reply code below and send it to ${hostName}.`}
+              </AlertDescription>
+            </Alert>
             <CodeBox
               label="Send this reply code back to the host"
               code={replyCode}
               testId="reply-code"
+              initiallyCopied={copied}
+              emphasizeCopy={!copied}
             />
           </CardContent>
         </Card>

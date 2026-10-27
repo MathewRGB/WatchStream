@@ -58,6 +58,22 @@ test('host and viewer connect through the extension and chat', async () => {
   await viewer.page.close();
 });
 
+test('the reply code is copied automatically and the viewer is told', async () => {
+  const host = await openSessionPage();
+  const viewer = await openSessionPage();
+  await host.start('Mathias', 'host');
+  await viewer.start('Julia', 'join');
+
+  const replyCode = await viewer.acceptInvitation(await host.createInvitation());
+
+  await expect(viewer.byTestId('reply-copy-notice')).toContainText(
+    'Reply code copied to your clipboard',
+  );
+  expect(await viewer.page.evaluate(() => navigator.clipboard.readText())).toBe(replyCode);
+  await host.page.close();
+  await viewer.page.close();
+});
+
 test('the copy button puts the invitation code on the clipboard', async () => {
   const host = await openSessionPage();
   await host.start('Mathias', 'host');

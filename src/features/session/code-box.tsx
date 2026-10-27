@@ -10,15 +10,25 @@ interface CodeBoxProps {
   label: string;
   code: string;
   testId: string;
+  /** The code is already on the clipboard (copied automatically). */
+  initiallyCopied?: boolean;
+  /** Make the copy button stand out, e.g. when automatic copying did not work. */
+  emphasizeCopy?: boolean;
 }
 
 type CopyState = 'idle' | 'copied' | 'failed';
 
 /** A read-only code with a copy button. */
-export function CodeBox({ label, code, testId }: CodeBoxProps) {
+export function CodeBox({
+  label,
+  code,
+  testId,
+  initiallyCopied = false,
+  emphasizeCopy = false,
+}: CodeBoxProps) {
   const id = useId();
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const [copyState, setCopyState] = useState<CopyState>('idle');
+  const [copyState, setCopyState] = useState<CopyState>(initiallyCopied ? 'copied' : 'idle');
 
   const copy = async () => {
     try {
@@ -44,7 +54,7 @@ export function CodeBox({ label, code, testId }: CodeBoxProps) {
       />
       <Button
         type="button"
-        variant="secondary"
+        variant={emphasizeCopy && copyState !== 'copied' ? 'default' : 'secondary'}
         size="sm"
         className="self-start"
         onClick={() => void copy()}
