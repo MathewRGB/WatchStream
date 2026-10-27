@@ -42,7 +42,7 @@ be blocked for individual viewers by region or age. See
 5. Once connected, the sidebar shows **People** and **Chat**.
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
-   it on their stage; **Stop sharing** (or the browser's own stop button) ends it. The host can
+   it on their stage, with a mute button and a volume slider; **Stop sharing** (or the browser's own stop button) ends it. The host can
    lower or raise the picture quality in the **Settings** tab.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with

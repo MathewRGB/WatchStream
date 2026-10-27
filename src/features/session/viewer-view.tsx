@@ -7,6 +7,7 @@ import type { PeerConnector } from '@/core/peer/message-link';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useViewerSession } from '@/hooks/use-viewer-session';
+import { useVolume } from '@/hooks/use-volume';
 import { copyText } from '@/lib/clipboard';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
@@ -22,6 +23,8 @@ import { TechnicalDetails } from './technical-details';
 
 interface ViewerViewProps {
   connector: PeerConnector;
+  /** Remembers the volume. */
+  storage: Pick<Storage, 'getItem' | 'setItem'>;
   viewerName: string;
   /** Called when the user leaves; the view has already closed its session. */
   onLeave: () => void;
@@ -35,7 +38,7 @@ interface Joined {
   candidates: CandidateSummary;
 }
 
-export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) {
+export function ViewerView({ connector, storage, viewerName, onLeave }: ViewerViewProps) {
   const [joined, setJoined] = useState<Joined | null>(null);
 
   const leave = () => {
@@ -50,6 +53,7 @@ export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) 
         replyCode={joined.replyCode}
         copied={joined.copied}
         candidates={joined.candidates}
+        storage={storage}
         onLeave={leave}
       />
     );
@@ -138,12 +142,21 @@ interface JoinedSessionProps {
   replyCode: string;
   copied: boolean;
   candidates: CandidateSummary;
+  storage: Pick<Storage, 'getItem' | 'setItem'>;
   onLeave: () => void;
 }
 
-function JoinedSession({ session, replyCode, copied, candidates, onLeave }: JoinedSessionProps) {
+function JoinedSession({
+  session,
+  replyCode,
+  copied,
+  candidates,
+  storage,
+  onLeave,
+}: JoinedSessionProps) {
   const { state, participants, participantId, media } = useViewerSession(session);
   const messages = useChatMessages(session);
+  const { volume, setVolume } = useVolume(storage);
   const { hostName } = session;
 
   if (state === 'connected') {
@@ -180,6 +193,8 @@ function JoinedSession({ session, replyCode, copied, candidates, onLeave }: Join
             {media && (
               <StageVideo
                 stream={media.stream}
+                volume={volume}
+                onVolumeChange={setVolume}
                 label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
               />
             )}

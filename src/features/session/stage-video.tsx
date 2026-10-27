@@ -7,25 +7,41 @@ interface StageVideoProps {
   /** Who shares, shown in a corner. */
   label?: string;
   /**
-   * No sound at all and no mute button, e.g. the host's own preview. The element gets a copy of
+   * No sound at all and no controls for it, e.g. the host's own preview. The element gets a copy of
    * the stream without its audio tracks, so nothing can play, whatever the browser does with a
    * muted element: the host hears the shared tab itself, a second copy would be an echo.
    */
   silent?: boolean;
+  /** Where the volume starts, from 0 (silent) to 1 (full). */
+  volume?: number;
+  /** Called when the viewer moves the volume slider, so the level can be remembered. */
+  onVolumeChange?: (volume: number) => void;
 }
 
+/** The level a viewer gets when they switch the sound on from 0. */
+const FALLBACK_VOLUME = 0.5;
+
 /**
- * Plays a shared stream on the stage. If the browser refuses to start it with
- * sound, it plays muted and says so, so the picture is never stuck.
+ * Plays a shared stream on the stage, with a mute button and a volume slider. If
+ * the browser refuses to start it with sound, it plays muted and says so, so the
+ * picture is never stuck.
  */
-export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
+export function StageVideo({
+  stream,
+  label,
+  silent = false,
+  volume = 1,
+  onVolumeChange,
+}: StageVideoProps) {
   const source = useMemo(
     () => (silent ? new MediaStream(stream.getVideoTracks()) : stream),
     [stream, silent],
   );
   const video = useRef<HTMLVideoElement>(null);
-  const [soundOff, setSoundOff] = useState(silent);
+  const [muted, setMuted] = useState(silent);
+  const [level, setLevel] = useState(volume);
   const [blocked, setBlocked] = useState(false);
+  const soundOff = muted || level === 0;
 
   useEffect(() => {
     const element = video.current;
@@ -36,14 +52,26 @@ export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    element.muted = soundOff;
+    element.volume = level;
+    element.muted = muted;
     void Promise.resolve(element.play?.()).catch(() => {
-      if (!soundOff) {
-        setSoundOff(true);
+      if (!muted) {
+        setMuted(true);
         setBlocked(true);
       }
     });
-  }, [source, soundOff]);
+  }, [source, muted, level]);
+
+  const changeLevel = (next: number) => {
+    setLevel(next);
+    onVolumeChange?.(next);
+  };
+
+  const toggleMute = () => {
+    setBlocked(false);
+    if (soundOff && level === 0) changeLevel(FALLBACK_VOLUME);
+    setMuted(!soundOff);
+  };
 
   return (
     <>
@@ -78,14 +106,28 @@ export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
             size="icon-sm"
             aria-label={soundOff ? 'Turn sound on' : 'Mute'}
             title={soundOff ? 'Turn sound on' : 'Mute'}
-            onClick={() => {
-              setBlocked(false);
-              setSoundOff((off) => !off);
-            }}
+            onClick={toggleMute}
             data-testid="sound-button"
           >
             {soundOff ? <VolumeX /> : <Volume2 />}
           </Button>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={muted ? 0 : level}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setBlocked(false);
+              if (next > 0) setMuted(false);
+              changeLevel(next);
+            }}
+            aria-label="Volume"
+            aria-valuetext={`${Math.round((muted ? 0 : level) * 100)} percent`}
+            className="h-1.5 w-24 cursor-pointer accent-primary"
+            data-testid="volume-slider"
+          />
         </div>
       )}
     </>

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StageVideo } from './stage-video';
@@ -74,5 +74,88 @@ describe('StageVideo', () => {
 
     const shown = (screen.getByTestId('stage-video') as HTMLVideoElement).srcObject;
     expect(shown).not.toBe(withAudio);
+  });
+
+  describe('volume', () => {
+    const element = () => screen.getByTestId('stage-video') as HTMLVideoElement;
+    const slider = () => screen.getByTestId('volume-slider') as HTMLInputElement;
+    const moveTo = (value: number) =>
+      fireEvent.change(slider(), { target: { value: String(value) } });
+
+    it('starts at the given level', () => {
+      stubPlay(async () => {});
+
+      render(<StageVideo stream={stream} volume={0.4} />);
+
+      expect(element().volume).toBe(0.4);
+      expect(slider().value).toBe('0.4');
+      expect(slider()).toHaveAccessibleName('Volume');
+    });
+
+    it('plays at full volume by default', () => {
+      stubPlay(async () => {});
+
+      render(<StageVideo stream={stream} />);
+
+      expect(element().volume).toBe(1);
+    });
+
+    it('follows the slider and reports the level so it can be remembered', () => {
+      stubPlay(async () => {});
+      const onChange = vi.fn();
+      render(<StageVideo stream={stream} onVolumeChange={onChange} />);
+
+      moveTo(0.3);
+
+      expect(element().volume).toBe(0.3);
+      expect(onChange).toHaveBeenCalledWith(0.3);
+    });
+
+    it('turns the sound back on when the slider is moved while muted', async () => {
+      stubPlay(async () => {});
+      render(<StageVideo stream={stream} />);
+      await userEvent.click(screen.getByTestId('sound-button'));
+      expect(element().muted).toBe(true);
+      expect(slider().value).toBe('0');
+
+      moveTo(0.6);
+
+      expect(element().muted).toBe(false);
+      expect(element().volume).toBe(0.6);
+      expect(screen.getByTestId('sound-button')).toHaveAccessibleName('Mute');
+    });
+
+    it('shows the sound as off at volume 0 and brings back a usable level on the button', async () => {
+      stubPlay(async () => {});
+      const onChange = vi.fn();
+      render(<StageVideo stream={stream} onVolumeChange={onChange} />);
+      moveTo(0);
+      expect(screen.getByTestId('sound-button')).toHaveAccessibleName('Turn sound on');
+
+      await userEvent.click(screen.getByTestId('sound-button'));
+
+      expect(element().volume).toBe(0.5);
+      expect(element().muted).toBe(false);
+      expect(onChange).toHaveBeenLastCalledWith(0.5);
+    });
+
+    it('keeps the level when muting and unmuting', async () => {
+      stubPlay(async () => {});
+      render(<StageVideo stream={stream} volume={0.7} />);
+
+      await userEvent.click(screen.getByTestId('sound-button'));
+      await userEvent.click(screen.getByTestId('sound-button'));
+
+      expect(element().volume).toBe(0.7);
+      expect(element().muted).toBe(false);
+    });
+
+    it('has no slider for the host preview', () => {
+      stubPlay(async () => {});
+
+      render(<StageVideo stream={stream} silent />);
+
+      expect(screen.queryByTestId('volume-slider')).toBeNull();
+    });
   });
 });

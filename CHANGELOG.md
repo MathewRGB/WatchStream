@@ -41,6 +41,9 @@ adheres to [Semantic Versioning](https://semver.org/).
   usual causes are a VPN, a firewall or a blocked STUN server.
 - A viewer who has waited a minute for the host's reply is told to leave and join again with a
   new invitation.
+- Volume control for viewers: a slider next to the mute button on the stage. Moving it while muted
+  turns the sound back on, and the level is remembered for the next session. Muting itself is not
+  remembered. The host's own preview has no sound controls.
 - Settings tab for the host with three picture quality presets (Saver 480p, Balanced 720p,
   Sharp 1080p). They cap bitrate, frame rate and resolution of what goes out to each viewer, also
   while sharing and for viewers who join later.

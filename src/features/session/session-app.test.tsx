@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeNetwork } from '@/core/testing/fake-network';
@@ -287,5 +287,25 @@ describe('WatchStream app', () => {
     await waitFor(() => expect(viewer.getByTestId('viewer-state')).toHaveTextContent('has ended'));
     expect(viewer.getByTestId('technical-details-text')).toHaveTextContent('Connection:');
     expect(viewer.getByTestId('back-button')).toBeInTheDocument();
+  });
+
+  it('lets the viewer set the volume and remembers it for the next session', async () => {
+    const { stream } = fakeCapturedStream();
+    const hostStorage = memoryStorage();
+    const viewerStorage = memoryStorage();
+    const host = openPage(network, hostStorage, async () => stream);
+    await start(host, 'user1', 'host');
+    const viewer = openPage(network, viewerStorage);
+    await start(viewer, 'user2', 'join');
+    await pasteReply(host, await joinWith(viewer, await createInvitation(host)));
+    await waitFor(() => expect(viewer.getByTestId('viewer-state')).toHaveTextContent('Connected'));
+    await userEvent.click(host.getByTestId('share-button'));
+    await waitFor(() => expect(viewer.getByTestId('volume-slider')).toBeInTheDocument());
+
+    fireEvent.change(viewer.getByTestId('volume-slider'), { target: { value: '0.25' } });
+
+    expect((viewer.getByTestId('stage-video') as HTMLVideoElement).volume).toBe(0.25);
+    expect(viewerStorage.getItem('watchstream.volume')).toBe('0.25');
+    expect(host.queryByTestId('volume-slider')).toBeNull();
   });
 });

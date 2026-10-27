@@ -122,3 +122,36 @@ test('the host chooses the picture quality in the settings tab', async () => {
   expect(await host.pageScrolls()).toBe(false);
   await host.page.close();
 });
+
+test('the viewer sets the volume, it is remembered, and the controls fit a narrow window', async () => {
+  const host = await openSessionPage();
+  const viewer = await openSessionPage();
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+  await host.share();
+  await viewer.expectPlaying();
+  const video = viewer.byTestId('stage-video');
+  const slider = viewer.byTestId('volume-slider');
+  expect(await video.evaluate((v: HTMLVideoElement) => v.volume)).toBe(1);
+
+  await slider.fill('0.3');
+
+  expect(await video.evaluate((v: HTMLVideoElement) => v.volume)).toBeCloseTo(0.3);
+  expect(await viewer.page.evaluate(() => localStorage.getItem('watchstream.volume'))).toBe('0.3');
+
+  await viewer.byTestId('sound-button').click();
+  expect(await video.evaluate((v: HTMLVideoElement) => v.muted)).toBe(true);
+  await viewer.byTestId('sound-button').click();
+  expect(await video.evaluate((v: HTMLVideoElement) => v.volume)).toBeCloseTo(0.3);
+
+  // In a narrow window the sidebar covers the stage; hide it and check the controls stay inside.
+  await viewer.page.setViewportSize({ width: 480, height: 700 });
+  await viewer.byTestId('sidebar-toggle').click();
+  const box = await slider.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(480);
+  expect(await viewer.pageScrolls()).toBe(false);
+  await host.page.close();
+  await viewer.page.close();
+});
