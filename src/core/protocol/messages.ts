@@ -29,7 +29,12 @@ export type HostMessage =
   | { type: 'welcome'; participantId: string }
   | { type: 'roster'; participants: Participant[] }
   | { type: 'chat'; message: ChatMessage }
-  /** `sourceId` is the participant who shares; a new offer replaces the stream before it. */
+  /**
+   * `sourceId` is the participant who shares. `media-started` comes before the offer and
+   * `media-stopped` ends the share; a viewer shows media only between the two, because the
+   * offers that add or remove tracks can also produce track events of their own.
+   */
+  | { type: 'media-started'; sourceId: string }
   | { type: 'media-offer'; sourceId: string; sdp: string }
   | { type: 'media-stopped'; sourceId: string };
 
@@ -71,6 +76,10 @@ export function parseHostMessage(raw: string): HostMessage | null {
         : null;
     case 'chat':
       return isChatMessage(data.message) ? { type: 'chat', message: data.message } : null;
+    case 'media-started':
+      return isNonEmptyString(data.sourceId)
+        ? { type: 'media-started', sourceId: data.sourceId }
+        : null;
     case 'media-offer':
       return isNonEmptyString(data.sourceId) && isSdp(data.sdp)
         ? { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp }

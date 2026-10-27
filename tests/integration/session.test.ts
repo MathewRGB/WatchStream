@@ -1,39 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { ChatMessage, Participant } from '../../src/core/protocol/messages';
-import { createPeerConnector } from '../../src/core/peer/peer-link';
-import { HostSession } from '../../src/core/session/host-session';
-import { ViewerSession } from '../../src/core/session/viewer-session';
-import { LOCAL_CONFIG, waitFor } from './helpers';
-
-const connector = createPeerConnector(LOCAL_CONFIG);
-const cleanups: (() => void)[] = [];
-
-afterEach(() => {
-  cleanups.splice(0).forEach((cleanup) => cleanup());
-});
-
-function startHost(): HostSession {
-  const host = new HostSession({ hostName: 'Host', connector });
-  cleanups.push(() => host.close());
-  return host;
-}
-
-async function join(host: HostSession, viewerName: string): Promise<ViewerSession> {
-  const { code } = await host.createInvitation();
-  const { session, replyCode } = await ViewerSession.join(code, { viewerName, connector });
-  cleanups.push(() => session.leave());
-  const rosterReceived = waitFor<Participant[]>((resolve) => {
-    const off = session.events.on('roster', (roster) => {
-      if (roster.some((p) => p.name === viewerName)) {
-        off();
-        resolve(roster);
-      }
-    });
-  });
-  await host.acceptReply(replyCode);
-  await rosterReceived;
-  return session;
-}
+import { join, startHost, waitFor } from './helpers';
 
 interface ChatSource {
   events: { on(event: 'chat', listener: (message: ChatMessage) => void): () => void };

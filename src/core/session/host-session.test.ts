@@ -286,4 +286,93 @@ describe('HostSession', () => {
     expect(first.viewer.state).toBe('disconnected');
     expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
   });
+
+  describe('sharing', () => {
+    const stream = { id: 'stream-1' } as MediaStream;
+
+    it('offers the stream to every viewer and tells them who shares', async () => {
+      const { host, network } = createHost();
+      const first = await joinViewer(host, network, 'user2');
+      const second = await joinViewer(host, network, 'user3');
+      const onMedia = vi.fn();
+      first.viewer.events.on('media', onMedia);
+      second.viewer.events.on('media', onMedia);
+
+      host.startSharing(stream);
+      await flush();
+
+      expect(network.offers.map((link) => link.outgoing)).toEqual([stream, stream]);
+      expect(onMedia).toHaveBeenCalledTimes(2);
+      expect(onMedia).toHaveBeenCalledWith(expect.objectContaining({ sourceId: host.hostId }));
+      expect(host.sharedStream).toBe(stream);
+    });
+
+    it('applies a viewer answer to that viewer link only', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+      await joinViewer(host, network, 'user3');
+
+      host.startSharing(stream);
+      await flush();
+
+      expect(network.offers.map((link) => link.received.map((s) => s.type))).toEqual([
+        ['answer'],
+        ['answer'],
+      ]);
+    });
+
+    it('shares with a viewer who joins later', async () => {
+      const { host, network } = createHost();
+      host.startSharing(stream);
+
+      const { viewer } = await joinViewer(host, network, 'user2');
+      await flush();
+
+      expect(viewer.media).toMatchObject({ sourceId: host.hostId });
+    });
+
+    it('stops the share for everyone and tells the viewers', async () => {
+      const { host, network } = createHost();
+      const { viewer } = await joinViewer(host, network, 'user2');
+      host.startSharing(stream);
+      await flush();
+      const onMedia = vi.fn();
+      viewer.events.on('media', onMedia);
+
+      host.stopSharing();
+      await flush();
+
+      expect(network.offers[0]!.outgoing).toBeNull();
+      expect(onMedia).toHaveBeenCalledWith(null);
+      expect(viewer.media).toBeNull();
+      expect(host.sharedStream).toBeNull();
+    });
+
+    it('ignores a media answer that names someone else as the source', async () => {
+      const { host, network } = createHost();
+      const { viewer } = await joinViewer(host, network, 'user2');
+      network.offers[0]!.receive(
+        JSON.stringify({ type: 'media-answer', sourceId: 'someone-else', sdp: 'v=0\r\n' }),
+      );
+      await flush();
+
+      expect(network.offers[0]!.received).toEqual([]);
+      expect(viewer.state).toBe('connected');
+    });
+
+    it('drops only the viewer whose link fails while sharing starts', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+      const { viewer: second } = await joinViewer(host, network, 'user3');
+      network.offers[0]!.setOutgoing = () => {
+        throw new Error('link broke');
+      };
+
+      host.startSharing(stream);
+      await flush();
+
+      expect(second.media).not.toBeNull();
+      expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
+    });
+  });
 });

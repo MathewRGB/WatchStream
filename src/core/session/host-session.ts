@@ -1,6 +1,6 @@
 import { Emitter } from '../events/emitter';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
-import type { MessageLink, OfferingLink, PeerConnector } from '../peer/message-link';
+import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
   parseViewerMessage,
@@ -26,11 +26,13 @@ export interface HostSessionEvents {
   /** The number of free places changed (payload: the new number). */
   slots: number;
   chat: ChatMessage;
+  /** The host started (stream) or stopped (`null`) sharing. */
+  sharing: MediaStream | null;
 }
 
 interface Viewer {
   participant: Participant;
-  link: MessageLink;
+  link: MediaLink;
 }
 
 export const DEFAULT_MAX_VIEWERS = 3;
@@ -45,12 +47,13 @@ export class HostSession {
   private readonly emitter = new Emitter<HostSessionEvents>();
   private readonly pending = new Map<string, OfferingLink>();
   /** Links whose reply was accepted but that are not open yet; they still hold a place. */
-  private readonly connecting = new Set<MessageLink>();
+  private readonly connecting = new Set<MediaLink>();
   private readonly viewers = new Map<string, Viewer>();
   private readonly maxViewers: number;
   private readonly connectTimeoutMs: number;
   private readonly createId: () => string;
   private readonly now: () => number;
+  private shared: MediaStream | null = null;
 
   constructor(private readonly options: HostSessionOptions) {
     this.maxViewers = options.maxViewers ?? DEFAULT_MAX_VIEWERS;
@@ -135,6 +138,28 @@ export class HostSession {
     this.publishChat(this.self, text);
   }
 
+  /** The stream the host currently shares, or `null`. */
+  get sharedStream(): MediaStream | null {
+    return this.shared;
+  }
+
+  /** Shares a stream with every viewer, now and for viewers who join later. Replaces a running share. */
+  startSharing(stream: MediaStream): void {
+    this.shared = stream;
+    for (const { link } of this.viewers.values()) this.startSharingWith(link);
+    this.emitter.emit('sharing', stream);
+  }
+
+  stopSharing(): void {
+    if (!this.shared) return;
+    this.shared = null;
+    for (const { link } of this.viewers.values()) {
+      this.unshareWith(link);
+      this.sendTo(link, { type: 'media-stopped', sourceId: this.hostId });
+    }
+    this.emitter.emit('sharing', null);
+  }
+
   close(): void {
     for (const link of this.pending.values()) link.close();
     for (const link of this.connecting) link.close();
@@ -150,7 +175,12 @@ export class HostSession {
     // The place changes hands in one step, so nobody ever sees it as free.
     this.connecting.delete(link);
     this.viewers.set(participant.id, viewer);
-    link.events.on('message', (raw) => this.handleViewerMessage(participant, raw));
+    link.events.on('message', (raw) => this.handleViewerMessage(link, raw, participant));
+    link.events.on('signal', (signal) => {
+      if (signal.type === 'offer') {
+        this.sendTo(link, { type: 'media-offer', sourceId: this.hostId, sdp: signal.sdp });
+      }
+    });
     link.events.on('close', () => {
       if (this.viewers.delete(participant.id)) {
         this.publishRoster();
@@ -158,14 +188,36 @@ export class HostSession {
       }
     });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
+    if (this.shared) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
   }
 
-  private handleViewerMessage(sender: Participant, raw: string): void {
+  private handleViewerMessage(link: MediaLink, raw: string, sender: Participant): void {
     const message = parseViewerMessage(raw);
     if (message?.type === 'chat') {
       this.publishChat(sender, message.text);
+    } else if (message?.type === 'media-answer' && message.sourceId === this.hostId) {
+      void link.receiveSignal({ type: 'answer', sdp: message.sdp }).catch(() => link.close());
+    }
+  }
+
+  /** The announcement goes first, so the viewer knows the offer that follows is a share. */
+  private startSharingWith(link: MediaLink): void {
+    this.sendTo(link, { type: 'media-started', sourceId: this.hostId });
+    this.guardMedia(link, () => link.setOutgoing(this.shared));
+  }
+
+  private unshareWith(link: MediaLink): void {
+    this.guardMedia(link, () => link.setOutgoing(null));
+  }
+
+  /** Media trouble with one viewer must not affect the others; that viewer drops out. */
+  private guardMedia(link: MediaLink, action: () => void): void {
+    try {
+      action();
+    } catch {
+      link.close();
     }
   }
 
@@ -200,7 +252,7 @@ export class HostSession {
   }
 
   /** A failing link must never keep the others from receiving; it is closed and drops out. */
-  private sendTo(link: MessageLink, message: HostMessage): void {
+  private sendTo(link: MediaLink, message: HostMessage): void {
     if (link.state !== 'open') return;
     try {
       link.send(serialize(message));
@@ -209,7 +261,7 @@ export class HostSession {
     }
   }
 
-  private waitUntilOpen(link: MessageLink): Promise<void> {
+  private waitUntilOpen(link: MediaLink): Promise<void> {
     if (link.state === 'open') return Promise.resolve();
     return new Promise((resolve, reject) => {
       const fail = () => {

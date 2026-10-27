@@ -1,6 +1,6 @@
 import { Emitter } from '../events/emitter';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
-import type { MessageLink, PeerConnector } from '../peer/message-link';
+import type { MediaLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
   parseHostMessage,
@@ -12,10 +12,19 @@ import { SessionError } from './session-error';
 
 export type ViewerState = 'waiting-for-host' | 'connected' | 'disconnected';
 
+/** What the host shares right now. */
+export interface SharedMedia {
+  /** The participant who shares. */
+  sourceId: string;
+  stream: MediaStream;
+}
+
 export interface ViewerSessionEvents {
   state: ViewerState;
   roster: Participant[];
   chat: ChatMessage;
+  /** The shared picture started or changed; `null` once the share ended. */
+  media: SharedMedia | null;
 }
 
 export interface JoinOptions {
@@ -29,14 +38,31 @@ export class ViewerSession {
   private currentState: ViewerState = 'waiting-for-host';
   private ownId: string | null = null;
   private roster: Participant[] = [];
+  private currentMedia: SharedMedia | null = null;
+  /** Who the media in the running negotiation comes from; answers carry it back. */
+  private offeredBy: string | null = null;
+  /** Who announced a share that has not ended; media is shown only while this is set. */
+  private sharer: string | null = null;
 
   private constructor(
     readonly hostName: string,
-    private readonly link: MessageLink,
+    private readonly link: MediaLink,
   ) {
     link.events.on('open', () => this.setState('connected'));
     link.events.on('close', () => this.setState('disconnected'));
     link.events.on('message', (raw) => this.handleMessage(raw));
+    link.events.on('signal', (signal) => {
+      if (signal.type === 'answer' && this.offeredBy !== null && this.link.state === 'open') {
+        this.link.send(
+          serialize({ type: 'media-answer', sourceId: this.offeredBy, sdp: signal.sdp }),
+        );
+      }
+    });
+    link.events.on('stream', (stream) => {
+      if (this.sharer === null || stream === this.currentMedia?.stream) return;
+      this.currentMedia = { sourceId: this.sharer, stream };
+      this.emitter.emit('media', this.currentMedia);
+    });
   }
 
   /**
@@ -73,6 +99,11 @@ export class ViewerSession {
     return this.roster;
   }
 
+  /** The shared picture, or `null` while nothing is shared. */
+  get media(): SharedMedia | null {
+    return this.currentMedia;
+  }
+
   sendChat(text: string): void {
     const normalized = normalizeChatText(text);
     if (normalized === null) {
@@ -101,6 +132,22 @@ export class ViewerSession {
         break;
       case 'chat':
         this.emitter.emit('chat', message.message);
+        break;
+      case 'media-started':
+        this.sharer = message.sourceId;
+        break;
+      case 'media-offer':
+        this.offeredBy = message.sourceId;
+        void this.link
+          .receiveSignal({ type: 'offer', sdp: message.sdp })
+          .catch(() => this.link.close());
+        break;
+      case 'media-stopped':
+        if (this.sharer === message.sourceId) this.sharer = null;
+        if (this.currentMedia?.sourceId === message.sourceId) {
+          this.currentMedia = null;
+          this.emitter.emit('media', null);
+        }
         break;
     }
   }

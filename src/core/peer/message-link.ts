@@ -2,10 +2,20 @@ import type { Emitter } from '../events/emitter';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
 
+/** A session description produced by a link; the session sends it to the other side. */
+export interface LinkSignal {
+  type: 'offer' | 'answer';
+  sdp: string;
+}
+
 export interface LinkEvents {
   open: undefined;
   message: string;
   close: undefined;
+  /** The link wants the other side to receive this description (media negotiation). */
+  signal: LinkSignal;
+  /** The other side started sending media. */
+  stream: MediaStream;
 }
 
 /** A bidirectional text channel to exactly one remote peer. */
@@ -16,13 +26,26 @@ export interface MessageLink {
   close(): void;
 }
 
+/**
+ * A message link that can also carry media. Negotiation is symmetric ("perfect
+ * negotiation"): either side may start one, and offers that cross resolve
+ * themselves. The link only produces and consumes descriptions; getting them
+ * to the other side is the session's job, through `signal` and `receiveSignal`.
+ */
+export interface MediaLink extends MessageLink {
+  /** Sends this stream to the other side; `null` stops sending. Only works once the link is open. */
+  setOutgoing(stream: MediaStream | null): void;
+  /** Applies a description from the other side. May emit an answer as `signal`. */
+  receiveSignal(signal: LinkSignal): Promise<void>;
+}
+
 /** A link created by the host; it opens once the viewer's answer is applied. */
-export interface OfferingLink extends MessageLink {
+export interface OfferingLink extends MediaLink {
   acceptAnswer(sdp: string): Promise<void>;
 }
 
 /** Creates links. Sessions depend on this instead of on WebRTC directly. */
 export interface PeerConnector {
   createOffer(): Promise<{ link: OfferingLink; sdp: string }>;
-  acceptOffer(offerSdp: string): Promise<{ link: MessageLink; sdp: string }>;
+  acceptOffer(offerSdp: string): Promise<{ link: MediaLink; sdp: string }>;
 }

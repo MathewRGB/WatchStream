@@ -19,7 +19,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 - ADR-0005 (proposed): stream mode adds media to the open connection and renegotiates over the
   data channel. A spike showed this works between Chromium and Firefox in both directions. It also
   records the plan that viewers can share too, which is required but comes after M4.
-- Data-channel messages `media-offer`, `media-answer` and `media-stopped`, validated like all others.
+- Data-channel messages `media-started`, `media-offer`, `media-answer` and `media-stopped`,
+  validated like all others.
+- The host session can share a media stream (`startSharing` / `stopSharing`). Viewers receive it,
+  also when they join later or when the host shares again after a stop. Connections negotiate
+  media over the data channel, with crossing offers resolved by the viewer yielding. Tested with
+  real WebRTC in Chromium and Firefox. There is no way to pick a source in the UI yet.
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
   scroll-area, alert, separator, tabs) with a dark design-token theme, plus Testing Library for
   component tests.

@@ -92,9 +92,16 @@ describe('media messages', () => {
   it('round-trips a media offer and a media stop from the host', () => {
     const offer: HostMessage = { type: 'media-offer', sourceId: 'p1', sdp: SDP };
     const stopped: HostMessage = { type: 'media-stopped', sourceId: 'p1' };
+    const started: HostMessage = { type: 'media-started', sourceId: 'p1' };
 
     expect(parseHostMessage(serialize(offer))).toEqual(offer);
     expect(parseHostMessage(serialize(stopped))).toEqual(stopped);
+    expect(parseHostMessage(serialize(started))).toEqual(started);
+  });
+
+  it('rejects media-started and media-stopped without a source id', () => {
+    expect(parseHostMessage(JSON.stringify({ type: 'media-started' }))).toBeNull();
+    expect(parseHostMessage(JSON.stringify({ type: 'media-stopped', sourceId: '' }))).toBeNull();
   });
 
   it('round-trips a media answer from a viewer', () => {

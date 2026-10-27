@@ -57,16 +57,24 @@ is the participant id of the sharer, so the stage can say who is sharing.
 | viewer → host | `{ type: "media-answer", sourceId, sdp }` |
 | host → viewer | `{ type: "media-stopped", sourceId }`     |
 
+`media-started` always comes before the offer of a share and `media-stopped` ends it. A viewer
+shows media only between the two. Presence cannot be read from the offers: the offer that removes
+the tracks after a stop makes the browser fire track events too (found in the integration test
+"shares again after a stop"), and the viewer must not show those.
+
 Negotiation is symmetric on the link: the host side is the impolite peer and the viewer side the
 polite one (the "perfect negotiation" pattern), so two offers that cross resolve themselves. In
 M3 this never triggers, because only the host offers; it is built in now because it is hard to
 add once links are in use. Negotiations on one link run one at a time.
 
-### 2. `MessageLink` gains media
+### 2. Links gain media
 
-A link that can carry media is a separate interface that extends `MessageLink`, so chat-only code
-and the in-memory fakes keep working. `PeerLink` implements it by exposing track add/remove and
-`negotiate()` / `applyRemoteDescription()`; the session classes never touch `RTCPeerConnection`.
+`MediaLink` extends `MessageLink` with `setOutgoing(stream | null)` and `receiveSignal(description)`.
+The link produces descriptions as `signal` events; the session wraps them in the messages above,
+so the session classes never touch `RTCPeerConnection`. Everything the other side sends arrives
+as one `MediaStream` that lives as long as the link. The streams that come with browser track
+events are not handed on: Chrome makes new ones for each negotiation and takes the tracks out
+again, which left a `<video>` element with an empty stream after the second share.
 
 ### 3. Capture source per browser (to be confirmed by the first manual run)
 

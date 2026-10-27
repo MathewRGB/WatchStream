@@ -1,8 +1,9 @@
 import { Emitter } from '../events/emitter';
 import type {
   LinkEvents,
+  LinkSignal,
   LinkState,
-  MessageLink,
+  MediaLink,
   OfferingLink,
   PeerConnector,
 } from '../peer/message-link';
@@ -16,6 +17,10 @@ export class FakeLink implements OfferingLink {
   remote: FakeLink | null = null;
   /** Makes `send` throw while the state still reads `open`, like a data channel that is closing. */
   failSends = false;
+  /** What this side currently sends, as set through `setOutgoing`. */
+  outgoing: MediaStream | null = null;
+  /** Descriptions received through `receiveSignal`, in order. */
+  readonly received: LinkSignal[] = [];
   private currentState: LinkState = 'connecting';
 
   constructor(
@@ -52,6 +57,23 @@ export class FakeLink implements OfferingLink {
     });
   }
 
+  setOutgoing(stream: MediaStream | null): void {
+    if (this.currentState !== 'open') throw new Error('The link is not open.');
+    if (stream === this.outgoing) return;
+    this.outgoing = stream;
+    // Like `negotiationneeded` in a browser, the offer comes after the caller has returned.
+    const sdp = `v=0\r\nfake-media-${this.network.nextMedia++}\r\n`;
+    queueMicrotask(() => this.emitter.emit('signal', { type: 'offer', sdp }));
+  }
+
+  async receiveSignal(signal: LinkSignal): Promise<void> {
+    this.received.push(signal);
+    if (signal.type === 'offer') {
+      this.emitter.emit('signal', { type: 'answer', sdp: 'v=0\r\nfake-media-answer\r\n' });
+      this.emitter.emit('stream', { fake: true } as unknown as MediaStream);
+    }
+  }
+
   close(): void {
     if (this.currentState === 'closed') return;
     this.currentState = 'closed';
@@ -76,6 +98,7 @@ export class FakeNetwork implements PeerConnector {
   /** When set, accepted answers never lead to an open connection. */
   blockConnections = false;
   readonly sent: string[] = [];
+  nextMedia = 0;
   readonly offers: FakeLink[] = [];
   readonly answers: FakeLink[] = [];
 
@@ -85,7 +108,7 @@ export class FakeNetwork implements PeerConnector {
     return { link, sdp: link.sdp };
   }
 
-  async acceptOffer(offerSdp: string): Promise<{ link: MessageLink; sdp: string }> {
+  async acceptOffer(offerSdp: string): Promise<{ link: MediaLink; sdp: string }> {
     if (!this.offers.some((offer) => offer.sdp === offerSdp)) {
       throw new Error(`Unknown offer: ${offerSdp}`);
     }
