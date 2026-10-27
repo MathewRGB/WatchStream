@@ -1,5 +1,6 @@
 import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 import { resolve } from 'node:path';
+import { installFakeDisplayCapture } from './support/fake-display-capture';
 import { connect, SessionPage } from './support/session-page';
 
 const EXTENSION_PATH = resolve('.output/chrome-mv3');
@@ -23,6 +24,7 @@ test.afterAll(async () => {
 
 async function openSessionPage(): Promise<SessionPage> {
   const page = await context.newPage();
+  await installFakeDisplayCapture(page);
   await page.goto(`chrome-extension://${extensionId}/session.html`);
   return new SessionPage(page);
 }
@@ -84,4 +86,20 @@ test('the copy button puts the invitation code on the clipboard', async () => {
   await expect(host.byTestId('invitation-code-copy')).toHaveText('Copied');
   expect(await host.page.evaluate(() => navigator.clipboard.readText())).toBe(code);
   await host.page.close();
+});
+
+test('the host shares a picture and the viewer plays it, in the real extension', async () => {
+  const host = await openSessionPage();
+  const viewer = await openSessionPage();
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+
+  await host.share();
+
+  await host.expectPlaying();
+  await viewer.expectPlaying();
+  await expect(viewer.byTestId('stage-label')).toHaveText('user1 is sharing');
+  expect(await viewer.pageScrolls()).toBe(false);
+  await host.page.close();
+  await viewer.page.close();
 });

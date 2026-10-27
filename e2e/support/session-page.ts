@@ -67,6 +67,29 @@ export class SessionPage {
     await expect(message.getByTestId('chat-sender')).toHaveText(sender);
   }
 
+  /** Host: shares what the (fake) picker returns. */
+  async share(): Promise<void> {
+    await this.byTestId('share-button').click();
+    await expect(this.byTestId('stop-share')).toBeVisible();
+  }
+
+  async stopSharing(): Promise<void> {
+    await this.byTestId('stop-share').click();
+    await expect(this.byTestId('share-button')).toBeVisible();
+  }
+
+  /** The stage shows a picture that really plays: it has a size and its clock advances. */
+  async expectPlaying(): Promise<void> {
+    const video = this.byTestId('stage-video');
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.videoWidth))
+      .toBeGreaterThan(0);
+    const before = await video.evaluate((v: HTMLVideoElement) => v.currentTime);
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime))
+      .toBeGreaterThan(before);
+  }
+
   /** True when the page itself would show a scroll bar (nothing may scroll but inner areas). */
   async pageScrolls(): Promise<boolean> {
     return this.page.evaluate(() => {

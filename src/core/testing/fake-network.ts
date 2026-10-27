@@ -70,7 +70,7 @@ export class FakeLink implements OfferingLink {
     this.received.push(signal);
     if (signal.type === 'offer') {
       this.emitter.emit('signal', { type: 'answer', sdp: 'v=0\r\nfake-media-answer\r\n' });
-      this.emitter.emit('stream', { fake: true } as unknown as MediaStream);
+      this.emitter.emit('stream', new MediaStream());
     }
   }
 

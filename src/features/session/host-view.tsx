@@ -1,23 +1,28 @@
-import { MessageSquare, UserPlus, Users } from 'lucide-react';
+import { MessageSquare, MonitorUp, MonitorX, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { HostSession } from '@/core/session/host-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useHostSession } from '@/hooks/use-host-session';
+import { useScreenShare } from '@/hooks/use-screen-share';
+import type { CaptureDisplay } from '@/lib/capture';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
 import { InviteTab } from './invite-tab';
 import { ParticipantList } from './participant-list';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
+import { StageVideo } from './stage-video';
 
 interface HostViewProps {
   session: HostSession;
   hostName: string;
+  capture: CaptureDisplay;
   onEnd: () => void;
 }
 
-export function HostView({ session, hostName, onEnd }: HostViewProps) {
-  const { participants, openSlots } = useHostSession(session);
+export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
+  const { participants, openSlots, sharedStream } = useHostSession(session);
+  const share = useScreenShare(session, capture);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
 
@@ -59,7 +64,41 @@ export function HostView({ session, hostName, onEnd }: HostViewProps) {
           End session
         </Button>
       }
-      stage={<Stage emptyMessage="Nothing is shared yet." />}
+      stage={
+        <Stage
+          emptyMessage="Nothing is shared yet. Choose Share to show a tab, window or screen."
+          overlay={
+            <>
+              {sharedStream ? (
+                <Button variant="secondary" size="sm" onClick={share.stop} data-testid="stop-share">
+                  <MonitorX /> Stop sharing
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void share.start()}
+                  disabled={share.starting}
+                  data-testid="share-button"
+                >
+                  <MonitorUp /> Share
+                </Button>
+              )}
+              {share.error && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-background/70 px-2 py-1 text-sm text-destructive"
+                  data-testid="share-error"
+                >
+                  {share.error}
+                </p>
+              )}
+            </>
+          }
+        >
+          {sharedStream && <StageVideo stream={sharedStream} silent label="You are sharing" />}
+        </Stage>
+      }
       sidebar={<Sidebar tabs={tabs} defaultTab="invite" />}
     />
   );

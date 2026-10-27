@@ -5,8 +5,9 @@ Watch streams together, browser to browser, without your own media server.
 WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
 viewers, and everyone watches the same thing: YouTube, Netflix or any other video in the browser.
 
-> **Status:** milestone M2. Host and viewers connect directly, chat, and have a one-window layout
-> with a stage and a sidebar. Watching together (stream and sync mode) follows in M3 and M4. The
+> **Status:** milestone M3 is in progress. Host and viewers connect directly, chat, and the host
+> can share a tab, window or screen that the viewers see. A quality setting and the manual checks
+> in Chrome, Brave and Firefox are still open. Sync mode for protected sites follows in M4. The
 > extension is not yet published in any store.
 
 ## How it works
@@ -39,10 +40,12 @@ be blocked for individual viewers by region or age. See
    it into your chat with the host.
 4. **Host:** paste the reply code into the invitation and choose **Connect**.
 5. Once connected, the sidebar shows **People** and **Chat**.
+6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
+   picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
+   it on their stage; **Stop sharing** (or the browser's own stop button) ends it.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
-tabs on the right, which you can hide with the button in the header. Nothing is shared on the stage
-yet; that arrives with stream mode.
+tabs on the right, which you can hide with the button in the header.
 
 Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
 open: closing it ends the session.

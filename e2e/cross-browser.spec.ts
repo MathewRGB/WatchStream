@@ -1,5 +1,6 @@
-import { chromium, firefox, test, type Browser } from '@playwright/test';
+import { chromium, expect, firefox, test, type Browser } from '@playwright/test';
 import { connect, SessionPage } from './support/session-page';
+import { installFakeDisplayCapture } from './support/fake-display-capture';
 import { serveDirectory } from './support/static-server';
 
 /*
@@ -25,6 +26,7 @@ async function openIn(launcher: typeof chromium | typeof firefox): Promise<Sessi
   const browser = await launcher.launch();
   browsers.push(browser);
   const page = await browser.newPage();
+  await installFakeDisplayCapture(page);
   await page.goto(`${server.url}/session.html`);
   return new SessionPage(page);
 }
@@ -60,4 +62,51 @@ test('a Firefox host chats with a Chromium viewer', async () => {
 
   await viewer.sendChat('Works the other way round too');
   await host.expectChatMessage('Viewer', 'Works the other way round too');
+});
+
+test('a Chromium host shares a picture that a Firefox and a Chromium viewer play', async () => {
+  const host = await openIn(chromium);
+  const firefoxViewer = await openIn(firefox);
+  const chromiumViewer = await openIn(chromium);
+  await host.start('Host', 'host');
+  await connect(host, firefoxViewer, 'Firefox');
+  await connect(host, chromiumViewer, 'Chromium');
+
+  await host.share();
+
+  await host.expectPlaying();
+  await firefoxViewer.expectPlaying();
+  await chromiumViewer.expectPlaying();
+  expect(await firefoxViewer.pageScrolls()).toBe(false);
+
+  await host.stopSharing();
+  await expect(firefoxViewer.byTestId('stage-empty')).toBeVisible();
+  await expect(chromiumViewer.byTestId('stage-empty')).toBeVisible();
+
+  await host.share();
+  await firefoxViewer.expectPlaying();
+});
+
+test('a Firefox host shares a picture that a Chromium viewer plays', async () => {
+  const host = await openIn(firefox);
+  const viewer = await openIn(chromium);
+  await host.start('Host', 'host');
+  await connect(host, viewer, 'Viewer');
+
+  await host.share();
+
+  await viewer.expectPlaying();
+});
+
+test('a viewer who joins during a share sees it', async () => {
+  const host = await openIn(chromium);
+  const early = await openIn(chromium);
+  await host.start('Host', 'host');
+  await connect(host, early, 'Early');
+  await host.share();
+
+  const late = await openIn(firefox);
+  await connect(host, late, 'Late');
+
+  await late.expectPlaying();
 });

@@ -16,6 +16,7 @@ import { ParticipantList } from './participant-list';
 import { SetupArea } from './setup-area';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
+import { StageVideo } from './stage-video';
 
 interface ViewerViewProps {
   connector: PeerConnector;
@@ -136,7 +137,7 @@ interface JoinedSessionProps {
 }
 
 function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionProps) {
-  const { state, participants, participantId } = useViewerSession(session);
+  const { state, participants, participantId, media } = useViewerSession(session);
   const messages = useChatMessages(session);
   const { hostName } = session;
 
@@ -169,7 +170,16 @@ function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionPro
         title="WatchStream"
         status={<span data-testid="viewer-state">Connected to {hostName}</span>}
         actions={<LeaveButton onClick={onLeave} />}
-        stage={<Stage emptyMessage={`Waiting for ${hostName} to share something.`} />}
+        stage={
+          <Stage emptyMessage={`Waiting for ${hostName} to share something.`}>
+            {media && (
+              <StageVideo
+                stream={media.stream}
+                label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
+              />
+            )}
+          </Stage>
+        }
         sidebar={<Sidebar tabs={tabs} defaultTab="chat" />}
       />
     );

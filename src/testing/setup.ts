@@ -6,3 +6,16 @@ import { afterEach } from 'vitest';
 afterEach(() => {
   cleanup();
 });
+
+// Node has no MediaStream. happy-dom only accepts instances of it for `srcObject`.
+if (typeof globalThis.MediaStream === 'undefined') {
+  globalThis.MediaStream = class FakeMediaStream {
+    constructor(readonly tracks: unknown[] = []) {}
+    getTracks() {
+      return this.tracks;
+    }
+    getVideoTracks() {
+      return this.tracks;
+    }
+  } as unknown as typeof MediaStream;
+}

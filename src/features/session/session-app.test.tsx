@@ -3,6 +3,7 @@ import { render, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeNetwork } from '@/core/testing/fake-network';
+import { fakeCapturedStream } from '@/testing/fake-capture';
 import { SessionApp } from './session-app';
 
 function memoryStorage() {
@@ -14,9 +15,13 @@ function memoryStorage() {
 }
 
 /** One browser tab: its own page with its own container. */
-function openPage(network: FakeNetwork, storage = memoryStorage()) {
+function openPage(
+  network: FakeNetwork,
+  storage = memoryStorage(),
+  capture?: () => Promise<MediaStream>,
+) {
   const container = document.body.appendChild(document.createElement('div'));
-  render(<SessionApp connector={network} storage={storage} />, { container });
+  render(<SessionApp connector={network} storage={storage} capture={capture} />, { container });
   return within(container);
 }
 
@@ -233,5 +238,28 @@ describe('WatchStream app', () => {
     await userEvent.click(viewer.getByTestId('leave-button'));
 
     expect(viewer.getByTestId('start-view')).toBeInTheDocument();
+  });
+
+  it('shows what the host shares to the viewer and ends it again', async () => {
+    const { stream, track } = fakeCapturedStream();
+    const host = openPage(network, memoryStorage(), async () => stream);
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
+    expect(viewer.getByTestId('stage-empty')).toHaveTextContent('Waiting for user1');
+
+    await userEvent.click(host.getByTestId('share-button'));
+
+    await waitFor(() => {
+      expect(viewer.getByTestId('stage-video')).toBeInTheDocument();
+      expect(viewer.getByTestId('stage-label')).toHaveTextContent('user1 is sharing');
+    });
+    expect(host.getByTestId('stage-label')).toHaveTextContent('You are sharing');
+    expect(host.queryByTestId('sound-button')).toBeNull();
+
+    await userEvent.click(host.getByTestId('stop-share'));
+
+    await waitFor(() => expect(viewer.getByTestId('stage-empty')).toBeInTheDocument());
+    expect(host.getByTestId('share-button')).toBeInTheDocument();
+    expect(track.stop).toHaveBeenCalled();
   });
 });

@@ -25,6 +25,7 @@ describe('useViewerSession', () => {
       state: 'waiting-for-host',
       participants: [],
       participantId: null,
+      media: null,
     });
   });
 

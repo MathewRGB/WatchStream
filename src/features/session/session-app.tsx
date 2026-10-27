@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { HostSession } from '@/core/session/host-session';
+import { captureDisplay, type CaptureDisplay } from '@/lib/capture';
 import { HostView } from './host-view';
 import { StartView } from './start-view';
 import { ViewerView } from './viewer-view';
@@ -8,6 +9,8 @@ import { ViewerView } from './viewer-view';
 export interface SessionAppProps {
   connector: PeerConnector;
   storage: Pick<Storage, 'getItem' | 'setItem'>;
+  /** Asks the user what to share; replaced in tests. */
+  capture?: CaptureDisplay;
 }
 
 const NAME_KEY = 'watchstream.name';
@@ -18,7 +21,7 @@ type Screen =
   | { kind: 'viewer'; name: string };
 
 /** The WatchStream page: switches between start, host and viewer screens. */
-export function SessionApp({ connector, storage }: SessionAppProps) {
+export function SessionApp({ connector, storage, capture = captureDisplay }: SessionAppProps) {
   const [screen, setScreen] = useState<Screen>({ kind: 'start' });
 
   const remember = (name: string) => storage.setItem(NAME_KEY, name);
@@ -51,6 +54,7 @@ export function SessionApp({ connector, storage }: SessionAppProps) {
         <HostView
           session={screen.session}
           hostName={screen.name}
+          capture={capture}
           onEnd={() => {
             screen.session.close();
             setScreen({ kind: 'start' });

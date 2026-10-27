@@ -24,7 +24,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - The host session can share a media stream (`startSharing` / `stopSharing`). Viewers receive it,
   also when they join later or when the host shares again after a stop. Connections negotiate
   media over the data channel, with crossing offers resolved by the viewer yielding. Tested with
-  real WebRTC in Chromium and Firefox. There is no way to pick a source in the UI yet.
+  real WebRTC in Chromium and Firefox.
+- Stream mode on the stage: the host chooses **Share** and picks a tab, window or screen in the
+  browser's own picker (Chrome and Brave can add tab audio). Viewers see and hear it, with a name
+  label, a mute button and a note when the browser had to start it without sound. The host sees a
+  silent preview and can stop sharing, also with the browser's own stop button.
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
   scroll-area, alert, separator, tabs) with a dark design-token theme, plus Testing Library for
   component tests.

@@ -35,7 +35,8 @@ Not established by the spike:
   `getMediaStreamId({ targetTabId, consumerTabId })` in the background script, then
   `getUserMedia` with `chromeMediaSource: 'tab'` in the session page.
 - **Frames of a screen capture.** In the headless run no frame arrived at the Firefox viewer
-  within 15 s. A static screen produces no frames, so this does not say much either way.
+  within 15 s. A static screen produces no frames, so this does not say much either way. The
+  automated tests therefore replace the picker with a moving canvas.
 - **Firefox tab audio.** Not available by design (ADR-0001, ADR-0004).
 
 ## Decision
@@ -76,13 +77,20 @@ as one `MediaStream` that lives as long as the link. The streams that come with 
 events are not handed on: Chrome makes new ones for each negotiation and takes the tracks out
 again, which left a `<video>` element with an empty stream after the second share.
 
-### 3. Capture source per browser (to be confirmed by the first manual run)
+### 3. Capture source: `getDisplayMedia` in every browser
 
-- **Chrome / Brave:** the user clicks the toolbar icon _on the tab to share_. That grants
-  `activeTab` for it. The background script passes that tab id and the session tab id to
-  `chrome.tabCapture.getMediaStreamId`, and the session page opens the stream. Permissions:
-  `tabCapture` and `activeTab`.
-- **Firefox:** `getDisplayMedia` from the session page, without tab audio.
+The session page calls `getDisplayMedia({ video, audio })`. The browser shows its own picker, so
+the user chooses a tab, window or screen. In Chrome and Brave the picker offers "also share tab
+audio" for tabs; Firefox shares no audio. This is one code path for all three browsers and needs no
+extra permission.
+
+`chrome.tabCapture` was the first idea (the user clicks the icon on the tab to share). It is not
+used: it would change what a click on the icon means, needs the `tabCapture` and `activeTab`
+permissions, and its only advantage over the picker, tab audio, `getDisplayMedia` already offers
+in Chromium. It can be added later as a shortcut if the picker proves too clumsy.
+
+The part that automation cannot cover is the real picker and the real audio. That is a manual
+check on Chrome, Brave and Firefox (steps in the README).
 
 ### 4. Quality control
 
@@ -91,11 +99,11 @@ The host chooses a maximum resolution and bitrate (settings tab). It is applied 
 
 ## Consequences
 
-- Clicking the icon on a video tab now means "share this tab" once a session exists, and "open
-  or focus the session page" otherwise.
+- The icon keeps its meaning: it opens or focuses the session page.
 - Every viewer gets its own encoded copy of the stream; host upload scales with the viewer count
   (max 3).
-- Status stays `proposed` until the manual run on Chrome, Brave and Firefox has confirmed section 3.
+- Status stays `proposed` until the manual run on Chrome, Brave and Firefox has confirmed section 3
+  and the quality control of section 4 exists.
 
 ### 5. Streaming by clients is planned, not built in M3
 

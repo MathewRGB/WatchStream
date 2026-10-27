@@ -7,13 +7,15 @@ interface StageProps {
   /** What is shown on the stage. Without children an empty state with `emptyMessage` appears. */
   children?: ReactNode;
   emptyMessage: string;
+  /** Controls in the top-left corner, e.g. the share button. */
+  overlay?: ReactNode;
 }
 
 /**
  * The big area for the shared picture. It owns the full-screen mode: only the
  * stage fills the screen, the sidebar and header stay out of it.
  */
-export function Stage({ children, emptyMessage }: StageProps) {
+export function Stage({ children, emptyMessage, overlay }: StageProps) {
   const { ref, active, supported, toggle } = useFullscreen<HTMLElement>();
 
   return (
@@ -23,6 +25,7 @@ export function Stage({ children, emptyMessage }: StageProps) {
           <p data-testid="stage-empty">{emptyMessage}</p>
         </div>
       )}
+      {overlay && <div className="absolute top-3 left-3 flex items-center gap-2">{overlay}</div>}
       {supported && (
         <Button
           type="button"
