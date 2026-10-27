@@ -1,7 +1,7 @@
 ---
 id: ADR-0001
 title: P2P watch party as a browser extension with stream mode
-status: proposed
+status: accepted
 date: 2026-10-25
 deciders: [Mathias Kuhlmey]
 ---
