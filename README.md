@@ -3,25 +3,22 @@
 Watch streams together, browser to browser, without your own media server.
 
 WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
-viewers, and everyone watches the same thing: YouTube, Netflix or any other video in the browser.
+viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
+browser.
 
 > **Status:** milestone M3 is done. Host and viewers connect directly, chat, and the host can
 > share a tab, window or screen that the viewers see and hear, with a quality setting and a volume
-> control. Sync mode for protected sites follows in M4. A test across two different networks is
-> still open. The extension is not yet published in any store.
+> control. A test across two different networks is still open. The extension is not yet published
+> in any store.
 
 ## How it works
 
-WatchStream has two modes and picks the right one automatically:
+The host shares a tab, window or screen, and the viewers see and hear it (stream mode). Only the
+host needs access to the content; the picture is re-encoded at near-transparent quality.
 
-| Mode       | Content                                                          | Quality                      | Requirement                                      |
-| ---------- | ---------------------------------------------------------------- | ---------------------------- | ------------------------------------------------ |
-| **Stream** | Everything unprotected, including YouTube                        | Re-encoded, near-transparent | Only the host needs access                       |
-| **Sync**   | Protected services such as Netflix, Disney+, Prime Video and Max | Original                     | Every viewer has their own access to the content |
-
-Protected content cannot be captured (the picture turns black), so it is synchronized instead:
-everyone plays it in their own tab. YouTube goes through stream mode on purpose, because videos can
-be blocked for individual viewers by region or age. See
+Services with copy protection (Netflix, Disney+, Prime Video, Max) are not supported: their
+picture turns black when it is shared, and WatchStream does not circumvent that. Syncing everyone's
+own player for such services is future work, see
 [ADR-0004](docs/adr/ADR-0004-mode-selection-and-roadmap.md).
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
@@ -53,8 +50,8 @@ open: closing it ends the session.
 
 ## Limitations
 
-- For services with copy protection (Netflix, Disney+, etc.) every viewer needs their own
-  subscription. WatchStream does not circumvent copy protection.
+- Services with copy protection (Netflix, Disney+, etc.) cannot be watched together: shared, their
+  picture is black. WatchStream does not circumvent copy protection.
 - In stream mode the host's upload bandwidth limits the quality. It is designed for 2-3 viewers.
   The host sends a separate copy to each viewer, so Sharp needs about 6 Mbit/s of upload per
   viewer. The sound adds 64 to 192 kbit/s, depending on the quality.
@@ -159,9 +156,9 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       with tabs, reply code copied automatically
 - [x] **M3:** stream mode: share a tab, window or screen, sound in stereo, quality presets,
       volume control, technical details for connection problems
-- [ ] **M4:** sync mode for protected sites: generic adapter, Netflix
-- [ ] **M5:** more protected sites, panel next to the streaming tab, optional TURN service
+- [ ] **M4:** panel next to the streaming tab, optional TURN service
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
+- **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004)
 
 ## Documentation
 

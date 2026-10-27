@@ -9,16 +9,16 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- ADR-0001: architecture as a P2P browser extension with sync and stream modes.
+- ADR-0001: architecture as a P2P browser extension with stream mode.
 - ADR-0002: the session tab page holds the connections; handshake code format and data-channel
   protocol v1.
 - ADR-0003: UI stack of React, Tailwind CSS and shadcn/ui on top of WXT, and the source layout
   that goes with it.
-- ADR-0004: sync mode only for protected sites, stream mode for everything else (YouTube
-  included), and a new roadmap with the app shell and stream mode ahead of sync mode.
+- ADR-0004: stream mode for all content (YouTube included) and a new roadmap with the app shell
+  and stream mode first.
 - ADR-0005 (proposed): stream mode adds media to the open connection and renegotiates over the
   data channel. A spike showed this works between Chromium and Firefox in both directions. It also
-  records the plan that viewers can share too, which is required but comes after M4.
+  records the plan that viewers can share too, which is required but comes later.
 - Data-channel messages `media-started`, `media-offer`, `media-answer` and `media-stopped`,
   validated like all others.
 - The host session can share a media stream (`startSharing` / `stopSharing`). Viewers receive it,
@@ -98,6 +98,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Sync mode and services with copy protection (Netflix, Disney+, Prime Video, Max) are no longer
+  planned. ADR-0001 and ADR-0004 describe stream mode only and keep sync mode as future work at
+  their end; M4 is now the panel next to the streaming tab and the optional TURN service.
 - The stage and the sidebar are inset panels with a thin border, rounded corners and a small gap
   to the window edge, so scrolling content visibly ends there instead of looking cut off.
 - Invitation and reply codes are shown in compact fields that scroll inside instead of growing to

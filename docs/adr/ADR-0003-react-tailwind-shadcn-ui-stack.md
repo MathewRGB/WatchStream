@@ -12,7 +12,7 @@ amends: [ADR-0002]
 ## Context
 
 M1 built the WatchStream page in plain TypeScript and DOM calls (about 400 lines). It works, but
-M2-M4 add sync status, quality indicators, mode selection and settings. Hand-written DOM code does
+the next milestones add an app shell, a stage, quality controls and settings. Hand-written DOM code does
 not scale to that: state changes have to be mirrored into the DOM by hand, and the component
 structure is hard to read.
 
@@ -74,7 +74,7 @@ twice in development, which would silently drop open invitations.
 
 ### 4. Content scripts stay free of React
 
-Scripts injected into third-party pages (M2 and later) are written in plain TypeScript. They must
+Scripts injected into third-party pages (none yet; an in-page panel in M4 would be one) are written in plain TypeScript. They must
 stay small and must not bring a UI framework, a stylesheet reset or global CSS into someone else's
 page. If such a script needs UI, it uses a Shadow DOM via WXT's `createShadowRootUi`.
 
