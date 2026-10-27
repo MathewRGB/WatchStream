@@ -14,6 +14,8 @@ import type {
 export class FakeLink implements OfferingLink {
   readonly emitter = new Emitter<LinkEvents>();
   remote: FakeLink | null = null;
+  /** Makes `send` throw while the state still reads `open`, like a data channel that is closing. */
+  failSends = false;
   private currentState: LinkState = 'connecting';
 
   constructor(
@@ -42,7 +44,7 @@ export class FakeLink implements OfferingLink {
   }
 
   send(data: string): void {
-    if (this.currentState !== 'open') throw new Error('The link is not open.');
+    if (this.currentState !== 'open' || this.failSends) throw new Error('The link is not open.');
     const remote = this.remote;
     this.network.sent.push(data);
     queueMicrotask(() => {

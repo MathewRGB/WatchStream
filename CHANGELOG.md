@@ -73,6 +73,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A viewer whose data channel is closing can no longer keep the host from relaying chat messages
+  to the other viewers. The failing link is closed and drops out of the session.
 - A place in the session stays reserved while a reply is still connecting. Before, the host could
   create a fourth invitation during those up to 20 seconds and end up with too many viewers.
 

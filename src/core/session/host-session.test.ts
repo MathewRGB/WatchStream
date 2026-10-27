@@ -270,4 +270,20 @@ describe('HostSession', () => {
     expect(network.offers).toHaveLength(2);
     expect(network.offers.every((link) => link.state === 'closed')).toBe(true);
   });
+
+  it('keeps relaying to the other viewers and drops the one whose link fails', async () => {
+    const { host, network } = createHost();
+    const first = await joinViewer(host, network, 'user2');
+    const second = await joinViewer(host, network, 'user3');
+    const onChat = vi.fn();
+    second.viewer.events.on('chat', onChat);
+    network.offers[0]!.failSends = true;
+
+    host.sendChat('hello');
+    await flush();
+
+    expect(onChat).toHaveBeenCalledWith(expect.objectContaining({ text: 'hello' }));
+    expect(first.viewer.state).toBe('disconnected');
+    expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
+  });
 });

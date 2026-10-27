@@ -199,8 +199,14 @@ export class HostSession {
     for (const { link } of this.viewers.values()) this.sendTo(link, message);
   }
 
+  /** A failing link must never keep the others from receiving; it is closed and drops out. */
   private sendTo(link: MessageLink, message: HostMessage): void {
-    if (link.state === 'open') link.send(serialize(message));
+    if (link.state !== 'open') return;
+    try {
+      link.send(serialize(message));
+    } catch {
+      link.close();
+    }
   }
 
   private waitUntilOpen(link: MessageLink): Promise<void> {

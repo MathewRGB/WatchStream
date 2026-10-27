@@ -76,8 +76,8 @@ to 1000 characters. Invalid messages are dropped without a reply.
 ## Consequences
 
 - Closing the WatchStream tab ends the session. This is visible and predictable for users.
-- M2 content scripts will talk to the session tab through extension messaging.
-- M4 has to verify that tab capture can feed a peer connection held by the session tab. If it
+- Content scripts (M4, sync mode) will talk to the session tab through extension messaging.
+- M3 has to verify that tab capture can feed a peer connection held by the session tab. If it
   cannot, the stream mode needs its own decision.
 - Every participant can see the others' names, but never their network addresses: viewers only
   connect to the host.
