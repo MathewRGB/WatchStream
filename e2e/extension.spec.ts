@@ -99,6 +99,10 @@ test('the host shares a picture and the viewer plays it, in the real extension',
   await host.expectPlaying();
   await viewer.expectPlaying();
   await expect(viewer.byTestId('stage-label')).toHaveText('user1 is sharing');
+  // The viewer hears the tab; the host already hears it from the tab itself, so the preview
+  // must carry no audio at all, or the host would hear an echo.
+  await expect.poll(() => viewer.stageAudioTrackCount()).toBe(1);
+  expect(await host.stageAudioTrackCount()).toBe(0);
   expect(await viewer.pageScrolls()).toBe(false);
   await host.page.close();
   await viewer.page.close();

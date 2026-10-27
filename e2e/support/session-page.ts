@@ -90,6 +90,13 @@ export class SessionPage {
       .toBeGreaterThan(before);
   }
 
+  /** Audio tracks that the stage video is given: what could be played from it. */
+  async stageAudioTrackCount(): Promise<number> {
+    return this.byTestId('stage-video').evaluate(
+      (v: HTMLVideoElement) => (v.srcObject as MediaStream).getAudioTracks().length,
+    );
+  }
+
   /** True when the page itself would show a scroll bar (nothing may scroll but inner areas). */
   async pageScrolls(): Promise<boolean> {
     return this.page.evaluate(() => {

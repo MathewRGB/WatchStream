@@ -61,4 +61,18 @@ describe('StageVideo', () => {
     expect(screen.queryByTestId('sound-button')).toBeNull();
     expect((screen.getByTestId('stage-video') as HTMLVideoElement).muted).toBe(true);
   });
+
+  it('plays the host preview from a stream without audio tracks', () => {
+    stubPlay(async () => {});
+    const video = { kind: 'video' } as MediaStreamTrack;
+    const withAudio = Object.assign(new MediaStream(), {
+      getVideoTracks: () => [video],
+      getAudioTracks: () => [{ kind: 'audio' } as MediaStreamTrack],
+    });
+
+    render(<StageVideo stream={withAudio} silent />);
+
+    const shown = (screen.getByTestId('stage-video') as HTMLVideoElement).srcObject;
+    expect(shown).not.toBe(withAudio);
+  });
 });

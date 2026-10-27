@@ -89,6 +89,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The host's own preview of the shared picture is built from the video track only. It used to
+  carry the audio track as well and relied on the element being muted, which risked the host
+  hearing the shared tab twice.
 - A viewer whose data channel is closing can no longer keep the host from relaying chat messages
   to the other viewers. The failing link is closed and drops out of the session.
 - A place in the session stays reserved while a reply is still connecting. Before, the host could

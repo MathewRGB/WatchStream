@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 /**
  * The browser's own picker cannot be driven by a test, so `getDisplayMedia`
- * answers with a moving canvas instead. Everything after it (sharing, WebRTC,
+ * answers with a moving canvas and a tone instead. Everything after it (sharing, WebRTC,
  * playing) is the real thing.
  */
 export async function installFakeDisplayCapture(page: Page): Promise<void> {
@@ -17,7 +17,16 @@ export async function installFakeDisplayCapture(page: Page): Promise<void> {
         context.fillStyle = `hsl(${(frame++ * 9) % 360} 80% 50%)`;
         context.fillRect(0, 0, canvas.width, canvas.height);
       }, 33);
-      return canvas.captureStream(30);
+      const stream = canvas.captureStream(30);
+      // A tone as the tab audio, so the tests can tell where sound is and is not.
+      const audio = new AudioContext();
+      const tone = audio.createOscillator();
+      const destination = audio.createMediaStreamDestination();
+      tone.connect(destination);
+      tone.start();
+      void audio.resume();
+      destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+      return stream;
     };
   });
 }

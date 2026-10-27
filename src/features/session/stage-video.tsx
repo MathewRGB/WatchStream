@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -6,7 +6,11 @@ interface StageVideoProps {
   stream: MediaStream;
   /** Who shares, shown in a corner. */
   label?: string;
-  /** No sound at all and no mute button, e.g. the host's own preview. */
+  /**
+   * No sound at all and no mute button, e.g. the host's own preview. The element gets a copy of
+   * the stream without its audio tracks, so nothing can play, whatever the browser does with a
+   * muted element: the host hears the shared tab itself, a second copy would be an echo.
+   */
   silent?: boolean;
 }
 
@@ -15,6 +19,10 @@ interface StageVideoProps {
  * sound, it plays muted and says so, so the picture is never stuck.
  */
 export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
+  const source = useMemo(
+    () => (silent ? new MediaStream(stream.getVideoTracks()) : stream),
+    [stream, silent],
+  );
   const video = useRef<HTMLVideoElement>(null);
   const [soundOff, setSoundOff] = useState(silent);
   const [blocked, setBlocked] = useState(false);
@@ -22,8 +30,8 @@ export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    element.srcObject = stream;
-  }, [stream]);
+    element.srcObject = source;
+  }, [source]);
 
   useEffect(() => {
     const element = video.current;
@@ -35,7 +43,7 @@ export function StageVideo({ stream, label, silent = false }: StageVideoProps) {
         setBlocked(true);
       }
     });
-  }, [stream, soundOff]);
+  }, [source, soundOff]);
 
   return (
     <>
