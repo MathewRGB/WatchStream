@@ -1,6 +1,8 @@
 import { Emitter } from '../events/emitter';
+import { createLogger, describeThrown } from '../log/logger';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
+import { describeDiagnostics } from '../peer/diagnostics';
 import type { MediaLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -39,6 +41,8 @@ export class ViewerSession {
   private currentState: ViewerState = 'waiting-for-host';
   private ownId: string | null = null;
   private roster: Participant[] = [];
+  private readonly log = createLogger('session.viewer');
+  private left = false;
   private currentMedia: SharedMedia | null = null;
   /** Who the media in the running negotiation comes from; answers carry it back. */
   private offeredBy: string | null = null;
@@ -120,7 +124,14 @@ export class ViewerSession {
     this.link.send(serialize({ type: 'chat', text: normalized }));
   }
 
+  /** What state the connection is in, for a message the viewer can copy. */
+  get diagnostics(): string {
+    return describeDiagnostics(this.link.diagnostics());
+  }
+
   leave(): void {
+    this.left = true;
+    this.log.info('left the session');
     this.link.close();
     this.emitter.clear();
   }
@@ -143,9 +154,10 @@ export class ViewerSession {
         break;
       case 'media-offer':
         this.offeredBy = message.sourceId;
-        void this.link
-          .receiveSignal({ type: 'offer', sdp: message.sdp })
-          .catch(() => this.link.close());
+        void this.link.receiveSignal({ type: 'offer', sdp: message.sdp }).catch((error) => {
+          this.log.error('could not apply the host media offer', describeThrown(error));
+          this.link.close();
+        });
         break;
       case 'media-stopped':
         if (this.sharer === message.sourceId) this.sharer = null;
@@ -154,12 +166,15 @@ export class ViewerSession {
           this.emitter.emit('media', null);
         }
         break;
+      default:
+        this.log.debug('dropped a message from the host', { length: raw.length });
     }
   }
 
   private setState(state: ViewerState): void {
     if (this.currentState === state || this.currentState === 'disconnected') return;
     this.currentState = state;
+    this.log[state === 'disconnected' && !this.left ? 'warn' : 'info']('state', { state });
     this.emitter.emit('state', state);
   }
 }

@@ -25,6 +25,17 @@ adheres to [Semantic Versioning](https://semver.org/).
   also when they join later or when the host shares again after a stop. Connections negotiate
   media over the data channel, with crossing offers resolved by the viewer yielding. Tested with
   real WebRTC in Chromium and Firefox.
+- Logging for everything that matters when a session breaks: connection and ICE states, how
+  candidates were gathered (counts only), the path a connection took (`srflx/srflx`, `relay`, …),
+  STUN errors, timeouts, dropped viewers, dropped messages and the sharing steps that used to fail
+  silently. It goes to the browser console under `[WatchStream]` and to a short in-memory history.
+  Codes, session descriptions, IP addresses, names and chat text are never logged; a test pins this.
+- **Technical details** with a copy button next to connection errors and on the screen that says
+  the session ended: the state of the connection, what each side's code offered and the latest log
+  lines. A failed connection now names the likely cause (VPN, firewall, carrier-grade NAT) and the
+  details say which side had no public address.
+- An error page with the same details instead of a blank page when the interface itself fails, and
+  uncaught errors and unhandled promise rejections are written to the log.
 - A notice next to invitation and reply codes that hold no public network address (no STUN
   result, no relay, no global IPv6). Such a code cannot be reached from another network; the
   usual causes are a VPN, a firewall or a blocked STUN server.
@@ -94,6 +105,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The "session ended" screen no longer fails in Firefox. Firefox refuses to read the state of a
+  closed connection, so the details are now taken from the last state seen before it closed.
+- A failed media negotiation was an unhandled promise rejection; it is logged now.
 - A viewer no longer sees "The session has ended" while the host is still about to paste the
   reply code. The viewer's connection starts testing paths as soon as it has the invitation, long
   before the reply arrives (it travels through a chat), and that early failure used to end the

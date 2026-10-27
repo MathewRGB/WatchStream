@@ -5,6 +5,8 @@ import {
   encodeInvitation,
   encodeReply,
 } from '../../src/core/handshake/handshake-code';
+import { clearLogHistory, logHistory, setLogSink } from '../../src/core/log/logger';
+import { describeDiagnostics } from '../../src/core/peer/diagnostics';
 import { PeerLink } from '../../src/core/peer/peer-link';
 import { closed, LOCAL_CONFIG, nextMessage, opened } from './helpers';
 
@@ -140,5 +142,56 @@ describe('PeerLink', () => {
     reportConnectionState(offer.link, 'closed');
 
     expect(offer.link.state).toBe('closed');
+  });
+
+  describe('logging and diagnostics', () => {
+    it('logs how the link came up, without any address', async () => {
+      clearLogHistory();
+      setLogSink(() => {});
+      try {
+        const { host, viewer } = await connectPair();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const messages = logHistory().map((entry) => entry.message);
+        expect(messages).toEqual(
+          expect.arrayContaining([
+            'candidates gathered',
+            'channel open',
+            'connected',
+            'connection state',
+          ]),
+        );
+        const connected = logHistory().find((entry) => entry.message === 'connected');
+        expect(connected?.data?.path).toMatch(
+          /^(host|srflx|prflx|relay)\/(host|srflx|prflx|relay)$/,
+        );
+        expect(JSON.stringify(logHistory())).not.toMatch(/\d+\.\d+\.\d+\.\d+|candidate:|v=0/);
+        expect(host.state).toBe('open');
+        expect(viewer.state).toBe('open');
+      } finally {
+        setLogSink(null);
+      }
+    });
+
+    it('reports the state of a connected link and what each side offered', async () => {
+      const { host } = await connectPair();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const diagnostics = host.diagnostics();
+
+      expect(diagnostics).toMatchObject({ connection: 'connected', signaling: 'stable' });
+      expect(diagnostics.own.local).toBeGreaterThan(0);
+      expect(diagnostics.remote.local).toBeGreaterThan(0);
+      expect(describeDiagnostics(diagnostics)).toContain('Connection: connected');
+      expect(describeDiagnostics(diagnostics)).toContain('Path:');
+    });
+
+    it('can still describe a link after it was closed', async () => {
+      const offer = await PeerLink.createOffer(LOCAL_CONFIG);
+      links.push(offer.link);
+      offer.link.close();
+
+      expect(describeDiagnostics(offer.link.diagnostics())).toContain('Connection: closed');
+    });
   });
 });

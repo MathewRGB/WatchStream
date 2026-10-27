@@ -1,5 +1,8 @@
 import { Emitter } from '../events/emitter';
+import { createLogger, describeThrown, type Logger } from '../log/logger';
 import type { VideoLimits } from '../media/quality';
+import { summarizeCandidates } from './candidates';
+import type { LinkDiagnostics } from './diagnostics';
 import type {
   LinkEvents,
   LinkSignal,
@@ -18,6 +21,26 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.
 
 const DEFAULT_ICE_GATHERING_TIMEOUT_MS = 3000;
 const CHANNEL_LABEL = 'watchstream';
+
+const NO_CANDIDATES = { local: 0, stun: 0, relay: 0, globalIpv6: 0 };
+const EMPTY_DIAGNOSTICS: LinkDiagnostics = {
+  connection: 'new',
+  ice: 'new',
+  gathering: 'new',
+  signaling: 'stable',
+  own: NO_CANDIDATES,
+  remote: NO_CANDIDATES,
+  path: '',
+};
+
+/** The fields of a WebRTC stats report that the path lookup reads. */
+interface StatsReport extends RTCStats {
+  selectedCandidatePairId?: string;
+  localCandidateId?: string;
+  remoteCandidateId?: string;
+  nominated?: boolean;
+  candidateType?: string;
+}
 
 /**
  * A WebRTC data channel to one remote peer. Signaling is non-trickle: all
@@ -41,6 +64,10 @@ export class PeerLink implements OfferingLink {
    */
   private readonly remote = new MediaStream();
   private readonly watched = new Set<MediaStream>();
+  private readonly log: Logger;
+  /** Kinds of the connected candidate pair, e.g. `srflx/srflx`; empty until connected. */
+  private path = '';
+  private lastDiagnostics: LinkDiagnostics = EMPTY_DIAGNOSTICS;
 
   /**
    * `polite` decides who yields when two offers cross: the viewer side is
@@ -50,15 +77,32 @@ export class PeerLink implements OfferingLink {
     private readonly connection: RTCPeerConnection,
     private readonly polite: boolean,
   ) {
+    this.log = createLogger(polite ? 'link.viewer' : 'link.host');
     connection.addEventListener('connectionstatechange', () => {
       const state = connection.connectionState;
+      if (state !== 'closed') this.lastDiagnostics = this.readDiagnostics();
+      const level = state === 'failed' ? 'warn' : 'info';
+      this.log[level]('connection state', { state, ice: connection.iceConnectionState });
+      if (state === 'connected') void this.recordPath();
       // The viewer's ICE starts as soon as it has the offer, long before the host has the reply
       // (a person has to carry it). Its early failure says nothing about the connection the host
       // starts afterwards, so a link that never opened only ends when the session gives up on it:
       // the host's timeout, or the person leaving.
       if (state === 'closed' || (state === 'failed' && this.currentState === 'open')) {
-        this.markClosed();
+        this.markClosed(`connection ${state}`);
       }
+    });
+    connection.addEventListener('iceconnectionstatechange', () =>
+      this.log.info('ice state', { ice: connection.iceConnectionState }),
+    );
+    // Typically a STUN server that did not answer; it is why a code has no public address.
+    connection.addEventListener('icecandidateerror', (event) => {
+      const error = event as RTCPeerConnectionIceErrorEvent;
+      this.log.warn('ice candidate error', {
+        code: error.errorCode,
+        text: error.errorText,
+        server: error.url,
+      });
     });
     connection.addEventListener('negotiationneeded', () => void this.negotiate());
     connection.addEventListener('track', (event) => this.receiveTrack(event));
@@ -122,7 +166,10 @@ export class PeerLink implements OfferingLink {
     const collision =
       signal.type === 'offer' && (this.makingOffer || this.connection.signalingState !== 'stable');
     this.ignoreOffer = !this.polite && collision;
-    if (this.ignoreOffer) return;
+    if (this.ignoreOffer) {
+      this.log.info('ignored a crossing offer');
+      return;
+    }
 
     // A polite peer's setRemoteDescription rolls back its own pending offer.
     await this.connection.setRemoteDescription({ type: signal.type, sdp: signal.sdp });
@@ -140,10 +187,21 @@ export class PeerLink implements OfferingLink {
     await this.applyLimits();
   }
 
+  diagnostics(): LinkDiagnostics {
+    try {
+      this.lastDiagnostics = this.readDiagnostics();
+      return this.lastDiagnostics;
+    } catch {
+      // Firefox refuses to read a closed connection. The last state we saw is the useful one.
+      return { ...this.lastDiagnostics, connection: 'closed', ice: 'closed' };
+    }
+  }
+
   close(): void {
+    this.diagnostics();
     this.channel?.close();
     this.connection.close();
-    this.markClosed();
+    this.markClosed('closed locally');
   }
 
   private attach(channel: RTCDataChannel): void {
@@ -151,15 +209,20 @@ export class PeerLink implements OfferingLink {
     channel.addEventListener('open', () => {
       if (this.currentState === 'connecting') {
         this.currentState = 'open';
+        this.log.info('channel open');
         this.emitter.emit('open', undefined);
       }
+    });
+    channel.addEventListener('error', (event) => {
+      const error = (event as RTCErrorEvent).error;
+      this.log.warn('channel error', { name: error?.name ?? 'unknown' });
     });
     channel.addEventListener('message', (event: MessageEvent) => {
       if (typeof event.data === 'string') {
         this.emitter.emit('message', event.data);
       }
     });
-    channel.addEventListener('close', () => this.markClosed());
+    channel.addEventListener('close', () => this.markClosed('channel closed'));
   }
 
   private async applyLimits(): Promise<void> {
@@ -178,8 +241,9 @@ export class PeerLink implements OfferingLink {
       }
       try {
         await sender.setParameters(parameters);
-      } catch {
+      } catch (error) {
         // The sender changed meanwhile (a renegotiation); the next answer applies the limits again.
+        this.log.warn('could not apply video limits', describeThrown(error));
       }
     }
   }
@@ -201,6 +265,8 @@ export class PeerLink implements OfferingLink {
       this.makingOffer = true;
       await this.connection.setLocalDescription();
       this.emitLocalDescription('offer');
+    } catch (error) {
+      this.log.error('media negotiation failed', describeThrown(error));
     } finally {
       this.makingOffer = false;
     }
@@ -213,7 +279,7 @@ export class PeerLink implements OfferingLink {
 
   private async createLocalDescription(config: PeerConfig): Promise<string> {
     await this.connection.setLocalDescription();
-    await waitForIceGathering(
+    const timedOut = await waitForIceGathering(
       this.connection,
       config.iceGatheringTimeoutMs ?? DEFAULT_ICE_GATHERING_TIMEOUT_MS,
     );
@@ -221,11 +287,50 @@ export class PeerLink implements OfferingLink {
     if (!description) {
       throw new Error('No local session description was created.');
     }
+    // A timeout means a STUN server was too slow; the code then lacks its public address.
+    this.log[timedOut ? 'warn' : 'info']('candidates gathered', {
+      timedOut,
+      ...summarizeCandidates(description.sdp),
+    });
     return description.sdp;
   }
 
-  private markClosed(): void {
+  private readDiagnostics(): LinkDiagnostics {
+    const connection = this.connection;
+    return {
+      connection: connection.connectionState,
+      ice: connection.iceConnectionState,
+      gathering: connection.iceGatheringState,
+      signaling: connection.signalingState,
+      own: summarizeCandidates(connection.localDescription?.sdp ?? ''),
+      remote: summarizeCandidates(connection.remoteDescription?.sdp ?? ''),
+      path: this.path,
+    };
+  }
+
+  private async recordPath(): Promise<void> {
+    try {
+      const stats = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
+      let pair: StatsReport | undefined;
+      for (const report of stats.values()) {
+        if (report.type === 'transport' && report.selectedCandidatePairId) {
+          pair = stats.get(report.selectedCandidatePairId);
+        }
+      }
+      // Firefox has no transport report with a selected pair.
+      pair ??= [...stats.values()].find((r) => r.type === 'candidate-pair' && r.nominated);
+      if (!pair) return;
+      const kind = (id?: string) => (id && stats.get(id)?.candidateType) || 'unknown';
+      this.path = `${kind(pair.localCandidateId)}/${kind(pair.remoteCandidateId)}`;
+      this.log.info('connected', { path: this.path });
+    } catch (error) {
+      this.log.debug('could not read the connected path', describeThrown(error));
+    }
+  }
+
+  private markClosed(reason: string): void {
     if (this.currentState === 'closed') return;
+    this.log.info('link closed', { reason, wasOpen: this.currentState === 'open' });
     this.currentState = 'closed';
     this.emitter.emit('close', undefined);
     this.emitter.clear();
@@ -240,20 +345,21 @@ export function createPeerConnector(config: PeerConfig): PeerConnector {
   };
 }
 
-function waitForIceGathering(connection: RTCPeerConnection, timeoutMs: number): Promise<void> {
+/** Resolves once gathering is complete, or after `timeoutMs`; the value says whether it timed out. */
+function waitForIceGathering(connection: RTCPeerConnection, timeoutMs: number): Promise<boolean> {
   if (connection.iceGatheringState === 'complete') {
-    return Promise.resolve();
+    return Promise.resolve(false);
   }
   return new Promise((resolve) => {
-    const finish = () => {
+    const finish = (timedOut: boolean) => {
       clearTimeout(timer);
       connection.removeEventListener('icegatheringstatechange', onChange);
-      resolve();
+      resolve(timedOut);
     };
     const onChange = () => {
-      if (connection.iceGatheringState === 'complete') finish();
+      if (connection.iceGatheringState === 'complete') finish(false);
     };
-    const timer = setTimeout(finish, timeoutMs);
+    const timer = setTimeout(() => finish(true), timeoutMs);
     connection.addEventListener('icegatheringstatechange', onChange);
   });
 }

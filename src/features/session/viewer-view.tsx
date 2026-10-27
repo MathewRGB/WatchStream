@@ -18,6 +18,7 @@ import { SetupArea } from './setup-area';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
 import { StageVideo } from './stage-video';
+import { TechnicalDetails } from './technical-details';
 
 interface ViewerViewProps {
   connector: PeerConnector;
@@ -203,6 +204,11 @@ function JoinedSession({ session, replyCode, copied, candidates, onLeave }: Join
                 <p role="alert" className="text-destructive" data-testid="viewer-state">
                   The session has ended.
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  The connection to {hostName} was lost or ended. If you did not expect this, check
+                  the technical details below.
+                </p>
+                <TechnicalDetails details={session.diagnostics} />
                 <Button onClick={onLeave} data-testid="back-button">
                   Back to start
                 </Button>

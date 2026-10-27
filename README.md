@@ -63,6 +63,22 @@ open: closing it ends the session.
   additional relay server (TURN).
 - Firefox 140 or newer is required.
 
+## When something goes wrong
+
+- **Connection errors** come with a **Technical details** section. It shows the state of the
+  connection, what each side's code offered (local, STUN, relay, IPv6 addresses by count) and the
+  latest log lines. **Copy technical details** puts it on the clipboard for a bug report.
+- **The log** is also in the browser console of the WatchStream tab (press F12, then Console, and
+  filter for `WatchStream`). It records connection states, how a link came up (`Path: srflx/srflx`
+  means a direct connection through STUN, `relay` means through a relay), timeouts, dropped
+  messages and failed sharing steps.
+- **What is never logged:** invitation and reply codes, session descriptions, IP addresses, names
+  and chat text. The log only carries states, counts and error names. It stays in memory and in
+  the console; nothing is sent anywhere.
+- If the page itself fails, an error page with the same details replaces the blank screen.
+- A code with no public address shows a warning next to it. It is the most common reason why two
+  people on different networks cannot connect: a VPN, a firewall or a blocked STUN server.
+
 ## Privacy
 
 - WatchStream has no server and collects no data.

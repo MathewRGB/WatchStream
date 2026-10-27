@@ -276,4 +276,16 @@ describe('WatchStream app', () => {
 
     expect(viewer.getByTestId('no-public-address')).toBeInTheDocument();
   });
+
+  it('tells the viewer the connection was lost and offers technical details', async () => {
+    const host = openPage(network);
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
+
+    await userEvent.click(host.getByTestId('end-button'));
+
+    await waitFor(() => expect(viewer.getByTestId('viewer-state')).toHaveTextContent('has ended'));
+    expect(viewer.getByTestId('technical-details-text')).toHaveTextContent('Connection:');
+    expect(viewer.getByTestId('back-button')).toBeInTheDocument();
+  });
 });

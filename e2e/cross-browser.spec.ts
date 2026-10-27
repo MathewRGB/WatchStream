@@ -110,3 +110,17 @@ test('a viewer who joins during a share sees it', async () => {
 
   await late.expectPlaying();
 });
+
+test('a Firefox viewer sees why the session ended, with technical details', async () => {
+  const host = await openIn(chromium);
+  const viewer = await openIn(firefox);
+  await host.start('Host', 'host');
+  await connect(host, viewer, 'Viewer');
+
+  await host.byTestId('end-button').click();
+
+  await expect(viewer.byTestId('viewer-state')).toHaveText('The session has ended.');
+  await viewer.byTestId('technical-details').locator('summary').click();
+  await expect(viewer.byTestId('technical-details-text')).toContainText('Connection:');
+  await expect(viewer.byTestId('technical-details-text')).toContainText('link.viewer');
+});

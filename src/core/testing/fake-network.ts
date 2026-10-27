@@ -1,5 +1,6 @@
 import { Emitter } from '../events/emitter';
 import type { VideoLimits } from '../media/quality';
+import type { LinkDiagnostics } from '../peer/diagnostics';
 import type {
   LinkEvents,
   LinkSignal,
@@ -67,6 +68,19 @@ export class FakeLink implements OfferingLink {
     // Like `negotiationneeded` in a browser, the offer comes after the caller has returned.
     const sdp = `v=0\r\nfake-media-${this.network.nextMedia++}\r\n`;
     queueMicrotask(() => this.emitter.emit('signal', { type: 'offer', sdp }));
+  }
+
+  diagnostics(): LinkDiagnostics {
+    const none = { local: 0, stun: 0, relay: 0, globalIpv6: 0 };
+    return {
+      connection: this.currentState,
+      ice: this.currentState,
+      gathering: 'complete',
+      signaling: 'stable',
+      own: none,
+      remote: none,
+      path: '',
+    };
   }
 
   async setVideoLimits(limits: VideoLimits): Promise<void> {

@@ -1,7 +1,9 @@
 import { Emitter } from '../events/emitter';
+import { createLogger, describeThrown } from '../log/logger';
 import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
+import { describeDiagnostics } from '../peer/diagnostics';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -55,6 +57,7 @@ export class HostSession {
   private readonly connectTimeoutMs: number;
   private readonly createId: () => string;
   private readonly now: () => number;
+  private readonly log = createLogger('session.host');
   private shared: MediaStream | null = null;
   private currentQuality: QualityId = DEFAULT_QUALITY;
 
@@ -94,9 +97,11 @@ export class HostSession {
     const inviteId = this.createId();
     const { link, sdp } = await this.options.connector.createOffer();
     this.pending.set(inviteId, link);
+    const candidates = summarizeCandidates(sdp);
+    this.log.info('invitation created', { openSlots: this.openSlots, ...candidates });
     this.publishSlots();
     const code = await encodeInvitation({ inviteId, hostName: this.options.hostName, sdp });
-    return { inviteId, code, candidates: summarizeCandidates(sdp) };
+    return { inviteId, code, candidates };
   }
 
   cancelInvitation(inviteId: string): void {
@@ -129,12 +134,20 @@ export class HostSession {
       await link.acceptAnswer(reply.sdp);
       await this.waitUntilOpen(link);
     } catch (error) {
+      // Read the state before closing: afterwards it only says "closed".
+      const details = describeDiagnostics(link.diagnostics());
+      const failure =
+        error instanceof SessionError
+          ? error
+          : new SessionError('connection-failed', 'The reply could not be applied.');
+      this.log.warn('viewer did not connect', {
+        reason: failure.reason,
+        ...(failure === error ? {} : describeThrown(error)),
+      });
       link.close();
       this.connecting.delete(link);
       this.publishSlots();
-      throw error instanceof SessionError
-        ? error
-        : new SessionError('connection-failed', 'The reply could not be applied.');
+      throw new SessionError(failure.reason, failure.message, details);
     }
 
     this.addViewer({ participant, link });
@@ -163,6 +176,7 @@ export class HostSession {
   /** Shares a stream with every viewer, now and for viewers who join later. Replaces a running share. */
   startSharing(stream: MediaStream): void {
     this.shared = stream;
+    this.log.info('sharing started', { viewers: this.viewers.size });
     for (const { link } of this.viewers.values()) this.startSharingWith(link);
     this.emitter.emit('sharing', stream);
   }
@@ -170,6 +184,7 @@ export class HostSession {
   stopSharing(): void {
     if (!this.shared) return;
     this.shared = null;
+    this.log.info('sharing stopped');
     for (const { link } of this.viewers.values()) {
       this.unshareWith(link);
       this.sendTo(link, { type: 'media-stopped', sourceId: this.hostId });
@@ -200,10 +215,12 @@ export class HostSession {
     });
     link.events.on('close', () => {
       if (this.viewers.delete(participant.id)) {
+        this.log.info('viewer left', { viewers: this.viewers.size });
         this.publishRoster();
         this.publishSlots();
       }
     });
+    this.log.info('viewer joined', { viewers: this.viewers.size });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
     // The link keeps the limits and applies them whenever a video track gets negotiated.
     this.applyQuality(link);
@@ -217,7 +234,13 @@ export class HostSession {
     if (message?.type === 'chat') {
       this.publishChat(sender, message.text);
     } else if (message?.type === 'media-answer' && message.sourceId === this.hostId) {
-      void link.receiveSignal({ type: 'answer', sdp: message.sdp }).catch(() => link.close());
+      void link.receiveSignal({ type: 'answer', sdp: message.sdp }).catch((error) => {
+        this.log.error('could not apply a media answer', describeThrown(error));
+        link.close();
+      });
+    } else {
+      // Dropped without a reply, as the protocol says; the length helps tell junk from a bug.
+      this.log.debug('dropped a message from a viewer', { length: raw.length });
     }
   }
 
@@ -229,7 +252,9 @@ export class HostSession {
 
   private applyQuality(link: MediaLink): void {
     // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
-    void link.setVideoLimits(qualityPreset(this.currentQuality)).catch(() => {});
+    void link.setVideoLimits(qualityPreset(this.currentQuality)).catch((error) => {
+      this.log.warn('could not set the video limits', describeThrown(error));
+    });
   }
 
   private unshareWith(link: MediaLink): void {
@@ -240,7 +265,8 @@ export class HostSession {
   private guardMedia(link: MediaLink, action: () => void): void {
     try {
       action();
-    } catch {
+    } catch (error) {
+      this.log.warn('dropped a viewer whose link failed during sharing', describeThrown(error));
       link.close();
     }
   }
@@ -280,7 +306,11 @@ export class HostSession {
     if (link.state !== 'open') return;
     try {
       link.send(serialize(message));
-    } catch {
+    } catch (error) {
+      this.log.warn('dropped a viewer whose link failed during sending', {
+        type: message.type,
+        ...describeThrown(error),
+      });
       link.close();
     }
   }
@@ -288,7 +318,8 @@ export class HostSession {
   private waitUntilOpen(link: MediaLink): Promise<void> {
     if (link.state === 'open') return Promise.resolve();
     return new Promise((resolve, reject) => {
-      const fail = () => {
+      const fail = (cause: 'timeout' | 'closed') => () => {
+        this.log.warn('viewer link did not open', { cause, afterMs: this.connectTimeoutMs });
         cleanup();
         reject(
           new SessionError(
@@ -297,12 +328,12 @@ export class HostSession {
           ),
         );
       };
-      const timer = setTimeout(fail, this.connectTimeoutMs);
+      const timer = setTimeout(fail('timeout'), this.connectTimeoutMs);
       const offOpen = link.events.on('open', () => {
         cleanup();
         resolve();
       });
-      const offClose = link.events.on('close', fail);
+      const offClose = link.events.on('close', fail('closed'));
       const cleanup = () => {
         clearTimeout(timer);
         offOpen();

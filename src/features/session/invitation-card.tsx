@@ -5,8 +5,10 @@ import { HandshakeCodeError } from '@/core/handshake/handshake-code';
 import type { CandidateSummary } from '@/core/peer/candidates';
 import type { HostSession } from '@/core/session/host-session';
 import { CodeBox, CodeInput } from './code-box';
+import { SessionError } from '@/core/session/session-error';
 import { describeError } from './describe-error';
 import { NoPublicAddressNotice } from './no-public-address-notice';
+import { TechnicalDetails } from './technical-details';
 
 interface InvitationCardProps {
   session: HostSession;
@@ -30,6 +32,7 @@ export function InvitationCard({
   const [reply, setReply] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [details, setDetails] = useState<string | undefined>();
 
   const connect = async () => {
     setPhase('connecting');
@@ -39,6 +42,7 @@ export function InvitationCard({
       onClose(inviteId);
     } catch (caught) {
       setError(describeError(caught));
+      setDetails(caught instanceof SessionError ? caught.details : undefined);
       // A damaged code can be pasted again; any other failure used up the invitation.
       setPhase(caught instanceof HandshakeCodeError ? 'idle' : 'used-up');
     }
@@ -79,6 +83,7 @@ export function InvitationCard({
             {error}
           </p>
         )}
+        {details && <TechnicalDetails details={details} />}
       </CardContent>
     </Card>
   );

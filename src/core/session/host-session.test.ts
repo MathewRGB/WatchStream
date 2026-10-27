@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeInvitation, HandshakeCodeError } from '../handshake/handshake-code';
+import { clearLogHistory, logHistory, setLogSink } from '../log/logger';
 import { createHost, flush, joinViewer } from '../testing/session-fixtures';
 import { SessionError } from './session-error';
 import { ViewerSession } from './viewer-session';
@@ -413,6 +414,76 @@ describe('HostSession', () => {
       await flush();
 
       expect(viewer.state).toBe('connected');
+    });
+  });
+
+  describe('diagnostics and logging', () => {
+    beforeEach(() => {
+      clearLogHistory();
+      setLogSink(() => {});
+    });
+    afterEach(() => setLogSink(null));
+
+    it('explains a connection that never opened, with technical details', async () => {
+      const { host, network } = createHost({ connectTimeoutMs: 30 });
+      network.blockConnections = true;
+      const { code } = await host.createInvitation();
+      const { replyCode } = await ViewerSession.join(code, {
+        viewerName: 'user2',
+        connector: network,
+      });
+
+      const failure = await host.acceptReply(replyCode).catch((error: unknown) => error);
+
+      expect(failure).toBeInstanceOf(SessionError);
+      expect(failure).toMatchObject({ reason: 'connection-failed' });
+      expect((failure as SessionError).details).toMatch(/^Connection: connecting, ICE: connecting/);
+      expect(logHistory()).toContainEqual(
+        expect.objectContaining({
+          level: 'warn',
+          message: 'viewer link did not open',
+          data: expect.objectContaining({ cause: 'timeout' }),
+        }),
+      );
+      expect(host.openSlots).toBe(3);
+    });
+
+    it('logs who came and went by count only, and a dropped broken link', async () => {
+      const { host, network } = createHost();
+      const { viewer } = await joinViewer(host, network, 'user2');
+      network.offers[0]!.failSends = true;
+
+      host.sendChat('hi');
+      await flush();
+
+      const messages = logHistory().map((entry) => entry.message);
+      expect(messages).toContain('viewer joined');
+      expect(messages).toContain('dropped a viewer whose link failed during sending');
+      expect(messages).toContain('viewer left');
+      expect(viewer.state).toBe('disconnected');
+    });
+
+    it('never puts codes, descriptions, names or chat text into the log', async () => {
+      const { host, network } = createHost({ hostName: 'SecretHostName' });
+      const { code } = await host.createInvitation();
+      const { session, replyCode } = await ViewerSession.join(code, {
+        viewerName: 'SecretViewerName',
+        connector: network,
+      });
+      await host.acceptReply(replyCode);
+      await flush();
+      host.sendChat('a private chat text');
+      session.sendChat('another private chat text');
+      host.startSharing(new MediaStream());
+      await flush();
+      host.stopSharing();
+      session.leave();
+      await flush();
+
+      const everything = JSON.stringify(logHistory());
+
+      expect(logHistory().length).toBeGreaterThan(5);
+      expect(everything).not.toMatch(/WSI1|WSR1|v=0|SecretHostName|SecretViewerName|private chat/);
     });
   });
 });

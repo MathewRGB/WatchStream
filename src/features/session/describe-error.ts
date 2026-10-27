@@ -20,7 +20,8 @@ export function describeError(error: unknown): string {
       case 'connection-failed':
         return (
           'No direct connection could be established. One of you may be behind a strict ' +
-          'firewall or carrier-grade NAT. Create a new invitation to try again.'
+          'firewall, a VPN or carrier-grade NAT. Create a new invitation to try again; the ' +
+          'technical details below say which side had no public address.'
         );
       case 'unknown-invitation':
         return 'This reply does not match an open invitation. It may have been used or cancelled already.';
