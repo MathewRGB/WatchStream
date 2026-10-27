@@ -164,6 +164,8 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 
 - [Changelog](CHANGELOG.md)
 - [Architecture decision records (ADRs)](docs/adr/)
+- [Manual test guide for stream mode](docs/manual-tests/m3-stream-mode.md)
+- [Checklist before the first store submission](docs/release-checklist.md)
 
 ## Disclaimer
 

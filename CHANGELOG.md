@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
+  checklist for the open points before the first store submission (Brave Shields, name search,
+  privacy text, packaging) in `docs/release-checklist.md`.
 - ADR-0001: architecture as a P2P browser extension with stream mode.
 - ADR-0002: the session tab page holds the connections; handshake code format and data-channel
   protocol v1.
