@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from './app-shell';
@@ -167,5 +167,79 @@ describe('AppShell full screen', () => {
     await userEvent.click(screen.getByTestId('fullscreen-button'));
 
     expect(screen.queryByTestId('sidebar')).toBeNull();
+  });
+  describe('revealing the sidebar at the right edge', () => {
+    async function enterFullscreen() {
+      renderShell();
+      await userEvent.click(screen.getByTestId('fullscreen-button'));
+    }
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('has no edge strip outside full screen', () => {
+      renderShell();
+
+      expect(screen.queryByTestId('sidebar-edge')).toBeNull();
+    });
+
+    it('slides the sidebar over the picture when the pointer touches the edge', async () => {
+      await enterFullscreen();
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+
+      const sidebar = screen.getByTestId('sidebar');
+      expect(sidebar).not.toHaveAttribute('inert');
+      expect(sidebar).toHaveClass('translate-x-0');
+      expect(screen.getByTestId('stage-panel')).not.toHaveClass('max-sm:hidden');
+    });
+
+    it('slides it out again a moment after the pointer left', async () => {
+      await enterFullscreen();
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      vi.useFakeTimers();
+
+      fireEvent.pointerLeave(screen.getByTestId('sidebar-edge'));
+      act(() => void vi.advanceTimersByTime(399));
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+      act(() => void vi.advanceTimersByTime(1));
+
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+      expect(screen.getByTestId('sidebar')).toHaveClass('translate-x-full');
+    });
+
+    it('stays while a message is being typed, with the pointer long gone', async () => {
+      await enterFullscreen();
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      await userEvent.type(screen.getByTestId('draft'), 'still writing');
+      vi.useFakeTimers();
+
+      fireEvent.pointerLeave(screen.getByTestId('sidebar'));
+      act(() => void vi.advanceTimersByTime(10_000));
+
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+      expect(screen.getByTestId('draft')).toHaveValue('still writing');
+    });
+
+    it('closes on a press on the picture', async () => {
+      await enterFullscreen();
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+
+      fireEvent.pointerDown(screen.getByTestId('stage'));
+
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+    });
+
+    it('is closed again after leaving full screen and entering it anew', async () => {
+      await enterFullscreen();
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+
+      await userEvent.click(screen.getByTestId('fullscreen-button'));
+      await userEvent.click(screen.getByTestId('fullscreen-button'));
+
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+    });
   });
 });

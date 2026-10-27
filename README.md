@@ -45,6 +45,10 @@ own player for such services is future work, see
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.
 
+In full screen the sidebar is hidden. Move the pointer to the right edge of the screen and it
+slides in over the picture; it slides out again a moment after the pointer left. It stays open
+while you are typing in it, and a click on the picture closes it.
+
 Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
 open: closing it ends the session.
 

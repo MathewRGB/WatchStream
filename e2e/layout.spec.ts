@@ -186,8 +186,10 @@ test('the workspace goes into full screen and back', async () => {
   const stage = (await host.byTestId('stage').boundingBox())!;
   expect(stage.width).toBe(screen.width);
   expect(stage.height).toBe(screen.height);
-  const sidebar = (await host.byTestId('sidebar').boundingBox())!;
-  expect(sidebar.x).toBeGreaterThanOrEqual(screen.width);
+  // It slides out of the way in a moment, so wait for it to be gone.
+  await expect
+    .poll(async () => (await host.byTestId('sidebar').boundingBox())!.x)
+    .toBeGreaterThanOrEqual(screen.width);
 
   await host.byTestId('fullscreen-button').click();
   await expect.poll(fullscreenId).toBeNull();
@@ -207,6 +209,51 @@ test('the connected viewer sees the stage and the sidebar side by side', async (
   const sidebar = (await viewer.byTestId('sidebar').boundingBox())!;
   expect(stage.x + stage.width).toBeLessThanOrEqual(sidebar.x + 1);
   expect(stage.width).toBeGreaterThan(sidebar.width);
+  await host.page.close();
+  await viewer.page.close();
+});
+
+test('in full screen the sidebar slides in at the right edge and stays while typing', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  const viewer = await openSessionPage(SIZES[0]!);
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+  const screen = viewer.page.viewportSize()!;
+  const sidebarLeft = async () => (await viewer.byTestId('sidebar').boundingBox())!.x;
+  const isShown = async () => (await sidebarLeft()) < screen.width - 300;
+
+  await viewer.byTestId('fullscreen-button').click();
+  await expect
+    .poll(() => viewer.page.evaluate(() => document.fullscreenElement !== null))
+    .toBe(true);
+  expect(await isShown()).toBe(false);
+
+  // Touching the edge brings it in, over the picture: the stage keeps its size.
+  const stageBefore = (await viewer.byTestId('stage').boundingBox())!;
+  await viewer.page.mouse.move(screen.width - 3, screen.height / 2);
+  await expect.poll(isShown).toBe(true);
+  expect((await viewer.byTestId('stage').boundingBox())!.width).toBe(stageBefore.width);
+
+  // A half-typed message keeps it open, however far the pointer goes.
+  await viewer.byTestId('chat-input').fill('typing at the edge');
+  await viewer.page.mouse.move(screen.width / 2, screen.height / 2);
+  await viewer.page.waitForTimeout(1_000);
+  expect(await isShown()).toBe(true);
+
+  // A click on the picture closes it; the text is still there when it comes back.
+  await viewer.page.mouse.click(screen.width / 2, screen.height / 2);
+  await expect.poll(isShown).toBe(false);
+  await viewer.page.mouse.move(screen.width - 3, screen.height / 2);
+  await expect.poll(isShown).toBe(true);
+  await expect(viewer.byTestId('chat-input')).toHaveValue('typing at the edge');
+
+  // Without focus in it, it goes when the pointer leaves.
+  await viewer.page.mouse.click(screen.width / 2, screen.height / 2);
+  await viewer.page.mouse.move(screen.width - 3, screen.height / 2);
+  await expect.poll(isShown).toBe(true);
+  await viewer.page.mouse.move(screen.width / 2, screen.height / 2);
+  await expect.poll(isShown).toBe(false);
+
   await host.page.close();
   await viewer.page.close();
 });

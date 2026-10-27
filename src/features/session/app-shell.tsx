@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreen } from '@/hooks/use-fullscreen';
+import { useSidebarPeek } from '@/hooks/use-sidebar-peek';
 import { cn } from '@/lib/utils';
 import { StageFullscreenContext } from './stage-fullscreen';
 
@@ -25,8 +26,9 @@ interface AppShellProps {
  * the whole width, so it also fits a browser side panel.
  *
  * Full screen takes the workspace (stage and sidebar, not the header). There
- * the sidebar leaves its column and waits off-screen at the right edge; it is
- * the same element, so what is typed in it and where it scrolled survive.
+ * the sidebar leaves its column and waits off-screen at the right edge until
+ * the pointer touches the edge; it is the same element, so what is typed in it
+ * and where it scrolled survive. It slides over the picture and does not move it.
  */
 export function AppShell({
   title,
@@ -41,6 +43,8 @@ export function AppShell({
   const fullscreen = useMemo(() => ({ active, supported, toggle }), [active, supported, toggle]);
   const docked = sidebar !== undefined && sidebarOpen && !fullscreen.active;
   const floating = sidebar !== undefined && fullscreen.active;
+  const peek = useSidebarPeek(floating);
+  const { panelRef, hoverProps, focusProps } = peek;
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden" data-testid={testId}>
@@ -86,16 +90,28 @@ export function AppShell({
           >
             {stage}
           </main>
+          {floating && (
+            // Touching the right edge reveals the sidebar. It starts below the full-screen button.
+            <div
+              className="absolute top-14 right-0 bottom-0 z-10 w-4"
+              aria-hidden
+              {...hoverProps}
+              data-testid="sidebar-edge"
+            />
+          )}
           {(docked || floating) && (
             <aside
+              ref={panelRef}
               className={cn(
                 'flex w-[22rem] flex-col overflow-hidden bg-card/40',
                 floating
-                  ? 'absolute inset-y-0 right-0 z-20 max-w-full translate-x-full border-l bg-card'
+                  ? 'absolute inset-y-0 right-0 z-20 max-w-full border-l bg-card shadow-xl transition-transform duration-150 motion-reduce:transition-none'
                   : 'shrink-0 rounded-lg border max-sm:w-full',
+                floating && (peek.open ? 'translate-x-0' : 'translate-x-full'),
               )}
-              // Off-screen and unreachable by keyboard until the next step reveals it.
-              inert={floating}
+              // Closed, it is off-screen and out of keyboard reach.
+              inert={floating && !peek.open}
+              {...(floating ? { ...hoverProps, ...focusProps } : {})}
               data-testid="sidebar"
             >
               {sidebar}

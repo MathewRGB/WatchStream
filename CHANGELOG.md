@@ -9,6 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The sidebar in full screen: full screen now takes the stage and the sidebar (not the header).
+  The sidebar waits off-screen; when the pointer touches the right edge it slides in over the
+  picture, without moving it, and slides out a moment after the pointer left. It stays while
+  something in it has focus, so a half-typed chat message is not lost, and a click on the picture
+  closes it. It is the same sidebar as outside full screen, with the same tabs and state.
 - A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
   checklist for the open points before the first store submission (Brave Shields, name search,
   privacy text, packaging) in `docs/release-checklist.md`.
