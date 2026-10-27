@@ -21,6 +21,8 @@ import { Stage } from './stage';
 import { StageVideo } from './stage-video';
 import { TechnicalDetails } from './technical-details';
 
+const APP_TITLE = 'WatchStream';
+
 interface ViewerViewProps {
   connector: PeerConnector;
   /** Remembers the volume. */
@@ -62,7 +64,7 @@ export function ViewerView({ connector, storage, viewerName, onLeave }: ViewerVi
   return (
     <AppShell
       testId="viewer-view"
-      title="WatchStream"
+      title={APP_TITLE}
       status="Join a session"
       actions={<LeaveButton onClick={leave} />}
       stage={
@@ -146,105 +148,107 @@ interface JoinedSessionProps {
   onLeave: () => void;
 }
 
-function JoinedSession({
-  session,
-  replyCode,
-  copied,
-  candidates,
-  storage,
-  onLeave,
-}: JoinedSessionProps) {
-  const { state, participants, participantId, media } = useViewerSession(session);
+function JoinedSession(props: JoinedSessionProps) {
+  const { session, onLeave } = props;
+  const { state } = useViewerSession(session);
+
+  if (state === 'connected') return <ConnectedView {...props} />;
+  if (state === 'disconnected') return <EndedView session={session} onLeave={onLeave} />;
+  return <JoiningView {...props} />;
+}
+
+function ConnectedView({ session, storage, onLeave }: JoinedSessionProps) {
+  const { participants, participantId, media } = useViewerSession(session);
   const messages = useChatMessages(session);
   const { volume, setVolume } = useVolume(storage);
   const { hostName } = session;
 
-  if (state === 'connected') {
-    const tabs: SidebarTab[] = [
-      {
-        id: 'people',
-        label: 'People',
-        icon: <Users />,
-        count: participants.length,
-        content: <ParticipantList participants={participants} selfId={participantId} />,
-      },
-      {
-        id: 'chat',
-        label: 'Chat',
-        icon: <MessageSquare />,
-        content: (
-          <ChatPanel
-            messages={messages}
-            selfId={participantId}
-            onSend={(text) => session.sendChat(text)}
-          />
-        ),
-      },
-    ];
-
-    return (
-      <AppShell
-        testId="viewer-view"
-        title="WatchStream"
-        status={<span data-testid="viewer-state">Connected to {hostName}</span>}
-        actions={<LeaveButton onClick={onLeave} />}
-        stage={
-          <Stage emptyMessage={`Waiting for ${hostName} to share something.`}>
-            {media && (
-              <StageVideo
-                stream={media.stream}
-                volume={volume}
-                onVolumeChange={setVolume}
-                label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
-              />
-            )}
-          </Stage>
-        }
-        sidebar={<Sidebar tabs={tabs} defaultTab="chat" />}
-      />
-    );
-  }
-
-  if (state === 'disconnected') {
-    return (
-      <AppShell
-        testId="viewer-view"
-        title="WatchStream"
-        status="Disconnected"
-        actions={<LeaveButton onClick={onLeave} />}
-        stage={
-          <SetupArea>
-            <Card>
-              <CardContent className="flex flex-col items-start gap-3">
-                <p role="alert" className="text-destructive" data-testid="viewer-state">
-                  The session has ended.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  The connection to {hostName} was lost or ended. If you did not expect this, check
-                  the technical details below.
-                </p>
-                <TechnicalDetails details={session.diagnostics} />
-                <Button onClick={onLeave} data-testid="back-button">
-                  Back to start
-                </Button>
-              </CardContent>
-            </Card>
-          </SetupArea>
-        }
-      />
-    );
-  }
+  const tabs: SidebarTab[] = [
+    {
+      id: 'people',
+      label: 'People',
+      icon: <Users />,
+      count: participants.length,
+      content: <ParticipantList participants={participants} selfId={participantId} />,
+    },
+    {
+      id: 'chat',
+      label: 'Chat',
+      icon: <MessageSquare />,
+      content: (
+        <ChatPanel
+          messages={messages}
+          selfId={participantId}
+          onSend={(text) => session.sendChat(text)}
+        />
+      ),
+    },
+  ];
 
   return (
     <AppShell
       testId="viewer-view"
-      title="WatchStream"
-      status={`Joining ${hostName}'s session`}
+      title={APP_TITLE}
+      status={<span data-testid="viewer-state">Connected to {hostName}</span>}
+      actions={<LeaveButton onClick={onLeave} />}
+      stage={
+        <Stage emptyMessage={`Waiting for ${hostName} to share something.`}>
+          {media && (
+            <StageVideo
+              stream={media.stream}
+              volume={volume}
+              onVolumeChange={setVolume}
+              label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
+            />
+          )}
+        </Stage>
+      }
+      sidebar={<Sidebar tabs={tabs} defaultTab="chat" />}
+    />
+  );
+}
+
+function EndedView({ session, onLeave }: Pick<JoinedSessionProps, 'session' | 'onLeave'>) {
+  return (
+    <AppShell
+      testId="viewer-view"
+      title={APP_TITLE}
+      status="Disconnected"
+      actions={<LeaveButton onClick={onLeave} />}
+      stage={
+        <SetupArea>
+          <Card>
+            <CardContent className="flex flex-col items-start gap-3">
+              <p role="alert" className="text-destructive" data-testid="viewer-state">
+                The session has ended.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                The connection to {session.hostName} was lost or ended. If you did not expect this,
+                check the technical details below.
+              </p>
+              <TechnicalDetails details={session.diagnostics} />
+              <Button onClick={onLeave} data-testid="back-button">
+                Back to start
+              </Button>
+            </CardContent>
+          </Card>
+        </SetupArea>
+      }
+    />
+  );
+}
+
+function JoiningView({ session, replyCode, copied, candidates, onLeave }: JoinedSessionProps) {
+  return (
+    <AppShell
+      testId="viewer-view"
+      title={APP_TITLE}
+      status={`Joining ${session.hostName}'s session`}
       actions={<LeaveButton onClick={onLeave} />}
       stage={
         <SetupArea>
           <ReplyStep
-            hostName={hostName}
+            hostName={session.hostName}
             replyCode={replyCode}
             copied={copied}
             candidates={candidates}
