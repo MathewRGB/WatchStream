@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { HandshakeCodeError } from '@/core/handshake/handshake-code';
+import type { CandidateSummary } from '@/core/peer/candidates';
 import type { HostSession } from '@/core/session/host-session';
 import { CodeBox, CodeInput } from './code-box';
 import { describeError } from './describe-error';
+import { NoPublicAddressNotice } from './no-public-address-notice';
 
 interface InvitationCardProps {
   session: HostSession;
   inviteId: string;
   code: string;
+  candidates: CandidateSummary;
   /** Called when the invitation is no longer shown (connected or removed). */
   onClose: (inviteId: string) => void;
 }
@@ -17,7 +20,13 @@ interface InvitationCardProps {
 type Phase = 'idle' | 'connecting' | 'used-up';
 
 /** One invitation: the code to send and the field for the viewer's reply. */
-export function InvitationCard({ session, inviteId, code, onClose }: InvitationCardProps) {
+export function InvitationCard({
+  session,
+  inviteId,
+  code,
+  candidates,
+  onClose,
+}: InvitationCardProps) {
   const [reply, setReply] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +53,7 @@ export function InvitationCard({ session, inviteId, code, onClose }: InvitationC
     <Card className="bg-background" data-testid="invitation">
       <CardContent className="flex flex-col gap-4">
         <CodeBox label="1. Send this invitation code" code={code} testId="invitation-code" />
+        <NoPublicAddressNotice candidates={candidates} />
         <CodeInput
           label="2. Paste the reply code"
           value={reply}

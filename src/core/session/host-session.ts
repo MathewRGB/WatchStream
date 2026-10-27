@@ -1,6 +1,7 @@
 import { Emitter } from '../events/emitter';
 import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
+import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -82,7 +83,11 @@ export class HostSession {
   }
 
   /** Creates a single-use invitation code for one viewer. */
-  async createInvitation(): Promise<{ inviteId: string; code: string }> {
+  async createInvitation(): Promise<{
+    inviteId: string;
+    code: string;
+    candidates: CandidateSummary;
+  }> {
     if (this.openSlots <= 0) {
       throw new SessionError('session-full', `A session holds at most ${this.maxViewers} viewers.`);
     }
@@ -91,7 +96,7 @@ export class HostSession {
     this.pending.set(inviteId, link);
     this.publishSlots();
     const code = await encodeInvitation({ inviteId, hostName: this.options.hostName, sdp });
-    return { inviteId, code };
+    return { inviteId, code, candidates: summarizeCandidates(sdp) };
   }
 
   cancelInvitation(inviteId: string): void {

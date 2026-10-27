@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import type { CandidateSummary } from '@/core/peer/candidates';
 import type { HostSession } from '@/core/session/host-session';
 import { describeError } from './describe-error';
 import { InvitationCard } from './invitation-card';
@@ -12,6 +13,7 @@ interface InviteTabProps {
 interface OpenInvitation {
   inviteId: string;
   code: string;
+  candidates: CandidateSummary;
 }
 
 /** Creates invitations and takes the viewers' replies. */
@@ -60,12 +62,13 @@ export function InviteTab({ session, openSlots }: InviteTabProps) {
         </p>
       )}
       <div className="flex flex-col gap-4" data-testid="invitations">
-        {invitations.map(({ inviteId, code }) => (
+        {invitations.map(({ inviteId, code, candidates }) => (
           <InvitationCard
             key={inviteId}
             session={session}
             inviteId={inviteId}
             code={code}
+            candidates={candidates}
             onClose={closeInvitation}
           />
         ))}

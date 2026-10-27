@@ -25,6 +25,11 @@ adheres to [Semantic Versioning](https://semver.org/).
   also when they join later or when the host shares again after a stop. Connections negotiate
   media over the data channel, with crossing offers resolved by the viewer yielding. Tested with
   real WebRTC in Chromium and Firefox.
+- A notice next to invitation and reply codes that hold no public network address (no STUN
+  result, no relay, no global IPv6). Such a code cannot be reached from another network; the
+  usual causes are a VPN, a firewall or a blocked STUN server.
+- A viewer who has waited a minute for the host's reply is told to leave and join again with a
+  new invitation.
 - Settings tab for the host with three picture quality presets (Saver 480p, Balanced 720p,
   Sharp 1080p). They cap bitrate, frame rate and resolution of what goes out to each viewer, also
   while sharing and for viewers who join later.
@@ -89,6 +94,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A viewer no longer sees "The session has ended" while the host is still about to paste the
+  reply code. The viewer's connection starts testing paths as soon as it has the invitation, long
+  before the reply arrives (it travels through a chat), and that early failure used to end the
+  session. A connection that has not opened yet is now only ended by the host's timeout or by
+  leaving; an open connection that fails still ends.
 - The host's own preview of the shared picture is built from the video track only. It used to
   carry the audio track as well and relied on the element being muted, which risked the host
   hearing the shared tab twice.

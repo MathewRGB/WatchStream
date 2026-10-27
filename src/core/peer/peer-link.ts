@@ -51,7 +51,12 @@ export class PeerLink implements OfferingLink {
     private readonly polite: boolean,
   ) {
     connection.addEventListener('connectionstatechange', () => {
-      if (connection.connectionState === 'failed' || connection.connectionState === 'closed') {
+      const state = connection.connectionState;
+      // The viewer's ICE starts as soon as it has the offer, long before the host has the reply
+      // (a person has to carry it). Its early failure says nothing about the connection the host
+      // starts afterwards, so a link that never opened only ends when the session gives up on it:
+      // the host's timeout, or the person leaving.
+      if (state === 'closed' || (state === 'failed' && this.currentState === 'open')) {
         this.markClosed();
       }
     });

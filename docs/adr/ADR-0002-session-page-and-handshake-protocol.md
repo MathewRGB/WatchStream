@@ -71,6 +71,10 @@ to 1000 characters. Invalid messages are dropped without a reply.
   cancelled.
 - After the host applies a reply, the connection has to open within 20 seconds; otherwise the
   invitation is used up and reported as a failed direct connection.
+- A link that has not opened yet is not closed when the browser reports the connection as failed:
+  the viewer's ICE starts before the host has the reply and can fail in the meantime (a person
+  carries the reply through a chat). Only the host's timeout or leaving ends it. An open link that
+  fails is closed.
 - Viewer names come from the reply code; no extra hello message is needed.
 
 ## Consequences

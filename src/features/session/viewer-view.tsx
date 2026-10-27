@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Clipboard, ClipboardCheck, MessageSquare, Users } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MessageSquare, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { CandidateSummary } from '@/core/peer/candidates';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
@@ -10,9 +10,10 @@ import { useViewerSession } from '@/hooks/use-viewer-session';
 import { copyText } from '@/lib/clipboard';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
-import { CodeBox, CodeInput } from './code-box';
+import { CodeInput } from './code-box';
 import { describeError } from './describe-error';
 import { ParticipantList } from './participant-list';
+import { ReplyStep } from './reply-step';
 import { SetupArea } from './setup-area';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
@@ -30,6 +31,7 @@ interface Joined {
   replyCode: string;
   /** The reply code was put on the clipboard automatically. */
   copied: boolean;
+  candidates: CandidateSummary;
 }
 
 export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) {
@@ -46,6 +48,7 @@ export function ViewerView({ connector, viewerName, onLeave }: ViewerViewProps) 
         session={joined.session}
         replyCode={joined.replyCode}
         copied={joined.copied}
+        candidates={joined.candidates}
         onLeave={leave}
       />
     );
@@ -89,12 +92,12 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
     setJoining(true);
     setError(null);
     try {
-      const { session, replyCode } = await ViewerSession.join(invitation, {
+      const { session, replyCode, candidates } = await ViewerSession.join(invitation, {
         viewerName,
         connector,
       });
       // Right after the click, so the browser still counts it as a user action.
-      onJoined({ session, replyCode, copied: await copyText(replyCode) });
+      onJoined({ session, replyCode, candidates, copied: await copyText(replyCode) });
     } catch (caught) {
       setError(describeError(caught));
       setJoining(false);
@@ -133,10 +136,11 @@ interface JoinedSessionProps {
   session: ViewerSession;
   replyCode: string;
   copied: boolean;
+  candidates: CandidateSummary;
   onLeave: () => void;
 }
 
-function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionProps) {
+function JoinedSession({ session, replyCode, copied, candidates, onLeave }: JoinedSessionProps) {
   const { state, participants, participantId, media } = useViewerSession(session);
   const messages = useChatMessages(session);
   const { hostName } = session;
@@ -218,31 +222,12 @@ function JoinedSession({ session, replyCode, copied, onLeave }: JoinedSessionPro
       actions={<LeaveButton onClick={onLeave} />}
       stage={
         <SetupArea>
-          <Card data-testid="reply-step">
-            <CardHeader>
-              <CardTitle>Send your reply</CardTitle>
-              <CardDescription data-testid="viewer-state">
-                Waiting for {hostName} to paste your reply code…
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <Alert data-testid="reply-copy-notice">
-                {copied ? <ClipboardCheck /> : <Clipboard />}
-                <AlertDescription>
-                  {copied
-                    ? `Reply code copied to your clipboard. Paste it into your chat with ${hostName}.`
-                    : `Copy the reply code below and send it to ${hostName}.`}
-                </AlertDescription>
-              </Alert>
-              <CodeBox
-                label="Send this reply code back to the host"
-                code={replyCode}
-                testId="reply-code"
-                initiallyCopied={copied}
-                emphasizeCopy={!copied}
-              />
-            </CardContent>
-          </Card>
+          <ReplyStep
+            hostName={hostName}
+            replyCode={replyCode}
+            copied={copied}
+            candidates={candidates}
+          />
         </SetupArea>
       }
     />

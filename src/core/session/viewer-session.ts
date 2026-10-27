@@ -1,5 +1,6 @@
 import { Emitter } from '../events/emitter';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
+import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import type { MediaLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -72,7 +73,7 @@ export class ViewerSession {
   static async join(
     invitationCode: string,
     options: JoinOptions,
-  ): Promise<{ session: ViewerSession; replyCode: string }> {
+  ): Promise<{ session: ViewerSession; replyCode: string; candidates: CandidateSummary }> {
     const invitation = await decodeInvitation(invitationCode);
     const { link, sdp } = await options.connector.acceptOffer(invitation.sdp);
     const replyCode = await encodeReply({
@@ -80,7 +81,11 @@ export class ViewerSession {
       viewerName: options.viewerName,
       sdp,
     });
-    return { session: new ViewerSession(invitation.hostName, link), replyCode };
+    return {
+      session: new ViewerSession(invitation.hostName, link),
+      replyCode,
+      candidates: summarizeCandidates(sdp),
+    };
   }
 
   get events(): Pick<Emitter<ViewerSessionEvents>, 'on'> {

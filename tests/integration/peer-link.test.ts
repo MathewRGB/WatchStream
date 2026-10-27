@@ -23,6 +23,13 @@ afterEach(() => {
   links.splice(0).forEach((link) => link.close());
 });
 
+/** Makes the browser report a connection state, as it does when ICE gives up. */
+function reportConnectionState(link: PeerLink, state: RTCPeerConnectionState): void {
+  const connection = link['connection'];
+  Object.defineProperty(connection, 'connectionState', { configurable: true, get: () => state });
+  connection.dispatchEvent(new Event('connectionstatechange'));
+}
+
 describe('PeerLink', () => {
   it('opens a data channel and carries messages in both directions', async () => {
     const { host, viewer } = await connectPair();
@@ -99,5 +106,39 @@ describe('PeerLink', () => {
 
   it('rejects an invalid offer', async () => {
     await expect(PeerLink.acceptOffer('v=0\r\ngarbage\r\n', LOCAL_CONFIG)).rejects.toThrow();
+  });
+
+  it('keeps waiting when ICE fails before the channel ever opened', async () => {
+    // The viewer's ICE starts before the host has the reply, which takes a person as long as a
+    // chat message. A failure in that time says nothing about the connection the host starts next.
+    const offer = await PeerLink.createOffer(LOCAL_CONFIG);
+    const answer = await PeerLink.acceptOffer(offer.sdp, LOCAL_CONFIG);
+    links.push(offer.link, answer.link);
+
+    reportConnectionState(answer.link, 'failed');
+
+    expect(answer.link.state).toBe('connecting');
+    await offer.link.acceptAnswer(answer.sdp);
+    await Promise.all([opened(offer.link), opened(answer.link)]);
+  });
+
+  it('closes when an open connection fails', async () => {
+    const { host, viewer } = await connectPair();
+    const viewerClosed = closed(viewer);
+
+    reportConnectionState(viewer, 'failed');
+
+    await viewerClosed;
+    expect(viewer.state).toBe('closed');
+    host.close();
+  });
+
+  it('closes when the connection is closed, open or not', async () => {
+    const offer = await PeerLink.createOffer(LOCAL_CONFIG);
+    links.push(offer.link);
+
+    reportConnectionState(offer.link, 'closed');
+
+    expect(offer.link.state).toBe('closed');
   });
 });

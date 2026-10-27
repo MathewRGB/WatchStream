@@ -262,4 +262,18 @@ describe('WatchStream app', () => {
     expect(host.getByTestId('share-button')).toBeInTheDocument();
     expect(track.stop).toHaveBeenCalled();
   });
+
+  it('warns on both sides when a code holds no public address', async () => {
+    // The fake network produces descriptions without any candidates.
+    const host = openPage(network);
+    await start(host, 'user1', 'host');
+    const invitation = await createInvitation(host);
+    expect(host.getByTestId('no-public-address')).toBeInTheDocument();
+
+    const viewer = openPage(network);
+    await start(viewer, 'user2', 'join');
+    await joinWith(viewer, invitation);
+
+    expect(viewer.getByTestId('no-public-address')).toBeInTheDocument();
+  });
 });
