@@ -16,6 +16,18 @@ const message = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
 });
 
 describe('ChatPanel', () => {
+  it('says so while there are no messages', () => {
+    render(<ChatPanel messages={[]} selfId="me" onSend={vi.fn()} />);
+
+    expect(screen.getByTestId('chat-empty')).toHaveTextContent('No messages yet.');
+  });
+
+  it('drops the empty note once a message arrives', () => {
+    render(<ChatPanel messages={[message()]} selfId="me" onSend={vi.fn()} />);
+
+    expect(screen.queryByTestId('chat-empty')).toBeNull();
+  });
+
   it('shows each message with its sender', () => {
     render(<ChatPanel messages={[message()]} selfId="me" onSend={vi.fn()} />);
 
