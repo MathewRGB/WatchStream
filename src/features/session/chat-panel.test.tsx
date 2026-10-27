@@ -9,7 +9,7 @@ import { ChatPanel } from './chat-panel';
 const message = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
   id: 'm1',
   senderId: 'other',
-  senderName: 'Julia',
+  senderName: 'user2',
   text: 'hello',
   sentAt: 0,
   ...overrides,
@@ -32,7 +32,7 @@ describe('ChatPanel', () => {
     render(<ChatPanel messages={[message()]} selfId="me" onSend={vi.fn()} />);
 
     const item = screen.getByTestId('chat-message');
-    expect(within(item).getByTestId('chat-sender')).toHaveTextContent('Julia');
+    expect(within(item).getByTestId('chat-sender')).toHaveTextContent('user2');
     expect(item).toHaveTextContent('hello');
   });
 

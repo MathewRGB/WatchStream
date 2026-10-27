@@ -84,29 +84,29 @@ describe('WatchStream app', () => {
   it('starts hosting with Enter in the name field', async () => {
     const page = openPage(network);
 
-    await userEvent.type(page.getByTestId('name-input'), 'Mathias{Enter}');
+    await userEvent.type(page.getByTestId('name-input'), 'user1{Enter}');
 
     expect(page.getByTestId('host-view')).toBeInTheDocument();
   });
 
   it('remembers the name for the next time', async () => {
     const storage = memoryStorage();
-    await start(openPage(network, storage), 'Mathias', 'host');
+    await start(openPage(network, storage), 'user1', 'host');
 
     const again = openPage(network, storage);
 
-    expect(again.getByTestId('name-input')).toHaveValue('Mathias');
+    expect(again.getByTestId('name-input')).toHaveValue('user1');
   });
 
   it('connects a viewer through invitation and reply codes', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
+    await start(host, 'user1', 'host');
 
-    const viewer = await connect(network, host, 'Julia');
+    const viewer = await connect(network, host, 'user2');
 
     await waitFor(() => {
-      expect(names(host)).toEqual(['Mathias', 'Julia']);
-      expect(names(viewer)).toEqual(['Mathias', 'Julia']);
+      expect(names(host)).toEqual(['user1', 'user2']);
+      expect(names(viewer)).toEqual(['user1', 'user2']);
     });
     expect(host.queryAllByTestId('invitation')).toHaveLength(0);
     expect(viewer.queryByTestId('reply-step')).toBeNull();
@@ -114,8 +114,8 @@ describe('WatchStream app', () => {
 
   it('exchanges chat messages between host and viewer', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
-    const viewer = await connect(network, host, 'Julia');
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
 
     await userEvent.type(viewer.getByTestId('chat-input'), 'Ready!{Enter}');
 
@@ -129,7 +129,7 @@ describe('WatchStream app', () => {
 
   it('shows how many places are left and disables inviting when all are taken', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
+    await start(host, 'user1', 'host');
     expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
 
     await createInvitation(host);
@@ -142,7 +142,7 @@ describe('WatchStream app', () => {
 
   it('frees a place when an invitation is cancelled', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
+    await start(host, 'user1', 'host');
     await createInvitation(host);
 
     await userEvent.click(host.getByTestId('cancel-invitation'));
@@ -159,9 +159,9 @@ describe('WatchStream app', () => {
     async function joinOnly(writeText: (text: string) => Promise<void>) {
       vi.stubGlobal('navigator', { clipboard: { writeText } });
       const host = openPage(network);
-      await start(host, 'Mathias', 'host');
+      await start(host, 'user1', 'host');
       const viewer = openPage(network);
-      await start(viewer, 'Julia', 'join');
+      await start(viewer, 'user2', 'join');
       const replyCode = await joinWith(viewer, await createInvitation(host));
       return { viewer, replyCode };
     }
@@ -173,7 +173,7 @@ describe('WatchStream app', () => {
 
       expect(writeText).toHaveBeenCalledWith(replyCode);
       expect(viewer.getByTestId('reply-copy-notice')).toHaveTextContent(
-        'Reply code copied to your clipboard. Paste it into your chat with Mathias.',
+        'Reply code copied to your clipboard. Paste it into your chat with user1.',
       );
       expect(viewer.getByTestId('reply-code-copy')).toHaveTextContent('Copied');
     });
@@ -182,7 +182,7 @@ describe('WatchStream app', () => {
       const { viewer } = await joinOnly(() => Promise.reject(new Error('NotAllowedError')));
 
       expect(viewer.getByTestId('reply-copy-notice')).toHaveTextContent(
-        'Copy the reply code below and send it to Mathias.',
+        'Copy the reply code below and send it to user1.',
       );
       expect(viewer.getByTestId('reply-code-copy')).toHaveTextContent('Copy');
       expect(viewer.getByTestId('reply-code-copy')).not.toHaveTextContent('Copied');
@@ -191,7 +191,7 @@ describe('WatchStream app', () => {
 
   it('explains a damaged invitation code to the viewer', async () => {
     const viewer = openPage(network);
-    await start(viewer, 'Julia', 'join');
+    await start(viewer, 'user2', 'join');
 
     await paste(viewer.getByTestId('invitation-input'), 'WSI1.broken');
     await userEvent.click(viewer.getByTestId('join-session-button'));
@@ -202,7 +202,7 @@ describe('WatchStream app', () => {
 
   it('explains to the host when an invitation code is pasted as reply', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
+    await start(host, 'user1', 'host');
     const invitationCode = await createInvitation(host);
 
     await pasteReply(host, invitationCode);
@@ -213,8 +213,8 @@ describe('WatchStream app', () => {
 
   it('tells the viewer when the host ends the session', async () => {
     const host = openPage(network);
-    await start(host, 'Mathias', 'host');
-    const viewer = await connect(network, host, 'Julia');
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
 
     await userEvent.click(host.getByTestId('end-button'));
 
@@ -228,7 +228,7 @@ describe('WatchStream app', () => {
 
   it('returns to the start when a viewer leaves before connecting', async () => {
     const viewer = openPage(network);
-    await start(viewer, 'Julia', 'join');
+    await start(viewer, 'user2', 'join');
 
     await userEvent.click(viewer.getByTestId('leave-button'));
 

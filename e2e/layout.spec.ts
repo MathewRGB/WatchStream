@@ -60,14 +60,14 @@ for (const size of SIZES) {
       const host = await openSessionPage(size);
       expect(await host.pageScrolls()).toBe(false); // start screen
 
-      await host.start('Mathias', 'host');
+      await host.start('user1', 'host');
       expect(await host.pageScrolls()).toBe(false); // empty host window
 
       for (let i = 0; i < 3; i++) await host.createInvitation();
       expect(await host.pageScrolls()).toBe(false); // three open invitations
 
       const viewer = await openSessionPage(size);
-      await viewer.start('Julia', 'join');
+      await viewer.start('user2', 'join');
       expect(await viewer.pageScrolls()).toBe(false); // join form
       const reply = await viewer.acceptInvitation(
         await host.byTestId('invitation-code').first().inputValue(),
@@ -94,7 +94,7 @@ for (const size of SIZES) {
 
 test('a long chat scrolls inside its list and keeps the input in view', async () => {
   const host = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
   await host.openTab('chat');
 
   for (let i = 0; i < 40; i++) {
@@ -114,7 +114,7 @@ test('a long chat scrolls inside its list and keeps the input in view', async ()
 
 test('only the active tab is shown and typed text survives a tab switch', async () => {
   const host = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
   await host.openTab('invite');
   await host.byTestId('invite-button').click();
   await host.byTestId('reply-input').fill('WSR1.half-typed');
@@ -130,7 +130,7 @@ test('only the active tab is shown and typed text survives a tab switch', async 
 
 test('the sidebar can be hidden and shown; the stage takes the free space', async () => {
   const host = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
   const stageWidth = async () => (await host.byTestId('stage').boundingBox())!.width;
   const narrow = await stageWidth();
 
@@ -146,7 +146,7 @@ test('the sidebar can be hidden and shown; the stage takes the free space', asyn
 
 test('stage and sidebar end above the window edge with a thin border', async () => {
   const host = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
 
   for (const id of ['stage-panel', 'sidebar']) {
     const panel = host.byTestId(id);
@@ -160,7 +160,7 @@ test('stage and sidebar end above the window edge with a thin border', async () 
 
 test('in a narrow window the open sidebar takes the whole width', async () => {
   const host = await openSessionPage(SIZES[2]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
 
   await expect(host.byTestId('stage')).toBeHidden();
   const box = (await host.byTestId('sidebar').boundingBox())!;
@@ -174,7 +174,7 @@ test('in a narrow window the open sidebar takes the whole width', async () => {
 
 test('the stage goes into full screen and back', async () => {
   const host = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
   const fullscreenId = () =>
     host.page.evaluate(() => document.fullscreenElement?.getAttribute('data-testid') ?? null);
 
@@ -191,8 +191,8 @@ test('the stage goes into full screen and back', async () => {
 test('the connected viewer sees the stage and the sidebar side by side', async () => {
   const host = await openSessionPage(SIZES[0]!);
   const viewer = await openSessionPage(SIZES[0]!);
-  await host.start('Mathias', 'host');
-  await connect(host, viewer, 'Julia');
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
 
   await expect(viewer.byTestId('stage')).toBeVisible();
   await expect(viewer.byTestId('sidebar')).toBeVisible();

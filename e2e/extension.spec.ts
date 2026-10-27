@@ -38,19 +38,19 @@ test('the extension ships the WatchStream page', async () => {
 test('host and viewer connect through the extension and chat', async () => {
   const host = await openSessionPage();
   const viewer = await openSessionPage();
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
 
-  await connect(host, viewer, 'Julia');
+  await connect(host, viewer, 'user2');
 
-  await host.expectParticipants(['Mathias', 'Julia']);
-  await viewer.expectParticipants(['Mathias', 'Julia']);
+  await host.expectParticipants(['user1', 'user2']);
+  await viewer.expectParticipants(['user1', 'user2']);
 
   await viewer.sendChat('Can you hear me?');
-  await host.expectChatMessage('Julia', 'Can you hear me?');
+  await host.expectChatMessage('user2', 'Can you hear me?');
   await viewer.expectChatMessage('You', 'Can you hear me?');
 
   await host.sendChat('Loud and clear');
-  await viewer.expectChatMessage('Mathias', 'Loud and clear');
+  await viewer.expectChatMessage('user1', 'Loud and clear');
 
   await host.byTestId('end-button').click();
   await expect(viewer.byTestId('viewer-state')).toHaveText('The session has ended.');
@@ -61,8 +61,8 @@ test('host and viewer connect through the extension and chat', async () => {
 test('the reply code is copied automatically and the viewer is told', async () => {
   const host = await openSessionPage();
   const viewer = await openSessionPage();
-  await host.start('Mathias', 'host');
-  await viewer.start('Julia', 'join');
+  await host.start('user1', 'host');
+  await viewer.start('user2', 'join');
 
   const replyCode = await viewer.acceptInvitation(await host.createInvitation());
 
@@ -76,7 +76,7 @@ test('the reply code is copied automatically and the viewer is told', async () =
 
 test('the copy button puts the invitation code on the clipboard', async () => {
   const host = await openSessionPage();
-  await host.start('Mathias', 'host');
+  await host.start('user1', 'host');
   const code = await host.createInvitation();
 
   await host.byTestId('invitation-code-copy').click();

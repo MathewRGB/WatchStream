@@ -28,8 +28,8 @@ const SDP = [
   '',
 ].join('\r\n');
 
-const INVITATION = { inviteId: 'abcDEF123_-x', hostName: 'Mathias', sdp: SDP };
-const REPLY = { inviteId: 'abcDEF123_-x', viewerName: 'Julia', sdp: SDP };
+const INVITATION = { inviteId: 'abcDEF123_-x', hostName: 'user1', sdp: SDP };
+const REPLY = { inviteId: 'abcDEF123_-x', viewerName: 'user2', sdp: SDP };
 
 async function rawCode(prefix: string, payload: unknown): Promise<string> {
   return `${prefix}.${encodeBase64Url(await compress(JSON.stringify(payload)))}`;

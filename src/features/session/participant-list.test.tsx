@@ -5,8 +5,8 @@ import type { Participant } from '@/core/protocol/messages';
 import { ParticipantList } from './participant-list';
 
 const participants: Participant[] = [
-  { id: 'h', name: 'Mathias', role: 'host' },
-  { id: 'v1', name: 'Julia', role: 'viewer' },
+  { id: 'h', name: 'user1', role: 'host' },
+  { id: 'v1', name: 'user2', role: 'viewer' },
 ];
 
 describe('ParticipantList', () => {
@@ -14,8 +14,8 @@ describe('ParticipantList', () => {
     render(<ParticipantList participants={participants} selfId={null} />);
 
     expect(screen.getAllByTestId('participant-name').map((n) => n.textContent)).toEqual([
-      'Mathias',
-      'Julia',
+      'user1',
+      'user2',
     ]);
   });
 

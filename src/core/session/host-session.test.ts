@@ -6,20 +6,20 @@ import { ViewerSession } from './viewer-session';
 
 describe('HostSession', () => {
   it('starts with only the host in the session', () => {
-    const { host } = createHost({ hostName: 'Mathias' });
+    const { host } = createHost({ hostName: 'user1' });
 
-    expect(host.participants).toEqual([{ id: host.hostId, name: 'Mathias', role: 'host' }]);
+    expect(host.participants).toEqual([{ id: host.hostId, name: 'user1', role: 'host' }]);
     expect(host.openSlots).toBe(3);
   });
 
   it('creates an invitation code that names the host', async () => {
-    const { host } = createHost({ hostName: 'Mathias' });
+    const { host } = createHost({ hostName: 'user1' });
 
     const { inviteId, code } = await host.createInvitation();
     const invitation = await decodeInvitation(code);
 
     expect(invitation.inviteId).toBe(inviteId);
-    expect(invitation.hostName).toBe('Mathias');
+    expect(invitation.hostName).toBe('user1');
     expect(host.openSlots).toBe(2);
   });
 
@@ -28,17 +28,17 @@ describe('HostSession', () => {
     const onRoster = vi.fn();
     host.events.on('roster', onRoster);
 
-    const { participant } = await joinViewer(host, network, 'Julia');
+    const { participant } = await joinViewer(host, network, 'user2');
 
-    expect(participant).toMatchObject({ name: 'Julia', role: 'viewer' });
-    expect(host.participants.map((p) => p.name)).toEqual(['Host', 'Julia']);
+    expect(participant).toMatchObject({ name: 'user2', role: 'viewer' });
+    expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user2']);
     expect(onRoster).toHaveBeenLastCalledWith(host.participants);
   });
 
   it('welcomes the viewer and sends the roster to it', async () => {
     const { host, network } = createHost();
 
-    const { viewer, participant } = await joinViewer(host, network, 'Julia');
+    const { viewer, participant } = await joinViewer(host, network, 'user2');
 
     expect(viewer.participantId).toBe(participant.id);
     expect(viewer.participants).toEqual(host.participants);
@@ -64,7 +64,7 @@ describe('HostSession', () => {
 
   it('frees the slot when a viewer leaves and updates the roster', async () => {
     const { host, network } = createHost({ maxViewers: 1 });
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     expect(host.openSlots).toBe(0);
 
     viewer.leave();
@@ -138,7 +138,7 @@ describe('HostSession', () => {
 
     it('reports a place freed by a leaving viewer', async () => {
       const { host, network } = createHost();
-      const { viewer } = await joinViewer(host, network, 'Julia');
+      const { viewer } = await joinViewer(host, network, 'user2');
       const onSlots = vi.fn();
       host.events.on('slots', onSlots);
 
@@ -195,12 +195,12 @@ describe('HostSession', () => {
   describe('chat', () => {
     it('delivers host messages to the host and all viewers', async () => {
       const { host, network } = createHost();
-      const { viewer: julia } = await joinViewer(host, network, 'Julia');
-      const { viewer: tom } = await joinViewer(host, network, 'Tom');
-      const seen = { host: vi.fn(), julia: vi.fn(), tom: vi.fn() };
+      const { viewer: user2 } = await joinViewer(host, network, 'user2');
+      const { viewer: user3 } = await joinViewer(host, network, 'user3');
+      const seen = { host: vi.fn(), user2: vi.fn(), user3: vi.fn() };
       host.events.on('chat', seen.host);
-      julia.events.on('chat', seen.julia);
-      tom.events.on('chat', seen.tom);
+      user2.events.on('chat', seen.user2);
+      user3.events.on('chat', seen.user3);
 
       host.sendChat('  popcorn ready? ');
       await flush();
@@ -212,36 +212,36 @@ describe('HostSession', () => {
         sentAt: 1_000,
       });
       expect(seen.host).toHaveBeenCalledWith(expected);
-      expect(seen.julia).toHaveBeenCalledWith(expected);
-      expect(seen.tom).toHaveBeenCalledWith(expected);
+      expect(seen.user2).toHaveBeenCalledWith(expected);
+      expect(seen.user3).toHaveBeenCalledWith(expected);
     });
 
     it('relays a viewer message to everyone, including the sender', async () => {
       const { host, network } = createHost();
-      const { viewer: julia, participant } = await joinViewer(host, network, 'Julia');
-      const { viewer: tom } = await joinViewer(host, network, 'Tom');
-      const seen = { host: vi.fn(), julia: vi.fn(), tom: vi.fn() };
+      const { viewer: user2, participant } = await joinViewer(host, network, 'user2');
+      const { viewer: user3 } = await joinViewer(host, network, 'user3');
+      const seen = { host: vi.fn(), user2: vi.fn(), user3: vi.fn() };
       host.events.on('chat', seen.host);
-      julia.events.on('chat', seen.julia);
-      tom.events.on('chat', seen.tom);
+      user2.events.on('chat', seen.user2);
+      user3.events.on('chat', seen.user3);
 
-      julia.sendChat('yes!');
+      user2.sendChat('yes!');
       await flush();
       await flush();
 
       const expected = expect.objectContaining({
         senderId: participant.id,
-        senderName: 'Julia',
+        senderName: 'user2',
         text: 'yes!',
       });
       expect(seen.host).toHaveBeenCalledWith(expected);
-      expect(seen.julia).toHaveBeenCalledWith(expected);
-      expect(seen.tom).toHaveBeenCalledWith(expected);
+      expect(seen.user2).toHaveBeenCalledWith(expected);
+      expect(seen.user3).toHaveBeenCalledWith(expected);
     });
 
     it('ignores invalid messages from viewers', async () => {
       const { host, network } = createHost();
-      await joinViewer(host, network, 'Julia');
+      await joinViewer(host, network, 'user2');
       const onChat = vi.fn();
       host.events.on('chat', onChat);
       const viewerLinkOnHostSide = network.offers[0];
@@ -262,7 +262,7 @@ describe('HostSession', () => {
 
   it('closes every link on close', async () => {
     const { host, network } = createHost();
-    await joinViewer(host, network, 'Julia');
+    await joinViewer(host, network, 'user2');
     await host.createInvitation();
 
     host.close();

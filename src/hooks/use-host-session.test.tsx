@@ -6,11 +6,11 @@ import { useHostSession } from './use-host-session';
 
 describe('useHostSession', () => {
   it('starts with the host alone and all places free', () => {
-    const { host } = createHost({ hostName: 'Mathias' });
+    const { host } = createHost({ hostName: 'user1' });
 
     const { result } = renderHook(() => useHostSession(host));
 
-    expect(result.current.participants.map((p) => p.name)).toEqual(['Mathias']);
+    expect(result.current.participants.map((p) => p.name)).toEqual(['user1']);
     expect(result.current.openSlots).toBe(3);
   });
 
@@ -34,10 +34,10 @@ describe('useHostSession', () => {
 
     let leave = () => {};
     await act(async () => {
-      const { viewer } = await joinViewer(host, network, 'Julia');
+      const { viewer } = await joinViewer(host, network, 'user2');
       leave = () => viewer.leave();
     });
-    expect(result.current.participants.map((p) => p.name)).toEqual(['Host', 'Julia']);
+    expect(result.current.participants.map((p) => p.name)).toEqual(['Host', 'user2']);
     expect(result.current.openSlots).toBe(2);
 
     await act(async () => {

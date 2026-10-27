@@ -9,14 +9,14 @@ describe('AppShell', () => {
     render(
       <AppShell
         title="WatchStream"
-        status="Hosting as Mathias"
+        status="Hosting as user1"
         actions={<button>End</button>}
         stage={<p>the stage</p>}
       />,
     );
 
     expect(screen.getByRole('heading', { name: 'WatchStream' })).toBeInTheDocument();
-    expect(screen.getByText('Hosting as Mathias')).toBeInTheDocument();
+    expect(screen.getByText('Hosting as user1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'End' })).toBeInTheDocument();
     expect(screen.getByText('the stage')).toBeInTheDocument();
   });

@@ -15,7 +15,7 @@ describe('useChatMessages', () => {
 
   it('collects messages in the order they arrive', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     const { result } = renderHook(() => useChatMessages(viewer));
 
     await act(async () => {
@@ -29,7 +29,7 @@ describe('useChatMessages', () => {
 
   it('ignores messages after unmounting', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     const { result, unmount } = renderHook(() => useChatMessages(viewer));
     unmount();
 

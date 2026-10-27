@@ -10,7 +10,7 @@ import {
 
 const CHAT: Extract<HostMessage, { type: 'chat' }> = {
   type: 'chat',
-  message: { id: 'm1', senderId: 'p1', senderName: 'Julia', text: 'hi', sentAt: 1_700_000_000 },
+  message: { id: 'm1', senderId: 'p1', senderName: 'user2', text: 'hi', sentAt: 1_700_000_000 },
 };
 
 describe('normalizeChatText', () => {
@@ -54,8 +54,8 @@ describe('parseHostMessage', () => {
     {
       type: 'roster',
       participants: [
-        { id: 'host', name: 'Mathias', role: 'host' },
-        { id: 'p1', name: 'Julia', role: 'viewer' },
+        { id: 'host', name: 'user1', role: 'host' },
+        { id: 'p1', name: 'user2', role: 'viewer' },
       ],
     },
     CHAT,

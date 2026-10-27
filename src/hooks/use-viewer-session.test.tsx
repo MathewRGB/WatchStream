@@ -6,10 +6,10 @@ import { ViewerSession } from '@/core/session/viewer-session';
 import { useViewerSession } from './use-viewer-session';
 
 async function joinPending() {
-  const { host, network } = createHost({ hostName: 'Mathias' });
+  const { host, network } = createHost({ hostName: 'user1' });
   const { code } = await host.createInvitation();
   const { session, replyCode } = await ViewerSession.join(code, {
-    viewerName: 'Julia',
+    viewerName: 'user2',
     connector: network,
   });
   return { host, session, replyCode };
@@ -38,9 +38,9 @@ describe('useViewerSession', () => {
     });
 
     expect(result.current.state).toBe('connected');
-    expect(result.current.participants.map((p) => p.name)).toEqual(['Mathias', 'Julia']);
+    expect(result.current.participants.map((p) => p.name)).toEqual(['user1', 'user2']);
     expect(result.current.participantId).toBe(
-      result.current.participants.find((p) => p.name === 'Julia')?.id,
+      result.current.participants.find((p) => p.name === 'user2')?.id,
     );
   });
 

@@ -5,17 +5,17 @@ import { ViewerSession } from './viewer-session';
 
 describe('ViewerSession', () => {
   it('creates a reply code for the invitation and waits for the host', async () => {
-    const { host, network } = createHost({ hostName: 'Mathias' });
+    const { host, network } = createHost({ hostName: 'user1' });
     const { inviteId, code } = await host.createInvitation();
 
     const { session, replyCode } = await ViewerSession.join(code, {
-      viewerName: 'Julia',
+      viewerName: 'user2',
       connector: network,
     });
     const reply = await decodeReply(replyCode);
 
-    expect(reply).toMatchObject({ inviteId, viewerName: 'Julia' });
-    expect(session.hostName).toBe('Mathias');
+    expect(reply).toMatchObject({ inviteId, viewerName: 'user2' });
+    expect(session.hostName).toBe('user1');
     expect(session.state).toBe('waiting-for-host');
   });
 
@@ -23,7 +23,7 @@ describe('ViewerSession', () => {
     const { host, network } = createHost();
     const { code } = await host.createInvitation();
     const { session, replyCode } = await ViewerSession.join(code, {
-      viewerName: 'Julia',
+      viewerName: 'user2',
       connector: network,
     });
     const onState = vi.fn();
@@ -38,7 +38,7 @@ describe('ViewerSession', () => {
 
   it('becomes disconnected when the host closes the session', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     const onState = vi.fn();
     viewer.events.on('state', onState);
 
@@ -71,7 +71,7 @@ describe('ViewerSession', () => {
 
   it('refuses an empty chat message', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
 
     expect(() => viewer.sendChat(' ')).toThrow(
       expect.objectContaining({ reason: 'invalid-message' }),
@@ -80,7 +80,7 @@ describe('ViewerSession', () => {
 
   it('ignores invalid messages from the host', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     const onChat = vi.fn();
     const onRoster = vi.fn();
     viewer.events.on('chat', onChat);
@@ -96,7 +96,7 @@ describe('ViewerSession', () => {
 
   it('stops emitting after leaving', async () => {
     const { host, network } = createHost();
-    const { viewer } = await joinViewer(host, network, 'Julia');
+    const { viewer } = await joinViewer(host, network, 'user2');
     const onChat = vi.fn();
     viewer.events.on('chat', onChat);
 
