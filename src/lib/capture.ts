@@ -1,9 +1,24 @@
 /**
+ * Sound as it is. Browsers treat captured audio like a microphone by default (echo cancellation,
+ * noise suppression, automatic gain), which is made for voices: it muffles music and film sound and
+ * makes the level pump. Off here, and stereo, because this is a tab, not a person.
+ */
+export const UNPROCESSED_AUDIO: MediaTrackConstraints = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+  channelCount: 2,
+};
+
+/**
  * Asks the user which tab, window or screen to share. The browser shows its
  * own picker; in Chrome and Brave it offers tab audio, Firefox shares no audio.
  */
 export function captureDisplay(): Promise<MediaStream> {
-  return navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+  return navigator.mediaDevices.getDisplayMedia({
+    video: { frameRate: 30 },
+    audio: UNPROCESSED_AUDIO,
+  });
 }
 
 export type CaptureDisplay = typeof captureDisplay;

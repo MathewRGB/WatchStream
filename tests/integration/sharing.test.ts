@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
-import { createTestStream, join, startHost, waitFor } from './helpers';
+import { createTestStream, createTestStreamWithAudio, join, startHost, waitFor } from './helpers';
 
 /** The encoder settings the browser really holds, read from the host's RTCRtpSenders. */
 function videoEncodings(host: ReturnType<typeof startHost>) {
@@ -11,6 +11,36 @@ function videoEncodings(host: ReturnType<typeof startHost>) {
       .filter((sender) => sender.track?.kind === 'video')
       .flatMap((sender) => sender.getParameters().encodings ?? []),
   );
+}
+
+type HostLink = { senders: RTCRtpSender[]; connection: RTCPeerConnection };
+
+function hostLinks(host: ReturnType<typeof startHost>): HostLink[] {
+  const viewers = (host as unknown as { viewers: Map<string, { link: HostLink }> }).viewers;
+  return [...viewers.values()].map(({ link }) => link);
+}
+
+/** Bits per second the host really sends as audio, measured over `ms`. */
+async function audioBitrate(host: ReturnType<typeof startHost>, ms: number): Promise<number> {
+  const sender = hostLinks(host)[0]!.senders.find((s) => s.track?.kind === 'audio')!;
+  const bytes = async () => {
+    const stats = await sender.getStats();
+    let sent = 0;
+    stats.forEach((report) => {
+      if (report.type === 'outbound-rtp') sent = report.bytesSent;
+    });
+    return sent;
+  };
+  const before = await bytes();
+  await new Promise((resolve) => setTimeout(resolve, ms));
+  return (((await bytes()) - before) * 8) / (ms / 1000);
+}
+
+/** The audio encoder limit the browser really holds. */
+function audioBitrateLimit(host: ReturnType<typeof startHost>): number | undefined {
+  return hostLinks(host)[0]!
+    .senders.find((sender) => sender.track?.kind === 'audio')
+    ?.getParameters().encodings?.[0]?.maxBitrate;
 }
 
 function nextMedia(session: ViewerSession) {
@@ -113,7 +143,7 @@ describe('sharing over WebRTC', () => {
     const host = startHost();
     const viewer = await join(host, 'user2');
     const arrived = nextMedia(viewer);
-    host.startSharing(createTestStream());
+    host.startSharing(createTestStreamWithAudio());
     await arrived;
 
     await waitFor<void>((resolve) => {
@@ -122,6 +152,7 @@ describe('sharing over WebRTC', () => {
       check();
     });
     expect(videoEncodings(host)[0]).toMatchObject({ maxBitrate: 3_500_000, maxFramerate: 30 });
+    expect(audioBitrateLimit(host)).toBe(128_000);
 
     host.setQuality('saver');
 
@@ -131,5 +162,23 @@ describe('sharing over WebRTC', () => {
       check();
     });
     expect(videoEncodings(host)[0]).toMatchObject({ maxBitrate: 1_500_000, maxFramerate: 24 });
+    expect(audioBitrateLimit(host)).toBe(64_000);
+  });
+
+  it('sends the sound in stereo at a music-grade bitrate', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStreamWithAudio());
+    await arrived;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    const bitrate = await audioBitrate(host, 3000);
+
+    // Opus' default for voice is about 32 kbit/s; music needs several times that.
+    expect(bitrate).toBeGreaterThan(90_000);
+    expect(bitrate).toBeLessThan(160_000);
+    const negotiated = hostLinks(host)[0]!.connection.remoteDescription!.sdp;
+    expect(negotiated).toMatch(/a=fmtp:\d+ [^\r\n]*stereo=1/);
   });
 });

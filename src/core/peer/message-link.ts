@@ -1,5 +1,5 @@
 import type { Emitter } from '../events/emitter';
-import type { VideoLimits } from '../media/quality';
+import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from './diagnostics';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
@@ -40,7 +40,7 @@ export interface MediaLink extends MessageLink {
   /** The state of the link for an error message; contains no addresses. */
   diagnostics(): LinkDiagnostics;
   /** Caps what is sent of the video: now, and again after every renegotiation. */
-  setVideoLimits(limits: VideoLimits): Promise<void>;
+  setMediaLimits(limits: MediaLimits): Promise<void>;
   /** Applies a description from the other side. May emit an answer as `signal`. */
   receiveSignal(signal: LinkSignal): Promise<void>;
 }

@@ -57,7 +57,7 @@ open: closing it ends the session.
   subscription. WatchStream does not circumvent copy protection.
 - In stream mode the host's upload bandwidth limits the quality. It is designed for 2-3 viewers.
   The host sends a separate copy to each viewer, so Sharp needs about 6 Mbit/s of upload per
-  viewer.
+  viewer. The sound adds 64 to 192 kbit/s, depending on the quality.
 - Firefox cannot capture audio as a host in stream mode.
 - Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
   additional relay server (TURN).

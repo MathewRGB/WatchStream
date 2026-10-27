@@ -406,7 +406,7 @@ describe('HostSession', () => {
     it('keeps a viewer when limits cannot be set on its link', async () => {
       const { host, network } = createHost();
       const { viewer } = await joinViewer(host, network, 'user2');
-      network.offers[0]!.setVideoLimits = async () => {
+      network.offers[0]!.setMediaLimits = async () => {
         throw new Error('no encodings yet');
       };
 

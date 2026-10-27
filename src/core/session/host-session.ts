@@ -252,7 +252,7 @@ export class HostSession {
 
   private applyQuality(link: MediaLink): void {
     // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
-    void link.setVideoLimits(qualityPreset(this.currentQuality)).catch((error) => {
+    void link.setMediaLimits(qualityPreset(this.currentQuality)).catch((error) => {
       this.log.warn('could not set the video limits', describeThrown(error));
     });
   }

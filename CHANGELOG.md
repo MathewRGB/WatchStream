@@ -105,6 +105,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The shared sound is much cleaner. It used to arrive at about 29 kbit/s (Chromium) or 64 kbit/s
+  (Firefox) in the voice setup the browsers use for calls. Now the capture is asked for sound
+  without echo cancellation, noise suppression and automatic gain (they muffle music and make the
+  level pump), the connection asks for stereo Opus with a music bitrate, and the quality presets
+  set the sound bitrate too: 64, 128 and 192 kbit/s. Measured in Chromium and Firefox in the
+  integration test.
 - The "session ended" screen no longer fails in Firefox. Firefox refuses to read the state of a
   closed connection, so the details are now taken from the last state seen before it closed.
 - A failed media negotiation was an unhandled promise rejection; it is logged now.

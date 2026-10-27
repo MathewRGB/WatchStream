@@ -23,8 +23,19 @@ export default defineConfig({
             enabled: true,
             headless: true,
             instances: [
-              { browser: 'chromium', provider: playwright() },
-              { browser: 'firefox', provider: playwright() },
+              // Tests make sound without a click: an AudioContext would stay suspended otherwise.
+              {
+                browser: 'chromium',
+                provider: playwright({
+                  launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
+                }),
+              },
+              {
+                browser: 'firefox',
+                provider: playwright({
+                  launchOptions: { firefoxUserPrefs: { 'media.autoplay.default': 0 } },
+                }),
+              },
             ],
           },
         },

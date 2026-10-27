@@ -62,6 +62,31 @@ export function createTestStream(): MediaStream {
   return stream;
 }
 
+/**
+ * Like `createTestStream`, plus stereo noise as the sound. Noise cannot be compressed away, so the
+ * bitrate the encoder uses shows what it is allowed to use.
+ */
+export function createTestStreamWithAudio(): MediaStream {
+  const stream = createTestStream();
+  const audio = new AudioContext();
+  const buffer = audio.createBuffer(2, audio.sampleRate, audio.sampleRate);
+  for (let channel = 0; channel < 2; channel += 1) {
+    const samples = buffer.getChannelData(channel);
+    for (let i = 0; i < samples.length; i += 1) samples[i] = (Math.random() * 2 - 1) * 0.5;
+  }
+  const source = audio.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const destination = audio.createMediaStreamDestination();
+  destination.channelCount = 2;
+  source.connect(destination);
+  source.start();
+  void audio.resume();
+  destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
+  cleanupAfterTest(() => void audio.close());
+  return stream;
+}
+
 export function waitFor<T>(
   subscribe: (resolve: (value: T) => void) => void,
   timeoutMs = 5000,

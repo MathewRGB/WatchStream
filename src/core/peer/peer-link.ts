@@ -1,7 +1,8 @@
 import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown, type Logger } from '../log/logger';
-import type { VideoLimits } from '../media/quality';
+import type { MediaLimits } from '../media/quality';
 import { summarizeCandidates } from './candidates';
+import { tuneOpus } from './opus';
 import type { LinkDiagnostics } from './diagnostics';
 import type {
   LinkEvents,
@@ -53,7 +54,7 @@ export class PeerLink implements OfferingLink {
   private currentState: LinkState = 'connecting';
   private readonly senders: RTCRtpSender[] = [];
   private outgoing: MediaStream | null = null;
-  private limits: VideoLimits | null = null;
+  private limits: MediaLimits | null = null;
   private makingOffer = false;
   private ignoreOffer = false;
   /**
@@ -174,7 +175,11 @@ export class PeerLink implements OfferingLink {
     // A polite peer's setRemoteDescription rolls back its own pending offer.
     await this.connection.setRemoteDescription({ type: signal.type, sdp: signal.sdp });
     if (signal.type === 'offer') {
-      await this.connection.setLocalDescription();
+      const answer = await this.connection.createAnswer();
+      await this.connection.setLocalDescription({
+        type: 'answer',
+        sdp: tuneOpus(answer.sdp ?? ''),
+      });
       this.emitLocalDescription('answer');
     } else {
       // Encodings only exist once the negotiation is complete.
@@ -182,7 +187,7 @@ export class PeerLink implements OfferingLink {
     }
   }
 
-  async setVideoLimits(limits: VideoLimits): Promise<void> {
+  async setMediaLimits(limits: MediaLimits): Promise<void> {
     this.limits = limits;
     await this.applyLimits();
   }
@@ -230,20 +235,27 @@ export class PeerLink implements OfferingLink {
     if (!limits) return;
     for (const sender of this.senders) {
       const track = sender.track;
-      if (track?.kind !== 'video') continue;
+      if (!track) continue;
       const parameters = sender.getParameters();
       if (!parameters.encodings || parameters.encodings.length === 0) continue;
-      const height = track.getSettings().height ?? limits.maxHeight;
       for (const encoding of parameters.encodings) {
-        encoding.maxBitrate = limits.maxBitrateBps;
-        encoding.maxFramerate = limits.maxFramerate;
-        encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);
+        if (track.kind === 'audio') {
+          encoding.maxBitrate = limits.maxAudioBitrateBps;
+        } else {
+          const height = track.getSettings().height ?? limits.maxHeight;
+          encoding.maxBitrate = limits.maxBitrateBps;
+          encoding.maxFramerate = limits.maxFramerate;
+          encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);
+        }
       }
       try {
         await sender.setParameters(parameters);
       } catch (error) {
         // The sender changed meanwhile (a renegotiation); the next answer applies the limits again.
-        this.log.warn('could not apply video limits', describeThrown(error));
+        this.log.warn('could not apply media limits', {
+          kind: track.kind,
+          ...describeThrown(error),
+        });
       }
     }
   }
@@ -263,7 +275,8 @@ export class PeerLink implements OfferingLink {
     if (this.currentState !== 'open') return;
     try {
       this.makingOffer = true;
-      await this.connection.setLocalDescription();
+      const offer = await this.connection.createOffer();
+      await this.connection.setLocalDescription({ type: 'offer', sdp: tuneOpus(offer.sdp ?? '') });
       this.emitLocalDescription('offer');
     } catch (error) {
       this.log.error('media negotiation failed', describeThrown(error));

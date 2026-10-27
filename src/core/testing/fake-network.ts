@@ -1,5 +1,5 @@
 import { Emitter } from '../events/emitter';
-import type { VideoLimits } from '../media/quality';
+import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from '../peer/diagnostics';
 import type {
   LinkEvents,
@@ -23,8 +23,8 @@ export class FakeLink implements OfferingLink {
   outgoing: MediaStream | null = null;
   /** Descriptions received through `receiveSignal`, in order. */
   readonly received: LinkSignal[] = [];
-  /** The latest limits set through `setVideoLimits`. */
-  limits: VideoLimits | null = null;
+  /** The latest limits set through `setMediaLimits`. */
+  limits: MediaLimits | null = null;
   private currentState: LinkState = 'connecting';
 
   constructor(
@@ -83,7 +83,7 @@ export class FakeLink implements OfferingLink {
     };
   }
 
-  async setVideoLimits(limits: VideoLimits): Promise<void> {
+  async setMediaLimits(limits: MediaLimits): Promise<void> {
     this.limits = limits;
   }
 

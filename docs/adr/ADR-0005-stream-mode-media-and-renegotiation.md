@@ -92,12 +92,21 @@ in Chromium. It can be added later as a shortcut if the picker proves too clumsy
 The part that automation cannot cover is the real picker and the real audio. That is a manual
 check on Chrome, Brave and Firefox (the step-by-step guide that closes the milestone).
 
+### 3a. Sound
+
+The capture asks for audio without echo cancellation, noise suppression and automatic gain, in
+stereo; those filters are made for voices and muffle music and film sound. The media descriptions
+are tuned for Opus with `stereo=1`, `sprop-stereo=1`, `maxaveragebitrate=192000` and in-band FEC
+(`tuneOpus`). Measured with noise as the source: Chromium sent about 29 kbit/s and Firefox 64 kbit/s
+with the browsers' voice defaults; with this tuning both stay between 90 and 160 kbit/s at the
+Balanced preset.
+
 ### 4. Quality control
 
 The host chooses one of three presets in the Settings tab: Saver (480p, 24 fps, 1.5 Mbit/s),
 Balanced (720p, 30 fps, 3.5 Mbit/s, the default) and Sharp (1080p, 30 fps, 6 Mbit/s). They are
 applied per viewer link through `RTCRtpSender.setParameters` (`maxBitrate`, `maxFramerate`,
-`scaleResolutionDownBy`), at once and while sharing. The browser only allows this once the
+`scaleResolutionDownBy` for the video, `maxBitrate` of 64, 128 or 192 kbit/s for the sound), at once and while sharing. The browser only allows this once the
 negotiation is complete, so a link keeps its limits and applies them after every answer. The
 integration test reads the values back from the real senders.
 
