@@ -56,11 +56,21 @@ export function AppShell({
           )}
         </div>
       </header>
-      <div className="flex min-h-0 flex-1">
-        <main className={cn('min-w-0 flex-1', showSidebar && 'max-sm:hidden')}>{stage}</main>
+      {/* Two inset panels with a thin border: scrolling content visibly ends at the panel edge
+          instead of looking cut off by the window. */}
+      <div className="flex min-h-0 flex-1 gap-2 p-2">
+        <main
+          className={cn(
+            'min-w-0 flex-1 overflow-hidden rounded-lg border',
+            showSidebar && 'max-sm:hidden',
+          )}
+          data-testid="stage-panel"
+        >
+          {stage}
+        </main>
         {showSidebar && (
           <aside
-            className="flex w-[22rem] shrink-0 flex-col border-l max-sm:w-full"
+            className="flex w-[22rem] shrink-0 flex-col overflow-hidden rounded-lg border bg-card/40 max-sm:w-full"
             data-testid="sidebar"
           >
             {sidebar}

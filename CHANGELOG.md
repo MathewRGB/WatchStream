@@ -63,6 +63,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The stage and the sidebar are inset panels with a thin border, rounded corners and a small gap
+  to the window edge, so scrolling content visibly ends there instead of looking cut off.
 - Invitation and reply codes are shown in compact fields that scroll inside instead of growing to
   fill the sidebar.
 - The WatchStream page is now built with React, Tailwind CSS and shadcn/ui instead of hand-written

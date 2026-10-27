@@ -144,13 +144,28 @@ test('the sidebar can be hidden and shown; the stage takes the free space', asyn
   await host.page.close();
 });
 
+test('stage and sidebar end above the window edge with a thin border', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  await host.start('Mathias', 'host');
+
+  for (const id of ['stage-panel', 'sidebar']) {
+    const panel = host.byTestId(id);
+    const box = (await panel.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(SIZES[0]!.height - 4);
+    const border = await panel.evaluate((el) => getComputedStyle(el).borderBottomWidth);
+    expect(border).toBe('1px');
+  }
+  await host.page.close();
+});
+
 test('in a narrow window the open sidebar takes the whole width', async () => {
   const host = await openSessionPage(SIZES[2]!);
   await host.start('Mathias', 'host');
 
   await expect(host.byTestId('stage')).toBeHidden();
   const box = (await host.byTestId('sidebar').boundingBox())!;
-  expect(Math.round(box.width)).toBe(SIZES[2]!.width);
+  // The window width minus the margin on both sides.
+  expect(Math.round(box.width)).toBe(SIZES[2]!.width - 16);
 
   await host.byTestId('sidebar-toggle').click();
   await expect(host.byTestId('stage')).toBeVisible();
