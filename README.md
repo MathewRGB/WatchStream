@@ -3,20 +3,24 @@
 Watch streams together, browser to browser, without your own media server.
 
 WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
-viewers, and everyone watches the same thing in sync: Netflix, YouTube or any other video in the
-browser.
+viewers, and everyone watches the same thing: YouTube, Netflix or any other video in the browser.
 
 > **Status:** milestone M1. Host and viewers connect directly and can chat. Watching together
-> (sync and stream mode) follows in M2-M4. The extension is not yet published in any store.
+> (stream and sync mode) follows in M3 and M4. The extension is not yet published in any store.
 
 ## How it works
 
 WatchStream has two modes and picks the right one automatically:
 
-| Mode               | Use case                                                                             | Quality                      | Requirement                                      |
-| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------ |
-| **Sync** (default) | Netflix, Disney+, Prime Video, YouTube and anything every viewer can open themselves | Original                     | Every viewer has their own access to the content |
-| **Stream**         | Non-DRM content that only the host can open                                          | Re-encoded, near-transparent | Only the host needs access                       |
+| Mode       | Content                                                          | Quality                      | Requirement                                      |
+| ---------- | ---------------------------------------------------------------- | ---------------------------- | ------------------------------------------------ |
+| **Stream** | Everything unprotected, including YouTube                        | Re-encoded, near-transparent | Only the host needs access                       |
+| **Sync**   | Protected services such as Netflix, Disney+, Prime Video and Max | Original                     | Every viewer has their own access to the content |
+
+Protected content cannot be captured (the picture turns black), so it is synchronized instead:
+everyone plays it in their own tab. YouTube goes through stream mode on purpose, because videos can
+be blocked for individual viewers by region or age. See
+[ADR-0004](docs/adr/ADR-0004-mode-selection-and-roadmap.md).
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
   control data are end-to-end encrypted and never pass through a WatchStream server.
@@ -118,13 +122,14 @@ Check the generated file's imports afterwards: they have to point at `@/lib/util
 
 ## Roadmap
 
-- [ ] **M1:** connection setup by code, chat, tested in Chrome, Brave and Firefox — implemented
-      and tested automatically in Chromium and Firefox; Brave and connections across different
-      networks still need a manual test
-- [ ] **M2:** sync mode with a generic video adapter, YouTube
-- [ ] **M3:** Netflix adapter
-- [ ] **M4:** stream mode
-- [ ] **M5:** more services, optional TURN and signaling service
+- [ ] **M1:** connection setup by code, chat — tested automatically in Chromium and Firefox and
+      manually by the maintainer in Chrome, Brave and Firefox; a test across two different
+      networks is still to be confirmed
+- [ ] **M2:** app shell: one window without page scrolling, stage with full-screen mode, sidebar
+      with tabs, reply code copied automatically
+- [ ] **M3:** stream mode
+- [ ] **M4:** sync mode for protected sites: generic adapter, Netflix
+- [ ] **M5:** more protected sites, panel next to the streaming tab, optional TURN service
 
 ## Documentation
 

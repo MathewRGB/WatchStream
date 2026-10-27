@@ -62,6 +62,10 @@ and is therefore not adopted.
 The extension detects DRM through the `<video>` element (`video.mediaKeys !== null`). With DRM
 only sync mode is offered; otherwise the host can choose. Sync mode is the default.
 
+> **Amended by [ADR-0004](ADR-0004-mode-selection-and-roadmap.md):** protected content uses sync
+> mode only; everything else, including YouTube, uses stream mode only. Sync mode is no longer the
+> default.
+
 ### 2. Topology: mesh, host at the center
 
 Star topology with the host as the hub. Each viewer has exactly one `RTCPeerConnection` to the
@@ -158,6 +162,9 @@ media-free signaling service can be added later without changing the rest.
 - **Viewers relay streams (relay chains):** unnecessary complexity for 2-3 viewers.
 
 ## Milestones
+
+> **Superseded by [ADR-0004](ADR-0004-mode-selection-and-roadmap.md):** sync mode is now only for
+> protected sites, YouTube goes through stream mode, and the milestones below were reordered.
 
 1. **M1:** connection setup by code, data-channel chat, tested in Chrome, Brave and Firefox,
    including NAT scenarios. Settles the biggest risks first.

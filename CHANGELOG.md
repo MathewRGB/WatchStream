@@ -14,6 +14,8 @@ adheres to [Semantic Versioning](https://semver.org/).
   protocol v1.
 - ADR-0003: UI stack of React, Tailwind CSS and shadcn/ui on top of WXT, and the source layout
   that goes with it.
+- ADR-0004: sync mode only for protected sites, stream mode for everything else (YouTube
+  included), and a new roadmap with the app shell and stream mode ahead of sync mode.
 - React 19, Tailwind CSS 4 and shadcn/ui (button, input, textarea, label, card, badge,
   scroll-area, alert, separator) with a dark design-token theme, plus Testing Library for
   component tests.
