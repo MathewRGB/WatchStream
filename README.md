@@ -6,10 +6,10 @@ WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
 browser.
 
-> **Status:** milestone M3 is done. Host and viewers connect directly, chat, and the host can
-> share a tab, window or screen that the viewers see and hear, with a quality setting and a volume
-> control. A test across two different networks is still open. The extension is not yet published
-> in any store.
+> **Status:** milestone M5 is done. Host and viewers connect directly, chat, and the host can
+> share a tab, window or screen that up to twelve viewers see and hear, with a quality setting and
+> a volume control. A test across two different networks is still open. The extension is not yet
+> published in any store.
 
 ## How it works
 
@@ -188,8 +188,8 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       volume control, technical details for connection problems
 - [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
       when idle, a quiet symbol for a message
-- [ ] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
-      several invitations at once, removing a viewer (ADR-0006; built, manual check open)
+- [x] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
+      several invitations at once, removing a viewer (ADR-0006)
 - [ ] **Later:** optional TURN service (after the test across two networks)
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
 - **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004);
