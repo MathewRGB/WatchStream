@@ -86,6 +86,22 @@ describe('parseHostMessage', () => {
   });
 });
 
+describe('removed message', () => {
+  it('round-trips from the host', () => {
+    const removed: HostMessage = { type: 'removed' };
+
+    expect(parseHostMessage(serialize(removed))).toEqual(removed);
+  });
+
+  it('is accepted from the host only', () => {
+    expect(parseViewerMessage(serialize({ type: 'removed' }))).toBeNull();
+  });
+
+  it('carries nothing a viewer could be tricked by: extra fields are dropped', () => {
+    expect(parseHostMessage('{"type":"removed","reason":"<script>"}')).toEqual({ type: 'removed' });
+  });
+});
+
 describe('media messages', () => {
   const SDP = 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n';
 

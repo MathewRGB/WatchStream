@@ -43,6 +43,7 @@ export class ViewerSession {
   private roster: Participant[] = [];
   private readonly log = createLogger('session.viewer');
   private left = false;
+  private removed = false;
   private currentMedia: SharedMedia | null = null;
   /** Who the media in the running negotiation comes from; answers carry it back. */
   private offeredBy: string | null = null;
@@ -102,6 +103,11 @@ export class ViewerSession {
 
   get participantId(): string | null {
     return this.ownId;
+  }
+
+  /** The host removed this viewer from the session, as opposed to the connection being lost. */
+  get removedByHost(): boolean {
+    return this.removed;
   }
 
   get participants(): Participant[] {
@@ -165,6 +171,12 @@ export class ViewerSession {
           this.currentMedia = null;
           this.emitter.emit('media', null);
         }
+        break;
+      case 'removed':
+        // Said before the host closes the connection; leaving at once shows it without delay.
+        this.removed = true;
+        this.log.info('removed by the host');
+        this.link.close();
         break;
       default:
         this.log.debug('dropped a message from the host', { length: raw.length });

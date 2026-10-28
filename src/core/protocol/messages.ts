@@ -36,7 +36,9 @@ export type HostMessage =
    */
   | { type: 'media-started'; sourceId: string }
   | { type: 'media-offer'; sourceId: string; sdp: string }
-  | { type: 'media-stopped'; sourceId: string };
+  | { type: 'media-stopped'; sourceId: string }
+  /** The host removed this viewer; the connection closes right after (ADR-0006). */
+  | { type: 'removed' };
 
 export const MAX_CHAT_LENGTH = 1000;
 const MAX_SDP_LENGTH = 20_000;
@@ -88,6 +90,8 @@ export function parseHostMessage(raw: string): HostMessage | null {
       return isNonEmptyString(data.sourceId)
         ? { type: 'media-stopped', sourceId: data.sourceId }
         : null;
+    case 'removed':
+      return { type: 'removed' };
     default:
       return null;
   }

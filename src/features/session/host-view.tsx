@@ -49,7 +49,12 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       icon: <Users />,
       count: participants.length,
       content: (
-        <ParticipantList participants={participants} selfId={session.hostId} health={load.health} />
+        <ParticipantList
+          participants={participants}
+          selfId={session.hostId}
+          health={load.health}
+          onRemove={(id) => session.removeViewer(id)}
+        />
       ),
     },
     {

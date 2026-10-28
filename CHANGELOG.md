@@ -9,6 +9,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The host can remove a viewer: a button on each viewer in the People tab, with one question before
+  it happens. The viewer is told "The host removed you from the session" and that they can join
+  again with a new invitation, the place is free at once, and the others are not affected. The host
+  sends a new `removed` message before it closes the connection, and keeps the connection open for
+  a third of a second so that the message gets out; what the removed viewer says in that moment is
+  not heard. Tested with real connections in Chromium and Firefox, and in the real extension.
 - The picture quality now follows what the host can carry. While the host shares, a load monitor
   reads every viewer's link every two seconds and compares the frames the encoder produced with
   what the source delivered (the browser's own quality-limitation flag read "none" at 2 frames a

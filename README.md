@@ -44,7 +44,8 @@ own player for such services is future work, see
    line on the stage says what is sent and to how many viewers ("720p · 8 viewers"). With many
    viewers WatchStream lowers the quality by itself when your computer or connection cannot keep
    up, says so on that line, and raises it again later. The **People** tab marks a viewer who is not
-   keeping up; viewers see none of this.
+   keeping up; viewers see none of this. The host can remove a viewer there, after one question;
+   that viewer can come back with a new invitation.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.

@@ -68,3 +68,29 @@ test('a host with five viewers: one roster, one chat and one picture for everyon
 
   for (const page of [host, ...viewers]) await page.page.close();
 });
+
+test('the host removes a viewer, who is told why, while the other keeps watching', async () => {
+  const host = await openSessionPage();
+  const gone = await openSessionPage();
+  const stays = await openSessionPage();
+  await host.start('user1', 'host');
+  await connect(host, gone, 'viewer1');
+  await connect(host, stays, 'viewer2');
+  await host.expectParticipants(['user1', 'viewer1', 'viewer2']);
+
+  const row = host.byTestId('participant').filter({ hasText: 'viewer1' });
+  await row.getByTestId('participant-remove').click();
+  await row.getByTestId('participant-remove-confirm').click();
+
+  await expect(gone.byTestId('viewer-state')).toHaveText('The host removed you from the session.');
+  await expect(gone.byTestId('removed-note')).toContainText('join again with a new invitation');
+  await host.expectParticipants(['user1', 'viewer2']);
+  await stays.expectParticipants(['user1', 'viewer2']);
+  await expect(stays.byTestId('viewer-state')).toContainText('Connected');
+  await stays.sendChat('Still here');
+  await host.expectChatMessage('viewer2', 'Still here');
+  await host.openTab('invite');
+  await expect(host.byTestId('open-slots')).toHaveText('Places left: 11');
+
+  for (const page of [host, gone, stays]) await page.page.close();
+});

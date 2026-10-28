@@ -222,13 +222,24 @@ function EndedView({ session, onLeave }: Pick<JoinedSessionProps, 'session' | 'o
           <Card>
             <CardContent className="flex flex-col items-start gap-3">
               <p role="alert" className="text-destructive" data-testid="viewer-state">
-                The session has ended.
+                {session.removedByHost
+                  ? 'The host removed you from the session.'
+                  : 'The session has ended.'}
               </p>
-              <p className="text-sm text-muted-foreground">
-                The connection to {session.hostName} was lost or ended. If you did not expect this,
-                check the technical details below.
-              </p>
-              <TechnicalDetails details={session.diagnostics} />
+              {session.removedByHost ? (
+                <p className="text-sm text-muted-foreground" data-testid="removed-note">
+                  {session.hostName} took you out of the session. You can join again with a new
+                  invitation.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    The connection to {session.hostName} was lost or ended. If you did not expect
+                    this, check the technical details below.
+                  </p>
+                  <TechnicalDetails details={session.diagnostics} />
+                </>
+              )}
               <Button onClick={onLeave} data-testid="back-button">
                 Back to start
               </Button>

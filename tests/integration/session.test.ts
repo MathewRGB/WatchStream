@@ -85,6 +85,24 @@ describe('host and viewer sessions over WebRTC', () => {
     expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
   });
 
+  it('tells a removed viewer why, before the connection goes, and keeps the others', async () => {
+    const host = startHost();
+    const gone = await join(host, 'user2');
+    const stays = await join(host, 'user3');
+    const disconnected = waitFor<void>((resolve) => {
+      gone.events.on('state', (state) => state === 'disconnected' && resolve());
+    });
+
+    host.removeViewer(host.participants.find((p) => p.name === 'user2')!.id);
+    await disconnected;
+
+    // The message came through real data channels before they closed, in both browsers.
+    expect(gone.removedByHost).toBe(true);
+    expect(host.participants.map((p) => p.name)).toEqual(['Host', 'user3']);
+    expect(stays.state).toBe('connected');
+    expect(stays.removedByHost).toBe(false);
+  }, 20_000);
+
   it('disconnects viewers when the host ends the session', async () => {
     const host = startHost();
     const user2 = await join(host, 'user2');

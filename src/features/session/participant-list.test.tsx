@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import type { Participant } from '@/core/protocol/messages';
 import { ParticipantList } from './participant-list';
 
@@ -47,6 +48,49 @@ describe('ParticipantList', () => {
       />,
     );
     expect(screen.queryByTestId('participant-slow')).toBeNull();
+  });
+
+  describe('removing a viewer', () => {
+    it('has no button for a viewer, who cannot remove anybody', () => {
+      render(<ParticipantList participants={participants} selfId="v1" />);
+
+      expect(screen.queryByTestId('participant-remove')).toBeNull();
+    });
+
+    it('has a button for every viewer but not for the host', () => {
+      render(<ParticipantList participants={participants} selfId="h" onRemove={() => {}} />);
+
+      const [host, viewer] = screen.getAllByTestId('participant');
+      expect(within(host!).queryByTestId('participant-remove')).toBeNull();
+      expect(within(viewer!).getByTestId('participant-remove')).toHaveAccessibleName(
+        'Remove user2',
+      );
+    });
+
+    it('asks once, and removes only when it is confirmed', async () => {
+      const onRemove = vi.fn();
+      render(<ParticipantList participants={participants} selfId="h" onRemove={onRemove} />);
+
+      await userEvent.click(screen.getByTestId('participant-remove'));
+      expect(onRemove).not.toHaveBeenCalled();
+      expect(screen.getByTestId('participant-remove-confirm')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByTestId('participant-remove-confirm'));
+
+      expect(onRemove).toHaveBeenCalledExactlyOnceWith('v1');
+    });
+
+    it('goes back to the button when the host thinks better of it', async () => {
+      const onRemove = vi.fn();
+      render(<ParticipantList participants={participants} selfId="h" onRemove={onRemove} />);
+      await userEvent.click(screen.getByTestId('participant-remove'));
+
+      await userEvent.click(screen.getByTestId('participant-remove-cancel'));
+
+      expect(screen.queryByTestId('participant-remove-confirm')).toBeNull();
+      expect(screen.getByTestId('participant-remove')).toBeInTheDocument();
+      expect(onRemove).not.toHaveBeenCalled();
+    });
   });
 
   it('marks the host and the own entry', () => {

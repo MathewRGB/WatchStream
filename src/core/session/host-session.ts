@@ -77,6 +77,8 @@ interface Viewer {
 export const MAX_VIEWERS = 12;
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000;
 const DEFAULT_MONITOR_INTERVAL_MS = 2_000;
+/** How long a removed viewer's connection stays open, so that the message reaches them. */
+const REMOVED_GRACE_MS = 300;
 
 /**
  * The host side of a watch session. The host is authoritative: it decides who
@@ -89,6 +91,8 @@ export class HostSession {
   /** Links whose reply was accepted but that are not open yet; they still hold a place. */
   private readonly connecting = new Set<MediaLink>();
   private readonly viewers = new Map<string, Viewer>();
+  /** Links of removed viewers, open for a moment longer; see `removeViewer`. */
+  private readonly leaving = new Map<MediaLink, ReturnType<typeof setTimeout>>();
   private readonly maxViewers: number;
   private readonly connectTimeoutMs: number;
   private readonly createId: () => string;
@@ -266,14 +270,44 @@ export class HostSession {
     this.publishLoad();
   }
 
+  /**
+   * Removes a viewer from the session (a host's call, ADR-0006). The viewer is told, and the
+   * connection closes a moment later so that the message gets out first. The place is free at
+   * once, and nothing the viewer sends in that moment is heard.
+   */
+  removeViewer(id: string): void {
+    const viewer = this.viewers.get(id);
+    if (!viewer) return;
+    this.viewers.delete(id);
+    this.monitor.forget(id);
+    this.health.delete(id);
+    this.log.info('viewer removed', { viewers: this.viewers.size });
+    this.sendTo(viewer.link, { type: 'removed' });
+    this.leaving.set(
+      viewer.link,
+      setTimeout(() => {
+        this.leaving.delete(viewer.link);
+        viewer.link.close();
+      }, REMOVED_GRACE_MS),
+    );
+    this.publishRoster();
+    this.publishSlots();
+    this.publishLoad();
+  }
+
   close(): void {
     this.stopMonitoring();
     for (const link of this.pending.values()) link.close();
     for (const link of this.connecting) link.close();
     for (const { link } of this.viewers.values()) link.close();
+    for (const [link, timer] of this.leaving) {
+      clearTimeout(timer);
+      link.close();
+    }
     this.pending.clear();
     this.connecting.clear();
     this.viewers.clear();
+    this.leaving.clear();
     this.emitter.clear();
   }
 
@@ -309,6 +343,11 @@ export class HostSession {
   }
 
   private handleViewerMessage(link: MediaLink, raw: string, sender: Participant): void {
+    if (!this.viewers.has(sender.id)) {
+      // Removed a moment ago: the link is still open, but the viewer is not in the session.
+      this.log.debug('dropped a message from a viewer who is gone', { length: raw.length });
+      return;
+    }
     const message = parseViewerMessage(raw);
     if (message?.type === 'chat') {
       this.publishChat(sender, message.text);

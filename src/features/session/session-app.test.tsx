@@ -132,6 +132,34 @@ describe('WatchStream app', () => {
     });
   });
 
+  it('lets the host remove a viewer, who is told and can come back with a new invitation', async () => {
+    const host = openPage(network);
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
+    const other = await connect(network, host, 'user3');
+    await waitFor(() => expect(names(host)).toEqual(['user1', 'user2', 'user3']));
+
+    const row = host.getAllByTestId('participant').find((li) => li.textContent?.includes('user2'))!;
+    await userEvent.click(within(row).getByTestId('participant-remove'));
+    await userEvent.click(within(row).getByTestId('participant-remove-confirm'));
+
+    await waitFor(() => expect(names(host)).toEqual(['user1', 'user3']));
+    await waitFor(() =>
+      expect(viewer.getByTestId('viewer-state')).toHaveTextContent(
+        'The host removed you from the session.',
+      ),
+    );
+    expect(viewer.getByTestId('removed-note')).toHaveTextContent(
+      'join again with a new invitation',
+    );
+    expect(viewer.queryByTestId('technical-details-text')).toBeNull();
+    expect(other.getByTestId('viewer-state')).toHaveTextContent('Connected');
+    await userEvent.click(host.getByTestId('tab-invite'));
+    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 11');
+    // Only the viewer who is left can be removed now.
+    expect(host.getAllByTestId('participant-remove')).toHaveLength(1);
+  });
+
   it('shows how many places are left and disables inviting when all are taken', async () => {
     const host = openPage(network);
     await start(host, 'user1', 'host');
