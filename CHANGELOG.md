@@ -17,6 +17,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - For full screen where the pointer cannot reach the edge (touch, a second monitor on the right):
   a small handle at the right edge, reachable by keyboard too, and the `S` key, which shows and
   hides the sidebar (ignored while typing in a field and with Ctrl, Alt or Cmd held).
+- A quiet notice for messages in full screen: when a message from somebody else comes in, a small
+  round chat symbol appears near the right edge for one second. It shows even when everything else
+  has faded, takes no clicks and is no activity itself, so it does not bring the controls or the
+  pointer back. There is none when the sidebar is open and in view, because the message is right
+  there, and none outside full screen.
 - Only the picture in full screen: after three seconds without a move of the pointer, a key, a
   click or scrolling, every control fades out (the full-screen and share buttons, the sound
   controls, the name of who shares, the handle, an open sidebar) and so does the mouse pointer.
@@ -128,6 +133,16 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- In full screen a message coming in pushed the picture 340 px to the left. The chat scrolled
+  itself into view with `scrollIntoView`, which also scrolls every parent, including the
+  full-screen workspace where the sidebar waits off-screen. The chat now scrolls only its own list,
+  and the workspace is clipped (`overflow: clip`) so that nothing can scroll it. This was in the
+  sidebar-in-full-screen change since its first commit.
+- In full screen the sidebar could stay open for good: touch the middle of the right edge, where
+  the handle is, and move away again before the sidebar had slid in under the pointer. The handle
+  went away as soon as the sidebar opened, so it never reported that the pointer had left, and the
+  sidebar believed the pointer was still there. The handle now stays in the page, unseen, and what
+  the pointer and the focus were doing is forgotten when full screen starts or ends.
 - The shared sound is much cleaner. It used to arrive at about 29 kbit/s (Chromium) or 64 kbit/s
   (Firefox) in the voice setup the browsers use for calls. Now the capture is asked for sound
   without echo cancellation, noise suppression and automatic gain (they muffle music and make the

@@ -85,10 +85,25 @@ trigger by accident? Is the delay too short or too long? Does the sidebar cover 
 
 Judge: is three seconds right? Does fading feel smooth and not abrupt?
 
+## 9. A message in full screen
+
+1. On the viewer, go into full screen with the sidebar closed, and let everything fade (section 8).
+2. Send a chat message from the other side.
+3. Expect: a small round chat symbol appears near the right edge, stays about one second and goes.
+   The controls and the pointer do not come back, and the picture does not move.
+4. Send a few messages in a row. Expect: the symbol stays while they keep coming and goes a second
+   after the last one.
+5. Open the sidebar (edge or `S`) and send another message. Expect: no symbol, the message is
+   right there in the chat.
+6. Write a message yourself from the sidebar. Expect: no symbol for your own message.
+7. Leave full screen and send a message. Expect: no symbol in the normal window.
+
+Judge: is the symbol quiet enough, and noticeable enough on a bright picture? Is one second right?
+
 ## Record the result
 
-| Browser | Edge | Delay feels right | Typing keeps it open | `S` | Handle | Fades when idle | Notes |
-| ------- | ---- | ----------------- | -------------------- | --- | ------ | --------------- | ----- |
-| Chrome  |      |                   |                      |     |        |                 |       |
-| Brave   |      |                   |                      |     |        |                 |       |
-| Firefox |      |                   |                      |     |        |                 |       |
+| Browser | Edge | Delay feels right | Typing keeps it open | `S` | Handle | Fades when idle | Message symbol | Notes |
+| ------- | ---- | ----------------- | -------------------- | --- | ------ | --------------- | -------------- | ----- |
+| Chrome  |      |                   |                      |     |        |                 |                |       |
+| Brave   |      |                   |                      |     |        |                 |                |       |
+| Firefox |      |                   |                      |     |        |                 |                |       |

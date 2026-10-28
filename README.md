@@ -55,6 +55,9 @@ In full screen, three seconds without moving the pointer, pressing a key, clicki
 leave only the picture: all controls fade out and the mouse pointer disappears. Moving the pointer
 brings them back. The sidebar stays while the pointer rests on it.
 
+A message from somebody else shows a small chat symbol near the right edge for one second, also
+when everything else has faded. It does not appear while the sidebar is open.
+
 Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
 open: closing it ends the session.
 

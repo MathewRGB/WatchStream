@@ -274,7 +274,7 @@ test('in full screen the sidebar also opens with the handle and the S key', asyn
   // The handle: a click brings the sidebar in, and the handle makes room for it.
   await viewer.byTestId('sidebar-handle').click();
   await expect.poll(isShown).toBe(true);
-  await expect(viewer.byTestId('sidebar-handle')).toHaveCount(0);
+  await expect(viewer.byTestId('sidebar-handle')).toBeHidden();
 
   // The key opens and closes it with no pointer near, and it stays open meanwhile.
   await viewer.page.mouse.move(screen.width / 2, screen.height / 2);
@@ -340,4 +340,60 @@ test('in full screen the controls and the pointer go when idle and come back on 
   await expect(host.byTestId('workspace')).toHaveAttribute('data-idle', 'false');
   expect(await style('fullscreen-button', 'opacity')).toBe('0.8');
   await host.page.close();
+});
+
+test('in full screen a message shows a quiet symbol for about a second', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  const viewer = await openSessionPage(SIZES[0]!);
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+  const notice = viewer.byTestId('chat-notice');
+  const seenOpacity = () =>
+    notice.evaluate((el) => {
+      let seen = 1;
+      for (let node: Element | null = el; node; node = node.parentElement) {
+        seen *= Number(getComputedStyle(node).opacity);
+      }
+      return Math.round(seen * 100) / 100;
+    });
+
+  // Outside full screen there is no symbol: the sidebar is in view and shows the message.
+  await expect(notice).toHaveCount(0);
+  await viewer.byTestId('fullscreen-button').click();
+  await expect(notice).toHaveAttribute('data-visible', 'false');
+  expect(await seenOpacity()).toBe(0);
+
+  // A message from the host: the symbol comes, stays about a second, and goes.
+  await host.sendChat('Are you there?');
+  await expect(notice).toHaveAttribute('data-visible', 'true');
+  // The sidebar waits off-screen; the message must not scroll the picture away to reach it.
+  expect(await viewer.byTestId('workspace').evaluate((el) => el.scrollLeft)).toBe(0);
+  expect((await viewer.byTestId('stage').boundingBox())!.x).toBe(0);
+  const shownAt = Date.now();
+  await expect.poll(seenOpacity).toBe(1);
+  await expect(notice).toHaveAttribute('data-visible', 'false');
+  const shownFor = Date.now() - shownAt;
+  expect(shownFor).toBeGreaterThan(500);
+  expect(shownFor).toBeLessThan(2_000);
+  await expect.poll(seenOpacity).toBe(0);
+
+  // With every control faded and no pointer in sight it still shows, and the pointer stays away.
+  await expect(viewer.byTestId('workspace')).toHaveAttribute('data-idle', 'true', {
+    timeout: 10_000,
+  });
+  await host.sendChat('Still here?');
+  await expect(notice).toHaveAttribute('data-visible', 'true');
+  await expect.poll(seenOpacity).toBe(1);
+  await expect(viewer.byTestId('workspace')).toHaveAttribute('data-idle', 'true');
+  await expect(notice).toHaveAttribute('data-visible', 'false');
+
+  // With the sidebar open and in view, which shows the message, there is no symbol.
+  await viewer.page.keyboard.press('s');
+  await expect(viewer.byTestId('workspace')).toHaveAttribute('data-idle', 'false');
+  await host.sendChat('And now?');
+  await expect(viewer.byTestId('chat-messages')).toContainText('And now?');
+  await expect(notice).toHaveAttribute('data-visible', 'false');
+
+  await host.page.close();
+  await viewer.page.close();
 });

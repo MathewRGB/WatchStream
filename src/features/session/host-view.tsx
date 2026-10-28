@@ -14,6 +14,7 @@ import { useScreenShare } from '@/hooks/use-screen-share';
 import type { CaptureDisplay } from '@/lib/capture';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
+import { countIncoming } from './incoming';
 import { InviteTab } from './invite-tab';
 import { ParticipantList } from './participant-list';
 import { Sidebar, type SidebarTab } from './sidebar';
@@ -71,6 +72,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   return (
     <AppShell
       testId="host-view"
+      incomingMessages={countIncoming(messages, session.hostId)}
       title="WatchStream"
       status={`Hosting as ${hostName} · ${viewers} ${viewers === 1 ? 'viewer' : 'viewers'}`}
       actions={

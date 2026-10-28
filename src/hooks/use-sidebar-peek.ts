@@ -110,7 +110,16 @@ export function useSidebarPeek(enabled: boolean, hideDelayMs = HIDE_DELAY_MS): S
     return () => document.removeEventListener('pointerdown', onPress);
   }, [enabled, open, close]);
 
-  useEffect(() => cancelClose, [cancelClose, enabled]);
+  // Whatever the pointer and the focus were doing belongs to the full screen that ends or starts
+  // here. The elements are new, so no "pointer left" will come for the old ones.
+  useEffect(
+    () => () => {
+      cancelClose();
+      hovering.current = false;
+      focusWithin.current = false;
+    },
+    [cancelClose, enabled],
+  );
 
   return {
     open: enabled && open,

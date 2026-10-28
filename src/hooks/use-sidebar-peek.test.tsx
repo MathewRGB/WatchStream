@@ -167,6 +167,26 @@ describe('useSidebarPeek', () => {
   });
 });
 
+describe('useSidebarPeek between full screens', () => {
+  it('forgets that the pointer or the focus was on the sidebar when full screen ends', () => {
+    const { result, rerender } = setup();
+    act(() => result.current.hoverProps.onPointerEnter(pointer()));
+    act(() => result.current.focusProps.onFocus());
+    expect(result.current.isHovering()).toBe(true);
+
+    // The elements are gone; no "pointer left" or "blur" will ever come for them.
+    rerender({ on: false });
+    rerender({ on: true });
+
+    expect(result.current.isHovering()).toBe(false);
+    act(() => result.current.reveal());
+    act(() => result.current.hoverProps.onPointerEnter(pointer()));
+    act(() => result.current.hoverProps.onPointerLeave(pointer()));
+    act(() => vi.advanceTimersByTime(HIDE_DELAY_MS));
+    expect(result.current.open).toBe(false);
+  });
+});
+
 describe('useSidebarPeek shortcut and toggle', () => {
   const press = (key: string, init: KeyboardEventInit = {}, target: EventTarget = document) =>
     act(

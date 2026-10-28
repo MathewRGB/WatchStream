@@ -161,6 +161,17 @@ describe('AppShell full screen', () => {
     expect(screen.queryByTestId('sidebar')).toBeNull();
   });
 
+  it('clips the workspace in full screen so that nothing can scroll it, whatever is off-screen', async () => {
+    renderShell();
+    expect(screen.getByTestId('workspace')).not.toHaveClass('overflow-clip');
+
+    await userEvent.click(screen.getByTestId('fullscreen-button'));
+
+    // `overflow: hidden` can still be scrolled by a script; the sidebar waits outside the box.
+    expect(screen.getByTestId('workspace')).toHaveClass('overflow-clip');
+    expect(screen.getByTestId('workspace')).not.toHaveClass('overflow-hidden');
+  });
+
   it('has no sidebar element in full screen when the shell has none', async () => {
     render(<AppShell title="WatchStream" stage={<Stage emptyMessage="x" />} />);
 
@@ -223,7 +234,7 @@ describe('AppShell full screen', () => {
       expect(screen.getByTestId('draft')).toHaveValue('still writing');
     });
 
-    it('shows a handle at the edge only while the sidebar is away, and it opens the sidebar', async () => {
+    it('shows a handle at the edge while the sidebar is away, and it opens the sidebar', async () => {
       renderShell();
       expect(screen.queryByTestId('sidebar-handle')).toBeNull();
 
@@ -231,11 +242,37 @@ describe('AppShell full screen', () => {
       const handle = screen.getByTestId('sidebar-handle');
       expect(handle).toHaveAccessibleName('Show sidebar');
       expect(handle).toHaveAttribute('title', 'Show sidebar (S)');
+      expect(handle).not.toHaveClass('invisible');
 
       await userEvent.click(handle);
 
       expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
-      expect(screen.queryByTestId('sidebar-handle')).toBeNull();
+    });
+
+    it('keeps the handle in the page, unseen and inert, while the sidebar covers it', async () => {
+      await enterFullscreen();
+      const handle = screen.getByTestId('sidebar-handle');
+
+      fireEvent.pointerEnter(handle);
+
+      expect(screen.getByTestId('sidebar-handle')).toBe(handle);
+      expect(handle).toHaveClass('invisible');
+      expect(handle).toHaveAttribute('inert');
+    });
+
+    it('closes after a pointer that touched the handle left it again, before the sidebar was under it', async () => {
+      // The pointer is told about leaving only by the element it entered. If that element has
+      // gone, the sidebar believes the pointer is still on it and never closes.
+      await enterFullscreen();
+      const handle = screen.getByTestId('sidebar-handle');
+      fireEvent.pointerEnter(handle);
+      expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+      vi.useFakeTimers();
+
+      fireEvent.pointerLeave(handle);
+      act(() => void vi.advanceTimersByTime(400));
+
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
     });
 
     it('opens and closes with the S key, but not while typing in the sidebar', async () => {
@@ -254,6 +291,110 @@ describe('AppShell full screen', () => {
       expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
       await userEvent.keyboard('s');
       expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+    });
+
+    describe('when a message comes in', () => {
+      function renderCounting() {
+        const shell = (count: number) => (
+          <AppShell
+            title="WatchStream"
+            stage={<Stage emptyMessage="x" />}
+            sidebar={<input data-testid="draft" aria-label="draft" />}
+            incomingMessages={count}
+          />
+        );
+        const view = render(shell(0));
+        vi.useFakeTimers();
+        fireEvent.click(screen.getByTestId('fullscreen-button'));
+        return { receive: (count: number) => view.rerender(shell(count)) };
+      }
+
+      const visible = () => screen.getByTestId('chat-notice').getAttribute('data-visible');
+
+      it('shows a small symbol for one second', async () => {
+        const { receive } = renderCounting();
+        await act(async () => {});
+        expect(visible()).toBe('false');
+        expect(screen.getByTestId('chat-notice')).toHaveClass('opacity-0');
+
+        receive(1);
+        expect(visible()).toBe('true');
+        expect(screen.getByTestId('chat-notice')).toHaveClass('opacity-100');
+        expect(screen.getByRole('status')).toHaveTextContent('New chat message');
+
+        act(() => void vi.advanceTimersByTime(999));
+        expect(visible()).toBe('true');
+        act(() => void vi.advanceTimersByTime(1));
+        expect(visible()).toBe('false');
+        expect(screen.getByTestId('chat-notice')).toHaveClass('opacity-0');
+        expect(screen.getByRole('status')).toBeEmptyDOMElement();
+      });
+
+      it('is shown also when everything else has faded, and does not end that', async () => {
+        const { receive } = renderCounting();
+        await act(async () => {});
+        act(() => void vi.advanceTimersByTime(3_000));
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'true');
+
+        receive(1);
+
+        expect(visible()).toBe('true');
+        expect(screen.getByTestId('chat-notice').className).not.toContain('group-data');
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'true');
+      });
+
+      it('takes no clicks and is not read out as a picture', async () => {
+        renderCounting();
+        await act(async () => {});
+
+        expect(screen.getByTestId('chat-notice')).toHaveClass('pointer-events-none');
+        expect(screen.getByTestId('chat-notice')).toHaveAttribute('aria-hidden', 'true');
+      });
+
+      it('stays away while the sidebar is open and in view, which shows the message', async () => {
+        const { receive } = renderCounting();
+        await act(async () => {});
+        fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+
+        receive(1);
+
+        expect(visible()).toBe('false');
+      });
+
+      it('is shown when the sidebar is open but has faded away', async () => {
+        const { receive } = renderCounting();
+        await act(async () => {});
+        fireEvent.keyDown(document.body, { key: 's' });
+        act(() => void vi.advanceTimersByTime(3_000));
+        expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
+        expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'true');
+
+        receive(1);
+
+        expect(visible()).toBe('true');
+      });
+
+      it('has no symbol outside full screen', () => {
+        const { rerender } = render(
+          <AppShell
+            title="WatchStream"
+            stage={<Stage emptyMessage="x" />}
+            sidebar={<p>side</p>}
+            incomingMessages={0}
+          />,
+        );
+
+        rerender(
+          <AppShell
+            title="WatchStream"
+            stage={<Stage emptyMessage="x" />}
+            sidebar={<p>side</p>}
+            incomingMessages={3}
+          />,
+        );
+
+        expect(screen.queryByTestId('chat-notice')).toBeNull();
+      });
     });
 
     describe('when nothing happens', () => {

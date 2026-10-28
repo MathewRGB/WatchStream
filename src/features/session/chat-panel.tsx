@@ -19,10 +19,14 @@ const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute:
 export function ChatPanel({ messages, selfId, onSend, disabled = false }: ChatPanelProps) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const end = useRef<HTMLLIElement>(null);
+  const list = useRef<HTMLOListElement>(null);
 
+  // Scroll the list and nothing else. `scrollIntoView` would also scroll every ancestor, and one
+  // of them is the full-screen workspace, where the sidebar waits off-screen: it was pulled in
+  // sideways, taking the picture with it, whenever a message came in.
   useEffect(() => {
-    end.current?.scrollIntoView?.({ block: 'end' });
+    const element = list.current;
+    if (element) element.scrollTop = element.scrollHeight;
   }, [messages.length]);
 
   const submit = (event: FormEvent) => {
@@ -40,6 +44,7 @@ export function ChatPanel({ messages, selfId, onSend, disabled = false }: ChatPa
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <ol
+        ref={list}
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"
         data-testid="chat-messages"
       >
@@ -71,7 +76,6 @@ export function ChatPanel({ messages, selfId, onSend, disabled = false }: ChatPa
             </li>
           );
         })}
-        <li ref={end} aria-hidden />
       </ol>
       <form className="flex shrink-0 gap-2" onSubmit={submit}>
         <Input

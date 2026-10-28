@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { ChevronLeft, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ChevronLeft, MessageSquare, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFullscreen } from '@/hooks/use-fullscreen';
 import { useIdle } from '@/hooks/use-idle';
+import { useNotice } from '@/hooks/use-notice';
 import { SHORTCUT_KEY, useSidebarPeek } from '@/hooks/use-sidebar-peek';
 import { cn } from '@/lib/utils';
 import { FADE_WHEN_IDLE, HIDE_WHEN_IDLE, StageFullscreenContext } from './stage-fullscreen';
@@ -17,6 +18,11 @@ interface AppShellProps {
   stage: ReactNode;
   /** Optional right-hand sidebar that can be collapsed. */
   sidebar?: ReactNode;
+  /**
+   * How many chat messages from others have come in so far. In full screen each increase shows a
+   * small symbol at the edge for a second, unless the sidebar is open and in view.
+   */
+  incomingMessages?: number;
   /** `data-testid` of the outermost element. */
   testId?: string;
 }
@@ -34,6 +40,9 @@ interface AppShellProps {
  * In full screen, a few seconds without activity leave only the picture: the controls fade out
  * and so does the mouse pointer, and the first move brings them back. The pointer resting on the
  * sidebar counts as activity, because that is someone reading.
+ *
+ * A message that comes in during full screen is told by a small symbol near the right edge, for
+ * one second. It shows even when the controls have faded, and is no activity itself.
  */
 export function AppShell({
   title,
@@ -41,6 +50,7 @@ export function AppShell({
   actions,
   stage,
   sidebar,
+  incomingMessages = 0,
   testId = 'app-shell',
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -51,6 +61,8 @@ export function AppShell({
   const peek = useSidebarPeek(floating);
   const { panelRef, hoverProps, focusProps } = peek;
   const idle = useIdle(fullscreen.active, peek.isHovering);
+  // An open sidebar in view already shows the message; faded away, it does not.
+  const notice = useNotice(incomingMessages, floating && !(peek.open && !idle));
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden" data-testid={testId}>
@@ -82,7 +94,9 @@ export function AppShell({
           ref={ref}
           className={cn(
             'group/workspace flex min-h-0 flex-1 gap-2 p-2',
-            fullscreen.active && 'relative gap-0 overflow-hidden bg-background p-0',
+            // `overflow-clip`, not `hidden`: clipped content can still be scrolled by a script,
+            // and the sidebar waiting off-screen would pull the picture sideways.
+            fullscreen.active && 'relative gap-0 overflow-clip bg-background p-0',
             // The pointer goes too, also over the controls whose own cursor would show it.
             idle && 'cursor-none **:cursor-none!',
           )}
@@ -108,18 +122,43 @@ export function AppShell({
               data-testid="sidebar-edge"
             />
           )}
-          {floating && !peek.open && (
+          {floating && (
+            <>
+              {/* Quiet and out of the way: no text, no clicks. It is not hidden when idle; being
+                  seen then is its purpose. */}
+              <div
+                aria-hidden
+                className={cn(
+                  'pointer-events-none absolute top-1/2 right-7 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-secondary/80 text-secondary-foreground shadow-md transition-opacity duration-200 motion-reduce:transition-none',
+                  notice ? 'opacity-100' : 'opacity-0',
+                )}
+                data-visible={notice}
+                data-testid="chat-notice"
+              >
+                <MessageSquare className="size-4" />
+              </div>
+              <span role="status" className="sr-only">
+                {notice ? 'New chat message' : ''}
+              </span>
+            </>
+          )}
+          {floating && (
             // For touch and for screens where the pointer cannot reach this edge (a second
-            // monitor on the right). A real button, so the keyboard reaches it too.
+            // monitor on the right). A real button, so the keyboard reaches it too. It stays in
+            // the page while the sidebar covers it, only unseen and inert: a pointer that left
+            // it must still be told so, and an element that is gone cannot be told anything. The
+            // sidebar then believed the pointer was still there and never closed.
             <button
               type="button"
               className={cn(
                 'absolute top-1/2 right-0 z-10 flex h-16 w-5 -translate-y-1/2 items-center justify-center rounded-l-md bg-secondary/70 text-secondary-foreground opacity-60 hover:opacity-100 focus-visible:opacity-100',
                 FADE_WHEN_IDLE,
+                peek.open && 'invisible',
               )}
               aria-label="Show sidebar"
               title={`Show sidebar (${SHORTCUT_KEY.toUpperCase()})`}
               onClick={peek.reveal}
+              inert={peek.open}
               {...hoverProps}
               data-testid="sidebar-handle"
             >

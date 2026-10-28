@@ -44,6 +44,22 @@ describe('ChatPanel', () => {
     expect(within(item).getByTestId('chat-sender')).toHaveTextContent('You');
   });
 
+  it('scrolls its own list to the newest message when one comes in, and nothing else', () => {
+    // Where a parent scrolls, a sidebar that waits off-screen in full screen is pulled into view.
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { rerender } = render(<ChatPanel messages={[]} selfId="me" onSend={vi.fn()} />);
+    const list = screen.getByTestId('chat-messages');
+    Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 500 });
+
+    rerender(<ChatPanel messages={[message()]} selfId="me" onSend={vi.fn()} />);
+
+    expect(list.scrollTop).toBe(500);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    // @ts-expect-error - remove the stub again
+    delete Element.prototype.scrollIntoView;
+  });
+
   it('renders message text as text, never as markup', () => {
     const text = '<img src=x onerror=alert(1)>';
     const { container } = render(

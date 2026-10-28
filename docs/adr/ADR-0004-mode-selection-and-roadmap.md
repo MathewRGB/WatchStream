@@ -79,7 +79,16 @@ existing sidebar, not a second one:
   controls does. A new control that should go with the rest takes the classes in
   `stage-fullscreen.ts`; there is no list to keep.
 
-Not done: a hint on the handle when a new chat message arrives.
+- A message in full screen: when a message from somebody else comes in, a small round chat symbol
+  appears near the right edge for one second. It is shown also when the controls have faded, takes
+  no clicks and counts as no activity. It stays away while the sidebar is open and in view (open
+  but faded away counts as not in view), and outside full screen. Only messages from others count.
+- The off-screen sidebar must never be scrolled into view: the full-screen workspace is clipped
+  (`overflow: clip`), and the chat scrolls only its own list, never with `scrollIntoView`, which
+  also scrolls every parent. Doing it the other way pushed the picture sideways when a message
+  came in.
+
+Not done: a count of unread messages, or a notice that tells who wrote.
 
 ## Consequences
 
