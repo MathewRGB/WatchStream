@@ -1,6 +1,6 @@
 // Measures what one host costs per viewer in stream mode: how many frames a second and bits a
 // second each viewer gets, and how much encoder time that takes, for a number of viewers and a
-// quality step. These are the numbers behind ADR-0006. Run `node scripts/measure-host-load.mjs
+// quality step. These are the numbers in docs/architecture.md, section 7. Run `node scripts/measure-host-load.mjs
 // --help` for the options.
 //
 // How: the host browser sends one animated 1080p canvas to N local connections with the caps of the

@@ -15,7 +15,7 @@ export interface ViewerSnapshot {
   participantId: string | null;
   /** What the host shares right now, or `null`. */
   media: SharedMedia | null;
-  /** The viewer's own share (ADR-0007). */
+  /** The viewer's own share. */
   share: ShareState;
   /** Why the last share did not start or was ended by the host; `null` otherwise. */
   shareEnd: ShareEnd | null;

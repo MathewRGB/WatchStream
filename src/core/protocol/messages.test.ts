@@ -143,7 +143,7 @@ describe('media messages', () => {
   });
 });
 
-describe('share messages (ADR-0007)', () => {
+describe('share messages', () => {
   const SDP = 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n';
 
   it('round-trips the viewer side: request, stop and an own offer', () => {

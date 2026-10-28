@@ -2,7 +2,7 @@ import type { LinkStats } from '../peer/link-stats';
 import type { MediaLimits } from './quality';
 
 /**
- * The thresholds of the load monitor (ADR-0006). First guesses, in one place so they can be tuned
+ * The thresholds of the load monitor. First guesses, in one place so they can be tuned
  * against measurements.
  */
 export const LOAD_RULES = {
@@ -59,7 +59,7 @@ function needed(links: number): number {
 
 /**
  * Finds out whether the host can keep up with its viewers by what it delivers, not by what the
- * browser says about it (ADR-0006: `qualityLimitationReason` read "none" at 2 frames a second).
+ * browser says about it (measured: `qualityLimitationReason` read "none" at 2 frames a second).
  * Pure: readings in, a decision out. The time comes from the readings.
  */
 export class LoadMonitor {

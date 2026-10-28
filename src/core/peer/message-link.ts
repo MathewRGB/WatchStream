@@ -43,7 +43,7 @@ export interface MediaLink extends MessageLink {
   /** Caps what is sent of the video: now, and again after every renegotiation. */
   setMediaLimits(limits: MediaLimits): Promise<void>;
   /**
-   * Counters of the picture this link sends, for the host's load monitor (ADR-0006). `null` while
+   * Counters of the picture this link sends, for the host's load monitor. `null` while
    * no picture is sent and once the link is closed.
    */
   stats(): Promise<LinkStats | null>;

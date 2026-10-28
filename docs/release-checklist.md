@@ -1,6 +1,6 @@
 # Before the first store submission
 
-Open points from ADR-0001 that need a person, not a test. Tick them off here.
+Open points that need a person, not a test. Tick them off here.
 
 ## Brave with default Shields
 

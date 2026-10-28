@@ -157,7 +157,7 @@ export class PeerLink implements OfferingLink {
       throw new Error('The link is not open.');
     }
     // Another stream replaces everything. The same stream is synced with its tracks as they are
-    // now: a stream that is forwarded (ADR-0007) gains its video and its sound one at a time.
+    // now: a stream that is forwarded from a viewer gains its video and its sound one at a time.
     if (stream !== this.outgoing) {
       for (const sender of this.senders.splice(0)) this.connection.removeTrack(sender);
     }

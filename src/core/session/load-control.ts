@@ -2,7 +2,7 @@ import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
 import { lowerQuality, qualityPreset, stepsBelow, type QualityId } from '../media/quality';
 import type { LinkStats } from '../peer/link-stats';
 
-/** How well the host carries its viewers (ADR-0006). */
+/** How well the host carries its viewers. */
 export interface LoadStatus {
   /** What the host chose; the most that is sent. */
   chosen: QualityId;
@@ -35,7 +35,7 @@ export interface LoadControlOptions {
 }
 
 /**
- * Runs the load monitor while something is sent (ADR-0006): reads every link on a timer, lets the
+ * Runs the load monitor while something is sent: reads every link on a timer, lets the
  * monitor judge, and keeps what follows from it, the steps taken off the chosen quality, the cause
  * and who is slow. What to do about a step is the session's business (`onStep`).
  */

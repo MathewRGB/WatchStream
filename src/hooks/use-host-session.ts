@@ -9,7 +9,7 @@ export interface HostSnapshot {
   openSlots: number;
   /** What the host shares right now, or `null`. */
   sharedStream: MediaStream | null;
-  /** The picture a viewer shares and the host passes on, or `null` (ADR-0007). */
+  /** The picture a viewer shares and the host passes on, or `null`. */
   incoming: IncomingShare | null;
   /** Viewers who asked to share and wait for the host's answer. */
   shareRequests: Participant[];

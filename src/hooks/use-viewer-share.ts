@@ -14,7 +14,7 @@ export interface ViewerShareControls {
 }
 
 /**
- * Lets a viewer pick a source and ask the host to share it (ADR-0007). The hook owns the captured
+ * Lets a viewer pick a source and ask the host to share it. The hook owns the captured
  * tracks: it stops them whenever the share is over, however it ended: the viewer, the browser's
  * own "stop sharing" button, the host saying no or taking it away, or leaving the page.
  */

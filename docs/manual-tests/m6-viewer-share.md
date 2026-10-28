@@ -3,7 +3,7 @@
 The automated tests cover the messages, the forwarding with several viewers, and a viewer sharing
 to the host and four others in the real extension and in Chromium and Firefox, with a moving
 picture and a tone in place of the browser's picker. They cannot press a real picker, hear real
-sound or judge how the delay feels. This guide covers those. Read ADR-0007 first.
+sound or judge how the delay feels. This guide covers those. Read [architecture.md, section 8](../architecture.md#8-viewers-who-share) first.
 
 ## What you need
 

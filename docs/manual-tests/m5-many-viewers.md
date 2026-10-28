@@ -3,7 +3,7 @@
 The automated tests cover twelve real connections, the load monitor with simulated counters, and a
 host with five viewers in the real extension. They cannot say how a real host's computer and
 connection behave with many people, how the quality changes feel, or whether the host's hints are
-clear. This guide covers those. Read ADR-0006 first for what is meant to happen.
+clear. This guide covers those. Read [architecture.md, section 7](../architecture.md#7-up-to-twelve-viewers-and-a-load-monitor) first for what is meant to happen.
 
 ## What you need
 

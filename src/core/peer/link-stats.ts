@@ -1,5 +1,5 @@
 /**
- * What the host's load monitor needs to know about one link's picture (ADR-0006). Plain counters,
+ * What the host's load monitor needs to know about one link's picture. Plain counters,
  * so the monitor works on the change between two readings and never touches WebRTC.
  */
 export interface LinkStats {

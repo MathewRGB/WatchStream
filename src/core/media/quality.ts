@@ -20,7 +20,7 @@ export interface QualityPreset extends MediaLimits {
  * The steps, from the lowest to the highest. The host sends one copy of the picture to every
  * viewer, so the upload needed is roughly the bitrate times the number of viewers, and the encoder
  * works once per viewer. The host chooses the highest step it wants; the load monitor goes down
- * from there when the host cannot keep up (ADR-0006).
+ * from there when the host cannot keep up.
  */
 export const QUALITY_PRESETS: readonly QualityPreset[] = [
   {

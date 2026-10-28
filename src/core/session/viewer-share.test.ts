@@ -51,7 +51,7 @@ async function startViewerShare(r: Room, sharer = 0): Promise<MediaStream> {
   return own;
 }
 
-describe('a viewer shares (ADR-0007)', () => {
+describe('a viewer shares', () => {
   it('asks the host, who sees the request and answers it', async () => {
     const r = await room(2);
     const onRequests = vi.fn();

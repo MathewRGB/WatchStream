@@ -19,13 +19,14 @@ host needs access to the content; the picture is re-encoded at near-transparent 
 Services with copy protection (Netflix, Disney+, Prime Video, Max) are not supported: their
 picture turns black when it is shared, and WatchStream does not circumvent that. Syncing everyone's
 own player for such services is future work, see
-[ADR-0004](docs/adr/ADR-0004-mode-selection-and-roadmap.md).
+[future work](docs/future-work.md#sync-mode-for-protected-sites).
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
   control data are end-to-end encrypted and never pass through a WatchStream server.
 - **Invitation by code:** the host sends an invitation code through any messenger, and the viewer
   sends a reply code back.
-- **Host controls:** only the host plays, pauses and seeks; viewers follow automatically.
+- **The host decides:** who is in the session and what is on the stage. A viewer can share too,
+  once the host allows it.
 
 ## Using it
 
@@ -147,7 +148,7 @@ local connections in another, at the quality steps of the app, and prints a tabl
 per second each viewer gets, and how much encoder time that takes. Use it to see what your computer
 carries; on Linux `-- --host-cores 0-3 --viewer-cores 4-13` pins the host browser to a few cores,
 and `-- --run balanced:6 --run saver:12` picks the runs (`-- --help` lists everything). The numbers
-in ADR-0006 come from it. Software encoding in a headless browser and a demanding picture make them
+in [architecture.md](docs/architecture.md#7-up-to-twelve-viewers-and-a-load-monitor) come from it. Software encoding in a headless browser and a demanding picture make them
 pessimistic: they show the shape, not what your host will do.
 
 `npm run lint:firefox` reports two `innerHTML` warnings. They come from React DOM inside the
@@ -158,8 +159,8 @@ own code, because chat text and names come from other people.
 
 [WXT](https://wxt.dev) (Manifest V3, one codebase for Chrome, Brave and Firefox), TypeScript,
 React 19, Tailwind CSS 4 and [shadcn/ui](https://ui.shadcn.com). Connections use WebRTC. See
-[ADR-0003](docs/adr/ADR-0003-react-tailwind-shadcn-ui-stack.md) for the reasons and the rules
-that keep the stack tidy.
+[architecture.md](docs/architecture.md#10-code-and-stack) for the reasons and the rules that keep
+the stack tidy.
 
 ### Project layout
 
@@ -175,7 +176,7 @@ src/lib/           small helpers such as cn()
 src/styles/        Tailwind import and design tokens (globals.css)
 tests/             integration tests in real browsers
 e2e/               Playwright end-to-end tests
-docs/adr/          architecture decision records
+docs/              architecture, protocol, future work, manual test guides
 ```
 
 Add a shadcn/ui component with `npx shadcn@latest add <name>`. It lands in `src/components/ui/`.
@@ -194,20 +195,20 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
       when idle, a quiet symbol for a message
 - [x] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
-      several invitations at once, removing a viewer (ADR-0006)
-- [ ] **Later:** optional TURN service (the test across two networks passed without it; add it if users report
-      failures)
+      several invitations at once, removing a viewer
 - [x] **M6:** viewers can share too: a viewer picks a source and asks, the host allows it with one
-      click and passes the picture on to everyone else (ADR-0007)
-- **Future work (not planned, after the release):** sync mode for services with copy protection
-  (ADR-0001, ADR-0004); viewers passing the picture on to other viewers, for more than 12 viewers
-  and less load on the host (ADR-0006); handing the host role to a viewer when the host leaves
-  (ADR-0007)
+      click and passes the picture on to everyone else
+- [ ] **Release:** the open points in the [release checklist](docs/release-checklist.md)
+- **Future work (not planned, after the release):** handing the host role to a viewer when the
+  host leaves, viewers passing the picture on to other viewers, sync mode for services with copy
+  protection, an optional TURN service; see [future work](docs/future-work.md)
 
 ## Documentation
 
 - [Changelog](CHANGELOG.md)
-- [Architecture decision records (ADRs)](docs/adr/)
+- [Architecture: how it is built and why](docs/architecture.md)
+- [Protocol: handshake codes and data-channel messages](docs/protocol.md)
+- [Future work](docs/future-work.md)
 - [Manual test guide for stream mode](docs/manual-tests/m3-stream-mode.md)
 - [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
 - [Manual test guide for many viewers](docs/manual-tests/m5-many-viewers.md)

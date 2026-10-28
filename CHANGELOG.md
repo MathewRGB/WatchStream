@@ -9,24 +9,23 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- A viewer can share too (M6, ADR-0007). The viewer chooses **Share**, picks a tab, window or
+- A viewer can share too (M6). The viewer chooses **Share**, picks a tab, window or
   screen and waits while the host is asked. The host sees "<name> wants to share" on the stage and
   in the People tab and decides with **Allow** or **Decline**. Once allowed, the host shows the
   viewer's picture with its sound and passes it on to all other viewers, who see "<name> is
   sharing". One picture is on the stage at a time: a request while something is shared is answered
-  at once, the host can end a viewer's share, and the host's own share takes the stage back. The
-  viewer is told if the host said no, or ended the share, and the captured source is stopped. The
-  quality limits and the automatic lowering of ADR-0006 apply to a forwarded picture too. New
+  at once, and a viewer is not offered the picker while something is shared. The host can end a
+  viewer's share, and the host's own share takes the stage back. The viewer is told if the host
+  said no, or ended the share, and the captured source is stopped. The quality limits and the
+  automatic lowering of the quality apply to a forwarded picture too. New
   messages `share-request`, `share-stop`, `share-granted`, `share-denied`, `share-revoked`, and
   `media-offer` from a viewer and `media-answer` from the host. Viewers still never connect to each
   other. Tested with the fake network, in Chromium and Firefox with real connections (twice in a
   row, with sound) and in the real extension. A manual test guide
   (`docs/manual-tests/m6-viewer-share.md`).
-- ADR-0007: how viewers share, and, as future work, handing the host role to a viewer when the host
-  leaves (with what is known about it).
 - `npm run measure:load` (`scripts/measure-host-load.mjs`): measures what a host costs per viewer,
   with the caps of the app's quality steps, optionally pinned to a number of cores on Linux. The
-  numbers in ADR-0006 come from it; a test keeps its quality steps in step with the app's. A manual
+  numbers in `docs/architecture.md` come from it; a test keeps its quality steps in step with the app's. A manual
   test guide for many viewers (`docs/manual-tests/m5-many-viewers.md`).
 - Several invitations at once: a number field next to **Invite a viewer** (up to the places that
   are left) makes that many invitations in one step. Each is a card with its own code and a number
@@ -53,12 +52,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   controls in full screen. The Settings tab says that the chosen quality is the most that is sent.
 - A fourth picture quality, Minimal (360p, 15 frames per second, 0.6 Mbit/s), for many viewers or a
   slow computer. It costs the encoder about an eighth of Balanced. It is the floor the load monitor
-  of ADR-0006 will lower the quality to when the host cannot keep up.
-- ADR-0006: up to twelve viewers, with a load monitor that lowers the quality when the host cannot
-  keep up. It holds the measurements behind the decision (one encode per viewer makes the host's
-  CPU the first limit, and the browser's own quality-limitation flag does not show it) and keeps
-  viewers passing the picture on to other viewers as future work, with the design and open
-  questions.
+  lowers the quality to when the host cannot keep up.
 - The sidebar in full screen: full screen now takes the stage and the sidebar (not the header).
   The sidebar waits off-screen; when the pointer touches the right edge it slides in over the
   picture, without moving it, and slides out a moment after the pointer left. It stays while
@@ -81,16 +75,6 @@ adheres to [Semantic Versioning](https://semver.org/).
 - A step-by-step manual test guide for stream mode (`docs/manual-tests/m3-stream-mode.md`) and a
   checklist for the open points before the first store submission (Brave Shields, name search,
   privacy text, packaging) in `docs/release-checklist.md`.
-- ADR-0001: architecture as a P2P browser extension with stream mode.
-- ADR-0002: the session tab page holds the connections; handshake code format and data-channel
-  protocol v1.
-- ADR-0003: UI stack of React, Tailwind CSS and shadcn/ui on top of WXT, and the source layout
-  that goes with it.
-- ADR-0004: stream mode for all content (YouTube included) and a new roadmap with the app shell
-  and stream mode first.
-- ADR-0005 (proposed): stream mode adds media to the open connection and renegotiates over the
-  data channel. A spike showed this works between Chromium and Firefox in both directions. It also
-  records the plan that viewers can share too, which is required but comes later.
 - Data-channel messages `media-started`, `media-offer`, `media-answer` and `media-stopped`,
   validated like all others.
 - The host session can share a media stream (`startSharing` / `stopSharing`). Viewers receive it,
@@ -172,13 +156,17 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - A session now holds up to twelve viewers instead of three. The number is fixed, not a setting.
   With many viewers the host's computer may not keep up and some viewers may get the picture late
-  or at a lower quality; a load monitor that lowers the quality for that comes next (ADR-0006).
+  or at a lower quality; the load monitor above lowers the quality for that.
   Tested with twelve real connections in Chromium and Firefox (one roster, one chat, a thirteenth
   invitation refused), six viewers playing one picture, and a host with five viewers in the real
   extension.
 - Sync mode and services with copy protection (Netflix, Disney+, Prime Video, Max) are no longer
-  planned. ADR-0001 and ADR-0004 describe stream mode only and keep sync mode as future work at
-  their end; M4 is now the sidebar in full screen and the optional TURN service.
+  planned; WatchStream is stream mode only, and sync mode is future work.
+- The design documents are three now: `docs/architecture.md` (how it is built and why, with the
+  measurements and what was not done), `docs/protocol.md` (handshake codes and data-channel
+  messages) and `docs/future-work.md` (handing the host role over, relaying through viewers, sync
+  mode, smaller items). They replace the seven architecture decision records in `docs/adr/`, whose
+  history and milestone plans this changelog and git keep.
 - The stage and the sidebar are inset panels with a thin border, rounded corners and a small gap
   to the window edge, so scrolling content visibly ends there instead of looking cut off.
 - Invitation and reply codes are shown in compact fields that scroll inside instead of growing to

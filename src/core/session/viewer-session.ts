@@ -16,7 +16,7 @@ import { SessionError } from './session-error';
 export type ViewerState = 'waiting-for-host' | 'connected' | 'disconnected';
 
 /**
- * The viewer's own share (ADR-0007): `requested` while the host decides, `sharing` once the host
+ * The viewer's own share: `requested` while the host decides, `sharing` once the host
  * allowed it and the stream is sent.
  */
 export type ShareState = 'idle' | 'requested' | 'sharing';

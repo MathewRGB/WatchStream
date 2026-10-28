@@ -12,7 +12,7 @@ interface ParticipantListProps {
   health?: ReadonlyMap<string, LinkHealth>;
   /** The host only: removes a viewer from the session. Without it there is no button. */
   onRemove?: (participantId: string) => void;
-  /** The host only: viewers who asked to share and wait for the host's answer (ADR-0007). */
+  /** The host only: viewers who asked to share and wait for the host's answer. */
   requests?: readonly string[];
   /** Who shares right now; marked with a badge. */
   sharerId?: string | null;

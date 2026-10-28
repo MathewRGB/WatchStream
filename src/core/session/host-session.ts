@@ -45,7 +45,7 @@ export interface HostSessionEvents {
   load: LoadStatus;
   /** A viewer's share started (its picture) or ended (`null`); see `incoming`. */
   incoming: IncomingShare | null;
-  /** The viewers who asked to share and wait for the host's answer (ADR-0007). */
+  /** The viewers who asked to share and wait for the host's answer. */
   shareRequests: Participant[];
 }
 
@@ -61,7 +61,7 @@ interface Viewer {
 }
 
 /**
- * The most viewers a session holds (ADR-0006). A ceiling in the code and no setting: what a host's
+ * The most viewers a session holds. A ceiling in the code and no setting: what a host's
  * computer and connection carry is for the load monitor to find out, and with many viewers some
  * of them may get the picture late or at a lower quality.
  */
@@ -255,7 +255,7 @@ export class HostSession {
     return this.shared;
   }
 
-  /** A viewer's picture that the host shows and passes on, or `null` (ADR-0007). */
+  /** A viewer's picture that the host shows and passes on, or `null`. */
   get incoming(): IncomingShare | null {
     return this.forwarded;
   }
@@ -322,7 +322,7 @@ export class HostSession {
   }
 
   /**
-   * Removes a viewer from the session (a host's call, ADR-0006). The viewer is told, and the
+   * Removes a viewer from the session (a host's call). The viewer is told, and the
    * connection closes a moment later so that the message gets out first. The place is free at
    * once, and nothing the viewer sends in that moment is heard.
    */

@@ -22,7 +22,7 @@ export interface ChatMessage {
   sentAt: number;
 }
 
-/** Why the host did not let a viewer share (ADR-0007). */
+/** Why the host did not let a viewer share. */
 export type ShareDenial = 'declined' | 'busy';
 
 /**
@@ -32,7 +32,7 @@ export type ShareDenial = 'declined' | 'busy';
 export type ViewerMessage =
   | { type: 'chat'; text: string }
   | { type: 'media-answer'; sourceId: string; sdp: string }
-  /** The viewer holds a stream and asks to share it (ADR-0007). */
+  /** The viewer holds a stream and asks to share it. */
   | { type: 'share-request' }
   | { type: 'share-stop' }
   | { type: 'media-offer'; sourceId: string; sdp: string };
@@ -43,14 +43,15 @@ export type HostMessage =
   | { type: 'roster'; participants: Participant[] }
   | { type: 'chat'; message: ChatMessage }
   /**
-   * `sourceId` is the participant who shares. `media-started` comes before the offer and
-   * `media-stopped` ends the share; a viewer shows media only between the two, because the
-   * offers that add or remove tracks can also produce track events of their own.
+   * In `media-started` and `media-stopped`, `sourceId` is the participant whose picture it is; in
+   * `media-offer`, the host, who made the offer. `media-started` comes before the offer and
+   * `media-stopped` ends the share; a viewer shows media only between the two, because the offers
+   * that add or remove tracks can also produce track events of their own.
    */
   | { type: 'media-started'; sourceId: string }
   | { type: 'media-offer'; sourceId: string; sdp: string }
   | { type: 'media-stopped'; sourceId: string }
-  /** The host removed this viewer; the connection closes right after (ADR-0006). */
+  /** The host removed this viewer; the connection closes right after. */
   | { type: 'removed' }
   | { type: 'share-granted' }
   | { type: 'share-denied'; reason: ShareDenial }
