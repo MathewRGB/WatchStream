@@ -1,3 +1,5 @@
+import { isSessionDescription } from '../peer/session-description';
+
 /**
  * Messages exchanged over the data channel between host and viewers.
  * The host is authoritative: viewers only send requests, the host decides
@@ -58,7 +60,6 @@ export type HostMessage =
   | { type: 'media-answer'; sourceId: string; sdp: string };
 
 export const MAX_CHAT_LENGTH = 1000;
-const MAX_SDP_LENGTH = 20_000;
 
 /** Returns the trimmed text, or `null` when it is empty or too long. */
 export function normalizeChatText(text: string): string | null {
@@ -76,10 +77,18 @@ export function parseViewerMessage(raw: string): ViewerMessage | null {
     const text = normalizeChatText(data.text);
     return text === null ? null : { type: 'chat', text };
   }
-  if (data?.type === 'media-answer' && isNonEmptyString(data.sourceId) && isSdp(data.sdp)) {
+  if (
+    data?.type === 'media-answer' &&
+    isNonEmptyString(data.sourceId) &&
+    isSessionDescription(data.sdp)
+  ) {
     return { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp };
   }
-  if (data?.type === 'media-offer' && isNonEmptyString(data.sourceId) && isSdp(data.sdp)) {
+  if (
+    data?.type === 'media-offer' &&
+    isNonEmptyString(data.sourceId) &&
+    isSessionDescription(data.sdp)
+  ) {
     return { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp };
   }
   if (data?.type === 'share-request') return { type: 'share-request' };
@@ -105,7 +114,7 @@ export function parseHostMessage(raw: string): HostMessage | null {
         ? { type: 'media-started', sourceId: data.sourceId }
         : null;
     case 'media-offer':
-      return isNonEmptyString(data.sourceId) && isSdp(data.sdp)
+      return isNonEmptyString(data.sourceId) && isSessionDescription(data.sdp)
         ? { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp }
         : null;
     case 'media-stopped':
@@ -123,7 +132,7 @@ export function parseHostMessage(raw: string): HostMessage | null {
     case 'share-revoked':
       return { type: 'share-revoked' };
     case 'media-answer':
-      return isNonEmptyString(data.sourceId) && isSdp(data.sdp)
+      return isNonEmptyString(data.sourceId) && isSessionDescription(data.sdp)
         ? { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp }
         : null;
     default:
@@ -144,10 +153,6 @@ function parseObject(raw: string): Record<string, unknown> | null {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value !== '';
-}
-
-function isSdp(value: unknown): value is string {
-  return typeof value === 'string' && value.startsWith('v=0') && value.length <= MAX_SDP_LENGTH;
 }
 
 function isParticipant(value: unknown): value is Participant {

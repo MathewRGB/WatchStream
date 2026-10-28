@@ -1,4 +1,5 @@
 import { decodeBase64Url, encodeBase64Url } from './base64url';
+import { isSessionDescription } from '../peer/session-description';
 import { compress, decompress } from './compression';
 
 /**
@@ -36,7 +37,6 @@ export class HandshakeCodeError extends Error {
 }
 
 export const MAX_NAME_LENGTH = 40;
-const MAX_SDP_LENGTH = 20_000;
 const MAX_DECOMPRESSED_BYTES = 32_000;
 const INVITE_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const FORMAT_VERSION = 1;
@@ -127,9 +127,7 @@ function isCommonFields(data: Record<string, unknown>): data is CommonFields {
   return (
     typeof data.inviteId === 'string' &&
     INVITE_ID_PATTERN.test(data.inviteId) &&
-    typeof data.sdp === 'string' &&
-    data.sdp.startsWith('v=0') &&
-    data.sdp.length <= MAX_SDP_LENGTH
+    isSessionDescription(data.sdp)
   );
 }
 
