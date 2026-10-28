@@ -9,6 +9,13 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- The picture quality now follows what the host can carry. While the host shares, a load monitor
+  reads every viewer's link every two seconds and compares the frames the encoder produced with
+  what the source delivered (the browser's own quality-limitation flag read "none" at 2 frames a
+  second, so it is not used). When the computer or the connection cannot keep up for most viewers,
+  the quality goes down one step at a time, never below Minimal; after ninety calm seconds it goes
+  up again. One viewer on a poor connection is marked slow and does not lower the rest. The quality
+  the host chooses is the most that is sent. The host is not told on screen yet.
 - A fourth picture quality, Minimal (360p, 15 frames per second, 0.6 Mbit/s), for many viewers or a
   slow computer. It costs the encoder about an eighth of Balanced. It is the floor the load monitor
   of ADR-0006 will lower the quality to when the host cannot keep up.

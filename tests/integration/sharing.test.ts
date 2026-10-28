@@ -197,6 +197,45 @@ describe('sharing over WebRTC', () => {
   });
 });
 
+describe('the load monitor over WebRTC', () => {
+  it('leaves the quality alone for a host that keeps up, as the real statistics show it', async () => {
+    // Every real counter of both browsers goes through the monitor: a false alarm here would be one
+    // for every host. A second a reading, so that the 8 s of grace and three readings are over.
+    const host = startHost({ monitorIntervalMs: 1000 });
+    const viewers = [await join(host, 'user2'), await join(host, 'user3')];
+    const arrivals = viewers.map(nextMedia);
+    host.startSharing(createTestStream());
+    await Promise.all(arrivals);
+    const statuses: string[] = [];
+    host.events.on('load', (status) => statuses.push(`${status.effective}/${status.cause}`));
+
+    await new Promise((resolve) => setTimeout(resolve, 14_000));
+
+    // Positive control: the monitor read both links, or "nothing slow" would say nothing.
+    expect(host.load.health.size).toBe(2);
+    expect(host.effectiveQuality).toBe('balanced');
+    expect(host.load).toMatchObject({ cause: null, overloaded: false });
+    expect([...host.load.health.values()]).toEqual(['good', 'good']);
+    expect(statuses.filter((s) => !s.startsWith('balanced/null'))).toEqual([]);
+  }, 40_000);
+
+  it('applies a lowered quality to the encoder of every sender', async () => {
+    const host = startHost();
+    for (const name of ['user2', 'user3', 'user4']) await join(host, name);
+    host.startSharing(createTestStream());
+
+    host.setQuality('minimal');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const encodings = videoEncodings(host);
+    expect(encodings).toHaveLength(3);
+    for (const encoding of encodings) {
+      expect(encoding.maxBitrate).toBe(600_000);
+      expect(encoding.maxFramerate).toBe(15);
+    }
+  }, 30_000);
+});
+
 describe('statistics of a link over WebRTC', () => {
   it('counts the frames encoded and produced and the bytes sent, and is null when it cannot', async () => {
     const host = startHost();

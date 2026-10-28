@@ -2,7 +2,7 @@ import { afterEach } from 'vitest';
 import type { MessageLink } from '../../src/core/peer/message-link';
 import { createPeerConnector } from '../../src/core/peer/peer-link';
 import type { Participant } from '../../src/core/protocol/messages';
-import { HostSession } from '../../src/core/session/host-session';
+import { HostSession, type HostSessionOptions } from '../../src/core/session/host-session';
 import { ViewerSession } from '../../src/core/session/viewer-session';
 
 /** Local tests must not depend on a public STUN server. */
@@ -20,8 +20,10 @@ export function cleanupAfterTest(cleanup: () => void): void {
   cleanups.push(cleanup);
 }
 
-export function startHost(): HostSession {
-  const host = new HostSession({ hostName: 'Host', connector });
+export function startHost(
+  options: Partial<Omit<HostSessionOptions, 'hostName' | 'connector'>> = {},
+): HostSession {
+  const host = new HostSession({ hostName: 'Host', connector, ...options });
   cleanupAfterTest(() => host.close());
   return host;
 }
@@ -81,7 +83,8 @@ export function createTestStreamWithAudio(): MediaStream {
   destination.channelCount = 2;
   source.connect(destination);
   source.start();
-  void audio.resume();
+  // A test that ends early closes the context while it is still starting; that is no error.
+  audio.resume().catch(() => undefined);
   destination.stream.getAudioTracks().forEach((track) => stream.addTrack(track));
   cleanupAfterTest(() => void audio.close());
   return stream;

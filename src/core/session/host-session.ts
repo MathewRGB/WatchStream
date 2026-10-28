@@ -1,9 +1,17 @@
 import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown } from '../log/logger';
-import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
+import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
+import {
+  DEFAULT_QUALITY,
+  lowerQuality,
+  qualityPreset,
+  stepsBelow,
+  type QualityId,
+} from '../media/quality';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
+import type { LinkStats } from '../peer/link-stats';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -22,8 +30,25 @@ export interface HostSessionOptions {
   maxViewers?: number;
   /** How long to wait for the connection after a reply was accepted. */
   connectTimeoutMs?: number;
+  /** How often the load monitor reads the links while the host shares. */
+  monitorIntervalMs?: number;
   createId?: () => string;
   now?: () => number;
+}
+
+/** How well the host carries its viewers (ADR-0006). */
+export interface LoadStatus {
+  /** What the host chose; the most that is sent. */
+  chosen: QualityId;
+  /** What is sent now: the chosen step, lowered when the host cannot keep up. */
+  effective: QualityId;
+  viewers: number;
+  /** Why the quality is lowered; `null` while it is not. */
+  cause: 'computer' | 'connection' | null;
+  /** The host struggles at the lowest step: nothing more can be done. */
+  overloaded: boolean;
+  /** By participant id; a viewer who is not listed is not known to be slow. */
+  health: ReadonlyMap<string, LinkHealth>;
 }
 
 export interface HostSessionEvents {
@@ -33,8 +58,10 @@ export interface HostSessionEvents {
   chat: ChatMessage;
   /** The host started (stream) or stopped (`null`) sharing. */
   sharing: MediaStream | null;
-  /** The picture quality changed (payload: the new preset). */
+  /** The picture quality the host chose changed (payload: the new preset). */
   quality: QualityId;
+  /** The load status changed: the effective quality, the cause, how the viewers fare. */
+  load: LoadStatus;
 }
 
 interface Viewer {
@@ -49,6 +76,7 @@ interface Viewer {
  */
 export const MAX_VIEWERS = 12;
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000;
+const DEFAULT_MONITOR_INTERVAL_MS = 2_000;
 
 /**
  * The host side of a watch session. The host is authoritative: it decides who
@@ -68,10 +96,21 @@ export class HostSession {
   private readonly log = createLogger('session.host');
   private shared: MediaStream | null = null;
   private currentQuality: QualityId = DEFAULT_QUALITY;
+  private readonly monitor = new LoadMonitor();
+  private readonly monitorIntervalMs: number;
+  private monitorTimer: ReturnType<typeof setInterval> | null = null;
+  private reading = false;
+  /** Steps the load monitor has taken off the quality the host chose. */
+  private penalty = 0;
+  private lowerCause: 'computer' | 'connection' = 'computer';
+  private overloaded = false;
+  private health = new Map<string, LinkHealth>();
+  private lastLoadKey = '';
 
   constructor(private readonly options: HostSessionOptions) {
     this.maxViewers = Math.min(options.maxViewers ?? MAX_VIEWERS, MAX_VIEWERS);
     this.connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
+    this.monitorIntervalMs = options.monitorIntervalMs ?? DEFAULT_MONITOR_INTERVAL_MS;
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.now = options.now ?? Date.now;
     this.hostId = this.createId();
@@ -166,15 +205,37 @@ export class HostSession {
     this.publishChat(this.self, text);
   }
 
+  /** The quality the host chose: the most that is sent. */
   get quality(): QualityId {
     return this.currentQuality;
   }
 
-  /** Sets how much of the picture goes out; takes effect at once and for later viewers. */
+  /** What is sent now: the chosen quality, lowered while the host cannot keep up. */
+  get effectiveQuality(): QualityId {
+    return lowerQuality(this.currentQuality, this.penalty);
+  }
+
+  get load(): LoadStatus {
+    return {
+      chosen: this.currentQuality,
+      effective: this.effectiveQuality,
+      viewers: this.viewers.size,
+      cause: this.penalty > 0 ? this.lowerCause : null,
+      overloaded: this.overloaded,
+      health: this.health,
+    };
+  }
+
+  /**
+   * Sets the most that goes out, at once and for later viewers. A new choice starts the load
+   * monitor over: what it learned was about the old one.
+   */
   setQuality(id: QualityId): void {
     this.currentQuality = id;
+    this.resetLoad();
     for (const { link } of this.viewers.values()) this.applyQuality(link);
     this.emitter.emit('quality', id);
+    this.publishLoad();
   }
 
   /** The stream the host currently shares, or `null`. */
@@ -187,6 +248,7 @@ export class HostSession {
     this.shared = stream;
     this.log.info('sharing started', { viewers: this.viewers.size });
     for (const { link } of this.viewers.values()) this.startSharingWith(link);
+    this.startMonitoring();
     this.emitter.emit('sharing', stream);
   }
 
@@ -194,14 +256,18 @@ export class HostSession {
     if (!this.shared) return;
     this.shared = null;
     this.log.info('sharing stopped');
+    this.stopMonitoring();
+    this.resetLoad();
     for (const { link } of this.viewers.values()) {
       this.unshareWith(link);
       this.sendTo(link, { type: 'media-stopped', sourceId: this.hostId });
     }
     this.emitter.emit('sharing', null);
+    this.publishLoad();
   }
 
   close(): void {
+    this.stopMonitoring();
     for (const link of this.pending.values()) link.close();
     for (const link of this.connecting) link.close();
     for (const { link } of this.viewers.values()) link.close();
@@ -225,8 +291,11 @@ export class HostSession {
     link.events.on('close', () => {
       if (this.viewers.delete(participant.id)) {
         this.log.info('viewer left', { viewers: this.viewers.size });
+        this.monitor.forget(participant.id);
+        this.health.delete(participant.id);
         this.publishRoster();
         this.publishSlots();
+        this.publishLoad();
       }
     });
     this.log.info('viewer joined', { viewers: this.viewers.size });
@@ -236,6 +305,7 @@ export class HostSession {
     if (this.shared) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
+    this.publishLoad();
   }
 
   private handleViewerMessage(link: MediaLink, raw: string, sender: Participant): void {
@@ -261,9 +331,79 @@ export class HostSession {
 
   private applyQuality(link: MediaLink): void {
     // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
-    void link.setMediaLimits(qualityPreset(this.currentQuality)).catch((error) => {
+    void link.setMediaLimits(qualityPreset(this.effectiveQuality)).catch((error) => {
       this.log.warn('could not set the video limits', describeThrown(error));
     });
+  }
+
+  /** The load monitor reads the links while something is shared (ADR-0006). */
+  private startMonitoring(): void {
+    if (this.monitorTimer !== null) return;
+    this.monitorTimer = setInterval(() => void this.readLinks(), this.monitorIntervalMs);
+  }
+
+  private stopMonitoring(): void {
+    if (this.monitorTimer !== null) clearInterval(this.monitorTimer);
+    this.monitorTimer = null;
+  }
+
+  private resetLoad(): void {
+    this.monitor.reset();
+    this.penalty = 0;
+    this.overloaded = false;
+    this.health = new Map();
+  }
+
+  /** One round: read every link, let the monitor judge, and apply a changed quality to all. */
+  private async readLinks(): Promise<void> {
+    if (this.reading || !this.shared || this.viewers.size === 0) return;
+    this.reading = true;
+    try {
+      const readings = new Map<string, LinkStats | null>();
+      await Promise.all(
+        [...this.viewers].map(async ([id, { link }]) => {
+          readings.set(id, await link.stats().catch(() => null));
+        }),
+      );
+      // Sharing may have stopped, or the quality been chosen again, while the links were read.
+      if (!this.shared) return;
+      const decision = this.monitor.update({
+        readings,
+        limits: qualityPreset(this.effectiveQuality),
+        stepsAvailable: stepsBelow(this.currentQuality),
+      });
+      const before = this.penalty;
+      this.penalty = decision.penalty;
+      this.overloaded = decision.overloaded;
+      this.health = new Map(decision.links);
+      if (decision.struggling && decision.cause) this.lowerCause = decision.cause;
+      if (this.penalty !== before) {
+        this.log.info(this.penalty > before ? 'quality lowered' : 'quality raised', {
+          to: this.effectiveQuality,
+          viewers: this.viewers.size,
+          cause: this.lowerCause,
+        });
+        for (const { link } of this.viewers.values()) this.applyQuality(link);
+      }
+      this.publishLoad();
+    } finally {
+      this.reading = false;
+    }
+  }
+
+  /** Tells the listeners, but only when something they show has changed. */
+  private publishLoad(): void {
+    const status = this.load;
+    const key = [
+      status.effective,
+      status.cause,
+      status.overloaded,
+      status.viewers,
+      [...status.health].map(([id, health]) => `${id}:${health}`).join(','),
+    ].join('|');
+    if (key === this.lastLoadKey) return;
+    this.lastLoadKey = key;
+    this.emitter.emit('load', status);
   }
 
   private unshareWith(link: MediaLink): void {
