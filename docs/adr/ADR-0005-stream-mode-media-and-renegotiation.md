@@ -123,6 +123,9 @@ integration test reads the values back from the real senders.
 
 ### 5. Streaming by clients is planned, not built in M3
 
+> Built in M6, see [ADR-0007](ADR-0007-viewers-can-share.md), which keeps the design below and
+> fixes the details.
+
 Clients must be able to share too (maintainer requirement, later milestone). The planned design
 keeps the star topology: a client asks the host, the host approves (the host stays authoritative),
 the client sends its stream to the host, and the host forwards it to the other viewers. Mesh
