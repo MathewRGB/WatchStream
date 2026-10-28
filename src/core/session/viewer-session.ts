@@ -160,7 +160,8 @@ export class ViewerSession {
    * only opens its picker on a fresh user action) and sends the stream once the host allows it.
    */
   requestShare(stream: MediaStream): void {
-    if (this.link.state !== 'open') {
+    // Without its id from the host's welcome, the viewer could not name itself in its offer.
+    if (this.link.state !== 'open' || this.ownId === null) {
       throw new SessionError('not-connected', 'Not connected to the host.');
     }
     if (this.shareState !== 'idle') {

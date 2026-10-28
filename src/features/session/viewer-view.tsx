@@ -219,7 +219,9 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
                   variant="secondary"
                   size="sm"
                   onClick={() => void sharing.start()}
-                  disabled={sharing.starting}
+                  // Something on the stage would be answered "busy"; the picker would be wasted.
+                  disabled={sharing.starting || media !== null}
+                  title={media ? 'Something is already being shared.' : undefined}
                   data-testid="share-button"
                 >
                   <MonitorUp /> Share

@@ -337,6 +337,20 @@ describe('WatchStream app', () => {
     expect(first.getByTestId('share-button')).toBeInTheDocument();
   });
 
+  it('does not offer a viewer the picker while something is shared already', async () => {
+    const { stream } = fakeCapturedStream();
+    const host = openPage(network, memoryStorage(), async () => stream);
+    await start(host, 'user1', 'host');
+    const viewer = await connect(network, host, 'user2');
+    expect(viewer.getByTestId('share-button')).toBeEnabled();
+
+    await userEvent.click(host.getByTestId('share-button'));
+
+    await waitFor(() => expect(viewer.getByTestId('share-button')).toBeDisabled());
+    await userEvent.click(host.getByTestId('stop-share'));
+    await waitFor(() => expect(viewer.getByTestId('share-button')).toBeEnabled());
+  });
+
   it('tells a viewer that the host did not allow sharing, and lets them stop the capture', async () => {
     const host = openPage(network, memoryStorage());
     await start(host, 'user1', 'host');

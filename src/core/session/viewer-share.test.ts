@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import { serialize } from '../protocol/messages';
-import type { FakeLink, FakeNetwork } from '../testing/fake-network';
+import { FakeNetwork, type FakeLink } from '../testing/fake-network';
 import { createHost, flush, joinViewer } from '../testing/session-fixtures';
 import type { HostSession } from './host-session';
-import type { ViewerSession } from './viewer-session';
+import { ViewerSession } from './viewer-session';
 
 /** A stream with the given fake tracks; happy-dom's MediaStream keeps them in `tracks`. */
 function streamOf(...tracks: string[]): MediaStream {
@@ -321,6 +322,23 @@ describe('a viewer shares (ADR-0007)', () => {
     await flush();
 
     expect(r.hostLink(0).received).toEqual([]);
+  });
+
+  it('refuses to ask before the host has welcomed it: its offer could not name it', async () => {
+    // A link that opened, from a host that never sends its welcome.
+    const network = new FakeNetwork();
+    const { link, sdp } = await network.createOffer();
+    const code = await encodeInvitation({ inviteId: 'invite-0001', hostName: 'Host', sdp });
+    const { session, replyCode } = await ViewerSession.join(code, {
+      viewerName: 'viewer1',
+      connector: network,
+    });
+    await link.acceptAnswer((await decodeReply(replyCode)).sdp);
+    await flush();
+    expect(session.state).toBe('connected');
+
+    expect(() => session.requestShare(streamOf('v'))).toThrow(/Not connected/);
+    expect(session.share).toBe('idle');
   });
 
   it('refuses a second request while one is running or asked for', async () => {

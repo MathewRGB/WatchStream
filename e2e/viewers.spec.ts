@@ -92,11 +92,8 @@ test('a viewer shares in the real extension: the host decides, four others watch
   // The host sends the same load line for a forwarded picture as for its own.
   await expect(host.byTestId('load-line')).toHaveText('720p · 5 viewers');
 
-  // A request while the stage is taken is answered at once.
-  await watchers[0]!.byTestId('share-button').click();
-  await expect(watchers[0]!.byTestId('share-notice')).toHaveText(
-    'Something is already being shared.',
-  );
+  // While the stage is taken, the others are not offered the picker.
+  await expect(watchers[0]!.byTestId('share-button')).toBeDisabled();
 
   await host.byTestId('stop-viewer-share').click();
   await expect(sharer.byTestId('share-notice')).toHaveText('user1 ended your share.');
