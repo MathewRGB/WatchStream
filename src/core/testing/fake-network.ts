@@ -1,6 +1,7 @@
 import { Emitter } from '../events/emitter';
 import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from '../peer/diagnostics';
+import type { LinkStats } from '../peer/link-stats';
 import type {
   LinkEvents,
   LinkSignal,
@@ -85,6 +86,13 @@ export class FakeLink implements OfferingLink {
 
   async setMediaLimits(limits: MediaLimits): Promise<void> {
     this.limits = limits;
+  }
+
+  /** What `stats()` answers; a test sets it, as the browser would count on. `null`: no picture. */
+  statsReading: LinkStats | null = null;
+
+  async stats(): Promise<LinkStats | null> {
+    return this.currentState === 'closed' ? null : this.statsReading;
   }
 
   async receiveSignal(signal: LinkSignal): Promise<void> {

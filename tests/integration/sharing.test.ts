@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { LinkStats } from '../../src/core/peer/link-stats';
+import type { MediaLink } from '../../src/core/peer/message-link';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
 import { createTestStream, createTestStreamWithAudio, join, startHost, waitFor } from './helpers';
 
@@ -193,4 +195,37 @@ describe('sharing over WebRTC', () => {
     const negotiated = hostLinks(host)[0]!.connection.remoteDescription!.sdp;
     expect(negotiated).toMatch(/a=fmtp:\d+ [^\r\n]*stereo=1/);
   });
+});
+
+describe('statistics of a link over WebRTC', () => {
+  it('counts the frames encoded and produced and the bytes sent, and is null when it cannot', async () => {
+    const host = startHost();
+    await join(host, 'user2');
+    const link = hostLinks(host)[0] as unknown as MediaLink;
+    expect(await link.stats()).toBeNull();
+
+    host.startSharing(createTestStream());
+    const first = await waitFor<LinkStats>((resolve) => {
+      const poll = async () => {
+        const stats = await link.stats();
+        if (stats && stats.framesEncoded > 5) resolve(stats);
+        else setTimeout(() => void poll(), 200);
+      };
+      void poll();
+    }, 15_000);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const second = (await link.stats())!;
+
+    expect(second.at).toBeGreaterThan(first.at);
+    expect(second.framesEncoded).toBeGreaterThan(first.framesEncoded);
+    expect(second.bytesSent).toBeGreaterThan(first.bytesSent);
+    // Both browsers say how many frames the source produced; the monitor compares with it.
+    expect(second.sourceFrames).toBeGreaterThan(first.sourceFrames!);
+    expect(second.lossFraction === null || second.lossFraction >= 0).toBe(true);
+    // Only Chromium has an available bitrate; the other browser leaves it out.
+    expect(second.availableBps === null || second.availableBps > 0).toBe(true);
+
+    host.close();
+    expect(await link.stats()).toBeNull();
+  }, 30_000);
 });

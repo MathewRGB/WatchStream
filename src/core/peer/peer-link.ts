@@ -2,6 +2,7 @@ import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown, type Logger } from '../log/logger';
 import type { MediaLimits } from '../media/quality';
 import { summarizeCandidates } from './candidates';
+import { readLinkStats, type LinkStats } from './link-stats';
 import { tuneOpus } from './opus';
 import type { LinkDiagnostics } from './diagnostics';
 import type {
@@ -190,6 +191,17 @@ export class PeerLink implements OfferingLink {
   async setMediaLimits(limits: MediaLimits): Promise<void> {
     this.limits = limits;
     await this.applyLimits();
+  }
+
+  async stats(): Promise<LinkStats | null> {
+    if (this.currentState === 'closed') return null;
+    try {
+      const reports = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
+      return readLinkStats(reports.values(), performance.now());
+    } catch {
+      // Firefox refuses to read a closed connection; there is nothing to say then.
+      return null;
+    }
   }
 
   diagnostics(): LinkDiagnostics {

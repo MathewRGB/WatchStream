@@ -1,6 +1,7 @@
 import type { Emitter } from '../events/emitter';
 import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from './diagnostics';
+import type { LinkStats } from './link-stats';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
 
@@ -41,6 +42,11 @@ export interface MediaLink extends MessageLink {
   diagnostics(): LinkDiagnostics;
   /** Caps what is sent of the video: now, and again after every renegotiation. */
   setMediaLimits(limits: MediaLimits): Promise<void>;
+  /**
+   * Counters of the picture this link sends, for the host's load monitor (ADR-0006). `null` while
+   * no picture is sent and once the link is closed.
+   */
+  stats(): Promise<LinkStats | null>;
   /** Applies a description from the other side. May emit an answer as `signal`. */
   receiveSignal(signal: LinkSignal): Promise<void>;
 }
