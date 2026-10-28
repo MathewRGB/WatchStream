@@ -50,9 +50,11 @@ YouTube goes through stream mode. There are no per-site adapters and no sync mod
 3. **M3:** stream mode. A short spike first: tab capture into the session page in Chrome and
    Brave, display capture without tab audio in Firefox (done).
 4. **M4:** the sidebar in full screen: full screen takes the stage and the sidebar, and the
-   sidebar slides in over the picture when the pointer touches the right edge (built, section 3);
-   optional TURN service (waits for the test across two networks).
-5. **Later, required:** viewers can share too (see ADR-0005 section 5). Not scheduled yet.
+   sidebar slides in over the picture when the pointer touches the right edge (done, section 3).
+5. **M5:** up to 12 viewers: a load monitor lowers the quality when the host cannot keep up
+   ([ADR-0006](ADR-0006-more-than-three-viewers.md)).
+6. **Later:** the optional TURN service (waits for the test across two networks); viewers can share
+   too, which is required (see ADR-0005 section 5). Not scheduled yet.
 
 ### 3. The sidebar in full screen
 

@@ -113,8 +113,9 @@ integration test reads the values back from the real senders.
 ## Consequences
 
 - The icon keeps its meaning: it opens or focuses the session page.
-- Every viewer gets its own encoded copy of the stream; host upload scales with the viewer count
-  (max 3).
+- Every viewer gets its own encoded copy of the stream; host upload and CPU scale with the viewer
+  count (up to 12; the host's load is watched and the quality lowered, see
+  [ADR-0006](ADR-0006-more-than-three-viewers.md)).
 - Accepted at the end of M3 (2026-10-27) after the maintainer's manual runs with real pickers, tab
   audio and the quality presets on two devices in one network. Not yet covered: a run across two
   different public networks, which decides whether a relay (TURN) is needed in M4.

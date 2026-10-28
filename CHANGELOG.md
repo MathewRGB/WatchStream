@@ -9,6 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- ADR-0006: up to twelve viewers, with a load monitor that lowers the quality when the host cannot
+  keep up. It holds the measurements behind the decision (one encode per viewer makes the host's
+  CPU the first limit, and the browser's own quality-limitation flag does not show it) and keeps
+  viewers passing the picture on to other viewers as future work, with the design and open
+  questions.
 - The sidebar in full screen: full screen now takes the stage and the sidebar (not the header).
   The sidebar waits off-screen; when the pointer touches the right edge it slides in over the
   picture, without moving it, and slides out a moment after the pointer left. It stays while

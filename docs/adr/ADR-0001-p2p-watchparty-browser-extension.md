@@ -30,7 +30,7 @@ and is therefore not adopted.
 
 | Topic                                       | Decision                               |
 | ------------------------------------------- | -------------------------------------- |
-| Viewers per session                         | 2-3 (plus host)                        |
+| Viewers per session                         | Up to 12 (plus host), see ADR-0006     |
 | Content that plays in the host's browser    | Required                               |
 | DRM services (Netflix, Disney+, Prime, Max) | Not supported (see Future work)        |
 | Invitation                                  | Copied code, manual handshake accepted |
@@ -74,7 +74,9 @@ does not circumvent that.
 ### 2. Topology: star, host at the center
 
 Star topology with the host as the hub. Each viewer has exactly one `RTCPeerConnection` to the
-host. With 2-3 viewers no relaying between viewers is needed.
+host. No relaying between viewers; with up to 12 viewers the host's load is watched and the
+quality lowered when needed ([ADR-0006](ADR-0006-more-than-three-viewers.md)). A tree in which
+viewers pass the picture on is future work there.
 
 ### 3. Transport
 
@@ -141,7 +143,8 @@ media-free signaling service can be added later without changing the rest.
   measures) and violates the services' terms of use.
 - **Clickable invitation link:** needs a hosted web page or a signaling service. Postponed,
   can be added through the signaling interface.
-- **Viewers relay streams (relay chains):** unnecessary complexity for 2-3 viewers.
+- **Viewers relay streams (relay chains):** left out for now, kept as future work with its design
+  and open questions in [ADR-0006](ADR-0006-more-than-three-viewers.md).
 
 ## Milestones
 

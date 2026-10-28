@@ -169,9 +169,15 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       with tabs, reply code copied automatically
 - [x] **M3:** stream mode: share a tab, window or screen, sound in stereo, quality presets,
       volume control, technical details for connection problems
-- [ ] **M4:** the sidebar in full screen (built, manual check open), optional TURN service
+- [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
+      when idle, a quiet symbol for a message
+- [ ] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up
+      (ADR-0006)
+- [ ] **Later:** optional TURN service (after the test across two networks)
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
-- **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004)
+- **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004);
+  viewers passing the picture on to other viewers, for more than 12 viewers and less load on the
+  host (ADR-0006)
 
 ## Documentation
 
