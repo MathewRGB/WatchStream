@@ -1,17 +1,9 @@
 import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown } from '../log/logger';
-import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
-import {
-  DEFAULT_QUALITY,
-  lowerQuality,
-  qualityPreset,
-  stepsBelow,
-  type QualityId,
-} from '../media/quality';
+import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
 import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
-import type { LinkStats } from '../peer/link-stats';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import {
   normalizeChatText,
@@ -22,7 +14,10 @@ import {
   type Participant,
   type ShareDenial,
 } from '../protocol/messages';
+import { LoadControl, type LoadStatus } from './load-control';
 import { SessionError } from './session-error';
+
+export type { LoadStatus } from './load-control';
 
 export interface HostSessionOptions {
   hostName: string;
@@ -35,21 +30,6 @@ export interface HostSessionOptions {
   monitorIntervalMs?: number;
   createId?: () => string;
   now?: () => number;
-}
-
-/** How well the host carries its viewers (ADR-0006). */
-export interface LoadStatus {
-  /** What the host chose; the most that is sent. */
-  chosen: QualityId;
-  /** What is sent now: the chosen step, lowered when the host cannot keep up. */
-  effective: QualityId;
-  viewers: number;
-  /** Why the quality is lowered; `null` while it is not. */
-  cause: 'computer' | 'connection' | null;
-  /** The host struggles at the lowest step: nothing more can be done. */
-  overloaded: boolean;
-  /** By participant id; a viewer who is not listed is not known to be slow. */
-  health: ReadonlyMap<string, LinkHealth>;
 }
 
 export interface HostSessionEvents {
@@ -119,21 +99,26 @@ export class HostSession {
   /** Viewers who asked to share, oldest first. */
   private readonly requests = new Set<string>();
   private currentQuality: QualityId = DEFAULT_QUALITY;
-  private readonly monitor = new LoadMonitor();
-  private readonly monitorIntervalMs: number;
-  private monitorTimer: ReturnType<typeof setInterval> | null = null;
-  private reading = false;
-  /** Steps the load monitor has taken off the quality the host chose. */
-  private penalty = 0;
-  private lowerCause: 'computer' | 'connection' = 'computer';
-  private overloaded = false;
-  private health = new Map<string, LinkHealth>();
+  private readonly loadControl: LoadControl;
   private lastLoadKey = '';
 
   constructor(private readonly options: HostSessionOptions) {
     this.maxViewers = Math.min(options.maxViewers ?? MAX_VIEWERS, MAX_VIEWERS);
     this.connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
-    this.monitorIntervalMs = options.monitorIntervalMs ?? DEFAULT_MONITOR_INTERVAL_MS;
+    this.loadControl = new LoadControl({
+      intervalMs: options.monitorIntervalMs ?? DEFAULT_MONITOR_INTERVAL_MS,
+      chosen: () => this.currentQuality,
+      links: () => this.sendingLinks(),
+      onStep: (direction) => {
+        this.log.info(direction === 'lowered' ? 'quality lowered' : 'quality raised', {
+          to: this.effectiveQuality,
+          viewers: this.viewers.size,
+          cause: this.load.cause,
+        });
+        for (const { link } of this.viewers.values()) this.applyQuality(link);
+      },
+      onReading: () => this.publishLoad(),
+    });
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.now = options.now ?? Date.now;
     this.hostId = this.createId();
@@ -246,18 +231,11 @@ export class HostSession {
 
   /** What is sent now: the chosen quality, lowered while the host cannot keep up. */
   get effectiveQuality(): QualityId {
-    return lowerQuality(this.currentQuality, this.penalty);
+    return this.loadControl.effective;
   }
 
   get load(): LoadStatus {
-    return {
-      chosen: this.currentQuality,
-      effective: this.effectiveQuality,
-      viewers: this.viewers.size,
-      cause: this.penalty > 0 || this.overloaded ? this.lowerCause : null,
-      overloaded: this.overloaded,
-      health: this.health,
-    };
+    return this.loadControl.status(this.viewers.size);
   }
 
   /**
@@ -266,7 +244,7 @@ export class HostSession {
    */
   setQuality(id: QualityId): void {
     this.currentQuality = id;
-    this.resetLoad();
+    this.loadControl.reset();
     for (const { link } of this.viewers.values()) this.applyQuality(link);
     this.emitter.emit('quality', id);
     this.publishLoad();
@@ -325,7 +303,7 @@ export class HostSession {
     this.shared = stream;
     this.log.info('sharing started', { viewers: this.viewers.size });
     for (const { link } of this.viewers.values()) this.startSharingWith(link);
-    this.startMonitoring();
+    this.loadControl.start();
     this.emitter.emit('sharing', stream);
   }
 
@@ -333,8 +311,8 @@ export class HostSession {
     if (!this.shared) return;
     this.shared = null;
     this.log.info('sharing stopped');
-    this.stopMonitoring();
-    this.resetLoad();
+    this.loadControl.stop();
+    this.loadControl.reset();
     for (const { link } of this.viewers.values()) {
       this.unshareWith(link);
       this.sendTo(link, { type: 'media-stopped', sourceId: this.hostId });
@@ -354,8 +332,7 @@ export class HostSession {
     if (id === this.sharerId) this.endIncoming();
     this.requests.delete(id);
     this.viewers.delete(id);
-    this.monitor.forget(id);
-    this.health.delete(id);
+    this.loadControl.forget(id);
     this.log.info('viewer removed', { viewers: this.viewers.size });
     this.sendTo(viewer.link, { type: 'removed' });
     this.leaving.set(
@@ -372,7 +349,7 @@ export class HostSession {
   }
 
   close(): void {
-    this.stopMonitoring();
+    this.loadControl.stop();
     for (const link of this.pending.values()) link.close();
     for (const link of this.connecting) link.close();
     for (const { link } of this.viewers.values()) link.close();
@@ -409,8 +386,7 @@ export class HostSession {
         this.viewers.delete(participant.id);
         this.requests.delete(participant.id);
         this.log.info('viewer left', { viewers: this.viewers.size });
-        this.monitor.forget(participant.id);
-        this.health.delete(participant.id);
+        this.loadControl.forget(participant.id);
         this.publishRoster();
         this.publishSlots();
         this.publishLoad();
@@ -514,7 +490,7 @@ export class HostSession {
     for (const [id, { link }] of this.viewers) {
       if (id !== viewerId) this.startSharingWith(link);
     }
-    this.startMonitoring();
+    this.loadControl.start();
     this.emitter.emit('incoming', this.forwarded);
     this.publishLoad();
   }
@@ -528,8 +504,8 @@ export class HostSession {
     this.forwarded = null;
     if (!forwarded) return;
     this.log.info('viewer share ended');
-    this.stopMonitoring();
-    this.resetLoad();
+    this.loadControl.stop();
+    this.loadControl.reset();
     for (const [id, { link }] of this.viewers) {
       if (id === sharerId) continue;
       this.unshareWith(link);
@@ -550,62 +526,14 @@ export class HostSession {
     });
   }
 
-  /** The load monitor reads the links while something is shared (ADR-0006). */
-  private startMonitoring(): void {
-    if (this.monitorTimer !== null) return;
-    this.monitorTimer = setInterval(() => void this.readLinks(), this.monitorIntervalMs);
-  }
-
-  private stopMonitoring(): void {
-    if (this.monitorTimer !== null) clearInterval(this.monitorTimer);
-    this.monitorTimer = null;
-  }
-
-  private resetLoad(): void {
-    this.monitor.reset();
-    this.penalty = 0;
-    this.overloaded = false;
-    this.health = new Map();
-  }
-
-  /** One round: read every link, let the monitor judge, and apply a changed quality to all. */
-  private async readLinks(): Promise<void> {
-    if (this.reading || !this.sending || this.viewers.size === 0) return;
-    this.reading = true;
-    try {
-      const readings = new Map<string, LinkStats | null>();
-      await Promise.all(
-        // The sharing viewer sends no picture back; its link has nothing to read.
-        [...this.viewers]
-          .filter(([id]) => id !== this.sharerId)
-          .map(async ([id, { link }]) => {
-            readings.set(id, await link.stats().catch(() => null));
-          }),
-      );
-      // Sharing may have stopped, or the quality been chosen again, while the links were read.
-      if (!this.sending) return;
-      const decision = this.monitor.update({
-        readings,
-        limits: qualityPreset(this.effectiveQuality),
-        stepsAvailable: stepsBelow(this.currentQuality),
-      });
-      const before = this.penalty;
-      this.penalty = decision.penalty;
-      this.overloaded = decision.overloaded;
-      this.health = new Map(decision.links);
-      if (decision.struggling && decision.cause) this.lowerCause = decision.cause;
-      if (this.penalty !== before) {
-        this.log.info(this.penalty > before ? 'quality lowered' : 'quality raised', {
-          to: this.effectiveQuality,
-          viewers: this.viewers.size,
-          cause: this.lowerCause,
-        });
-        for (const { link } of this.viewers.values()) this.applyQuality(link);
-      }
-      this.publishLoad();
-    } finally {
-      this.reading = false;
-    }
+  /** The links that get the picture: every viewer but the one who shares it. */
+  private sendingLinks(): Map<string, MediaLink> {
+    if (!this.sending) return new Map();
+    return new Map(
+      [...this.viewers]
+        .filter(([id]) => id !== this.sharerId)
+        .map(([id, { link }]) => [id, link] as const),
+    );
   }
 
   /** Tells the listeners, but only when something they show has changed. */
