@@ -31,9 +31,9 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   is left when nothing happens, and a quiet symbol tells of a new message.
 - Technical details with a copy button for connection problems, and an error page with the same
   details if the interface itself fails.
-- Tools for development: `npm run measure:load` (what a host costs per viewer), `npm run
-lint:firefox`, and manual test guides for stream mode, full screen, many viewers and viewer
-  shares in `docs/manual-tests/`.
+- Development tools: `npm run measure:load` shows what a host costs per viewer, and `npm run lint:firefox`
+  checks the Firefox package. Manual test guides for stream mode, full screen, many viewers and
+  viewer shares are in `docs/manual-tests/`.
 
 ### Security
 
