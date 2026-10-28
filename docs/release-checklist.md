@@ -6,9 +6,9 @@ Open points from ADR-0001 that need a person, not a test. Tick them off here.
 
 Brave limits WebRTC address handling by default, which can reduce the candidates in a code.
 
-- [ ] Brave as host and as viewer, Shields at their defaults, same network: connects, picture and
+- [x] Brave as host and as viewer, Shields at their defaults, same network: connects, picture and
       sound arrive.
-- [ ] Same across two networks.
+- [x] Same across two networks.
 - [ ] If it fails: copy the technical details from both sides and note which candidate counts
       (local, STUN, relay, IPv6) are zero, then decide whether the page needs a hint for Brave.
 
