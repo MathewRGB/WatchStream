@@ -3,6 +3,7 @@ import { Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { copyText } from '@/lib/clipboard';
 
 // A code is long and not meant to be read: a few lines, scrolling inside, keep the sidebar compact.
 const CODE_CLASSES = 'min-h-20 max-h-28 font-mono text-xs break-all';
@@ -32,10 +33,9 @@ export function CodeBox({
   const [copyState, setCopyState] = useState<CopyState>(initiallyCopied ? 'copied' : 'idle');
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
+    if (await copyText(code)) {
       setCopyState('copied');
-    } catch {
+    } else {
       textarea.current?.select();
       setCopyState('failed');
     }

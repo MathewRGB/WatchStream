@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, MonitorUp, MonitorX, Users } from 'lucide-react';
+import { MessageSquare, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CandidateSummary } from '@/core/peer/candidates';
@@ -9,7 +9,6 @@ import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useViewerSession } from '@/hooks/use-viewer-session';
 import { useViewerShare } from '@/hooks/use-viewer-share';
 import { useVolume } from '@/hooks/use-volume';
-import type { ShareEnd } from '@/core/session/viewer-session';
 import type { CaptureDisplay } from '@/lib/capture';
 import { copyText } from '@/lib/clipboard';
 import { AppShell } from './app-shell';
@@ -24,6 +23,7 @@ import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
 import { StageVideo } from './stage-video';
 import { TechnicalDetails } from './technical-details';
+import { ViewerShareControls } from './viewer-share-controls';
 
 const APP_TITLE = 'WatchStream';
 
@@ -165,13 +165,6 @@ function JoinedSession(props: JoinedSessionProps) {
   return <JoiningView {...props} />;
 }
 
-/** What the viewer is told when the host did not let them share, or ended it. */
-const SHARE_END_TEXT: Record<ShareEnd, (host: string) => string> = {
-  declined: (host) => `${host} did not allow sharing.`,
-  busy: () => 'Something is already being shared.',
-  revoked: (host) => `${host} ended your share.`,
-};
-
 function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProps) {
   const { participants, participantId, media, share, shareEnd, ownShare } =
     useViewerSession(session);
@@ -213,68 +206,13 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
         <Stage
           emptyMessage={`Waiting for ${hostName} to share something.`}
           overlay={
-            <>
-              {share === 'idle' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void sharing.start()}
-                  // Something on the stage would be answered "busy"; the picker would be wasted.
-                  disabled={sharing.starting || media !== null}
-                  title={media ? 'Something is already being shared.' : undefined}
-                  data-testid="share-button"
-                >
-                  <MonitorUp /> Share
-                </Button>
-              )}
-              {share === 'requested' && (
-                <>
-                  <p
-                    role="status"
-                    className="rounded-md bg-background/70 px-2 py-1 text-sm"
-                    data-testid="share-waiting"
-                  >
-                    Waiting for {hostName} to allow it
-                  </p>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={sharing.stop}
-                    data-testid="share-cancel"
-                  >
-                    Cancel
-                  </Button>
-                </>
-              )}
-              {share === 'sharing' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={sharing.stop}
-                  data-testid="stop-share"
-                >
-                  <MonitorX /> Stop sharing
-                </Button>
-              )}
-              {share === 'idle' && shareEnd && (
-                <p
-                  role="status"
-                  className="rounded-md bg-background/70 px-2 py-1 text-sm"
-                  data-testid="share-notice"
-                >
-                  {SHARE_END_TEXT[shareEnd](hostName)}
-                </p>
-              )}
-              {sharing.error && (
-                <p
-                  role="alert"
-                  className="rounded-md bg-background/70 px-2 py-1 text-sm text-destructive"
-                  data-testid="share-error"
-                >
-                  {sharing.error}
-                </p>
-              )}
-            </>
+            <ViewerShareControls
+              share={share}
+              shareEnd={shareEnd}
+              hostName={hostName}
+              stageTaken={media !== null}
+              controls={sharing}
+            />
           }
         >
           {share === 'sharing' && ownShare ? (

@@ -1,12 +1,10 @@
 import {
-  Check,
   MessageSquare,
   MonitorUp,
   MonitorX,
   SlidersHorizontal,
   UserPlus,
   Users,
-  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { HostSession } from '@/core/session/host-session';
@@ -22,7 +20,9 @@ import { LoadLine } from './load-line';
 import { ParticipantList } from './participant-list';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { SettingsTab } from './settings-tab';
+import { ShareRequestNote } from './share-request-note';
 import { Stage } from './stage';
+import { StageNote } from './stage-note';
 import { StageVideo } from './stage-video';
 
 interface HostViewProps {
@@ -39,7 +39,6 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'A viewer';
-  const asking = shareRequests[0];
 
   const tabs: SidebarTab[] = [
     {
@@ -127,40 +126,16 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
                   <MonitorX /> Stop {nameOf(incoming.sourceId)}&apos;s share
                 </Button>
               )}
-              {asking && (
-                <p
-                  role="status"
-                  className="flex items-center gap-2 rounded-md bg-background/70 px-2 py-1 text-sm"
-                  data-testid="share-request-banner"
-                >
-                  {nameOf(asking.id)} wants to share
-                  {shareRequests.length > 1 && ` (+${shareRequests.length - 1})`}
-                  <Button
-                    size="sm"
-                    onClick={() => session.allowShare(asking.id)}
-                    data-testid="share-allow"
-                  >
-                    <Check /> Allow
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => session.declineShare(asking.id)}
-                    data-testid="share-decline"
-                  >
-                    <X /> Decline
-                  </Button>
-                </p>
-              )}
+              <ShareRequestNote
+                requests={shareRequests}
+                onAllow={(id) => session.allowShare(id)}
+                onDecline={(id) => session.declineShare(id)}
+              />
               {(sharedStream || incoming) && viewers > 0 && <LoadLine load={load} />}
               {share.error && (
-                <p
-                  role="alert"
-                  className="rounded-md bg-background/70 px-2 py-1 text-sm text-destructive"
-                  data-testid="share-error"
-                >
+                <StageNote role="alert" className="text-destructive" data-testid="share-error">
                   {share.error}
-                </p>
+                </StageNote>
               )}
             </>
           }

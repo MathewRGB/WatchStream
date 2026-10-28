@@ -3,6 +3,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FADE_WHEN_IDLE } from './stage-fullscreen';
+import { StageNote } from './stage-note';
 
 interface StageVideoProps {
   stream: MediaStream;
@@ -85,25 +86,19 @@ export function StageVideo({
         data-testid="stage-video"
       />
       {label && (
-        <p
-          className={cn(
-            'absolute bottom-3 left-3 rounded-md bg-background/70 px-2 py-1 text-sm',
-            FADE_WHEN_IDLE,
-          )}
+        <StageNote
+          className={cn('absolute bottom-3 left-3', FADE_WHEN_IDLE)}
           data-testid="stage-label"
         >
           {label}
-        </p>
+        </StageNote>
       )}
       {!silent && (
         <div className={cn('absolute right-3 bottom-3 flex items-center gap-2', FADE_WHEN_IDLE)}>
           {blocked && (
-            <p
-              className="rounded-md bg-background/70 px-2 py-1 text-sm"
-              data-testid="sound-blocked"
-            >
+            <StageNote data-testid="sound-blocked">
               The browser started the video without sound.
-            </p>
+            </StageNote>
           )}
           <Button
             type="button"

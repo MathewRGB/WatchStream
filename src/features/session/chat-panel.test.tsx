@@ -114,11 +114,4 @@ describe('ChatPanel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Not connected to the host.');
     expect(screen.getByTestId('chat-input')).toHaveValue('hello?');
   });
-
-  it('can be disabled', () => {
-    render(<ChatPanel messages={[]} selfId="me" onSend={vi.fn()} disabled />);
-
-    expect(screen.getByTestId('chat-input')).toBeDisabled();
-    expect(screen.getByTestId('chat-send')).toBeDisabled();
-  });
 });

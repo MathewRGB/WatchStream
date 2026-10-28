@@ -11,12 +11,11 @@ interface ChatPanelProps {
   selfId: string | null;
   /** Sends the text; throws when it cannot be sent. */
   onSend: (text: string) => void;
-  disabled?: boolean;
 }
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
 
-export function ChatPanel({ messages, selfId, onSend, disabled = false }: ChatPanelProps) {
+export function ChatPanel({ messages, selfId, onSend }: ChatPanelProps) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const list = useRef<HTMLOListElement>(null);
@@ -84,16 +83,9 @@ export function ChatPanel({ messages, selfId, onSend, disabled = false }: ChatPa
           maxLength={MAX_CHAT_LENGTH}
           placeholder="Write a message"
           aria-label="Message"
-          disabled={disabled}
           data-testid="chat-input"
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={disabled}
-          aria-label="Send"
-          data-testid="chat-send"
-        >
+        <Button type="submit" size="icon" aria-label="Send" data-testid="chat-send">
           <Send />
         </Button>
       </form>
