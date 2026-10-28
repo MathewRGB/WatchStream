@@ -16,6 +16,11 @@ export default defineConfig({
       default_title: 'Open WatchStream',
     },
     ...(browser === 'firefox' && {
+      // Firefox shares no tab sound, so a script is injected into the tab the host chooses. Nothing
+      // is granted at install: the tab list and each site are asked for when the host picks them.
+      permissions: ['storage', 'scripting'],
+      optional_permissions: ['tabs'],
+      optional_host_permissions: ['<all_urls>'],
       browser_specific_settings: {
         gecko: {
           id: 'watchstream@mathewrgb.github.io',
