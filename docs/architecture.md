@@ -24,7 +24,7 @@ What the platform imposes:
   over a channel the users already have (a messenger).
 - **Extension URLs** differ per browser and installation (Firefox: a random UUID), so a clickable
   invitation link is not possible without a hosted page.
-- **Firefox** shares no tab audio through `getDisplayMedia`. **Brave** limits WebRTC address
+- **Firefox** shares no tab audio through `getDisplayMedia` (see §6 for the way around it). **Brave** limits WebRTC address
   handling by default; tested with default Shields, it connects.
 
 ## 1. Stream mode only
@@ -113,6 +113,27 @@ Capture is `getDisplayMedia` in every browser: the browser's own picker, one cod
 permission. Chrome and Brave offer "also share tab audio"; Firefox shares no sound.
 `chrome.tabCapture` would change what a click on the icon means and needs two more permissions for
 nothing `getDisplayMedia` does not already give.
+
+**Tab sound in Firefox.** The host picks a tab in Settings; a script is injected into it
+(`src/entrypoints/tab-sound.content.ts`, Firefox build only, registered at runtime and never
+declared in the manifest). It routes the page's `<video>` or `<audio>` through Web Audio
+(`createMediaElementSource`): to the speakers, so the host still hears it, and to a processor that
+posts blocks of samples on a runtime port (`src/core/tab-sound/capture.ts`). The session page
+checks every block (`relay.ts`), schedules it with 100 ms of lead into a
+`MediaStreamAudioDestinationNode` (`sink.ts`) and adds that track, cloned per share, to the shared
+stream (`refreshSharing` passes a late track on). Why not hand over a stream: a `MediaStream` cannot
+leave its tab, and the connection lives in the session tab, so the picture stays with
+`getDisplayMedia` and only the sound travels as numbers. `mozCaptureStream` would mute the element
+for the host, and tapping the element is the only way that keeps the speakers in our hands.
+
+Costs, and why they are accepted: nothing is granted at install. `tabs` (to list titles) and the
+chosen site's origin are optional permissions asked for at the two clicks; `scripting` is the only
+permission added to the manifest. The sound is about 150 ms behind the picture (the lead plus the
+port), because a getDisplayMedia picture cannot be delayed to match. `ScriptProcessorNode` is
+deprecated but needs no module file, which a content script cannot load into the page's realm;
+an `AudioWorklet` is the replacement if it is ever removed. A player that took the element over
+itself, DRM media and cross-origin media without CORS give silence or an error. Only the first
+frame that delivers sound is used.
 
 Sound is captured without echo cancellation, noise suppression and automatic gain, in stereo:
 those filters are made for voices and muffle music. The descriptions ask Opus for stereo, up to

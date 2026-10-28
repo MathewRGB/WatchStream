@@ -82,7 +82,11 @@ open: closing it ends the session.
   the quality: Sharp needs about 6 Mbit/s of upload and one encode per viewer. A session holds up
   to twelve viewers; with many of them some may get the picture late or at a lower quality. The
   sound adds 64 to 192 kbit/s, depending on the quality.
-- Firefox cannot capture audio as a host in stream mode.
+- Firefox cannot share the sound of a tab itself. As a host, choose the tab with the video under
+  **Settings → Sound from a tab**: WatchStream takes the sound from the video in that tab and adds
+  it to your share. The sound can be a fraction of a second behind the picture, protected streams
+  and players that process their own sound do not work, and Firefox asks you for the tab list and
+  for access to that one site when you choose.
 - Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
   additional relay server (TURN).
 - Firefox 140 or newer is required.

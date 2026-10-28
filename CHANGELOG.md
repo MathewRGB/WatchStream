@@ -25,6 +25,9 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 - Viewers can share too: a viewer picks a source and asks, the host allows it with one click and
   passes the picture on to everyone else. One picture is on the stage at a time; the host can end a
   viewer's share and its own share takes the stage back.
+- Firefox: sound from a tab. Firefox shares no tab sound, so the host can choose the tab with the
+  video in Settings; WatchStream takes the sound from its video and adds it to the share. Access
+  to the tab list and to the one site is asked for at that moment, not at install.
 - Chat, a list of the people in the session, and the host's view of who is not keeping up.
 - One window without page scrolling: the stage with full screen, and a sidebar with tabs (Invite,
   People, Chat, Settings). In full screen the sidebar slides in at the right edge, only the picture
