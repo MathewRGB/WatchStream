@@ -307,6 +307,17 @@ export class HostSession {
     this.emitter.emit('sharing', stream);
   }
 
+  /**
+   * Passes on tracks the shared stream gained or lost after the share started, such as the
+   * sound taken from a tab. Viewers and the sharer's own picture are handled as in `startSharing`.
+   */
+  refreshSharing(): void {
+    const stream = this.shared;
+    if (!stream) return;
+    for (const { link } of this.viewers.values())
+      this.guardMedia(link, () => link.setOutgoing(stream));
+  }
+
   stopSharing(): void {
     if (!this.shared) return;
     this.shared = null;
