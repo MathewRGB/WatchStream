@@ -26,6 +26,9 @@ describe('useViewerSession', () => {
       participants: [],
       participantId: null,
       media: null,
+      share: 'idle',
+      shareEnd: null,
+      ownShare: null,
     });
   });
 

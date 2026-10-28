@@ -156,11 +156,22 @@ export class PeerLink implements OfferingLink {
     if (this.currentState !== 'open') {
       throw new Error('The link is not open.');
     }
-    if (stream === this.outgoing) return;
-    for (const sender of this.senders.splice(0)) this.connection.removeTrack(sender);
+    // Another stream replaces everything. The same stream is synced with its tracks as they are
+    // now: a stream that is forwarded (ADR-0007) gains its video and its sound one at a time.
+    if (stream !== this.outgoing) {
+      for (const sender of this.senders.splice(0)) this.connection.removeTrack(sender);
+    }
     this.outgoing = stream;
-    for (const track of stream?.getTracks() ?? []) {
-      this.senders.push(this.connection.addTrack(track, stream!));
+    const wanted = stream?.getTracks() ?? [];
+    for (const sender of [...this.senders]) {
+      if (sender.track && wanted.includes(sender.track)) continue;
+      this.connection.removeTrack(sender);
+      this.senders.splice(this.senders.indexOf(sender), 1);
+    }
+    for (const track of wanted) {
+      if (!this.senders.some((sender) => sender.track === track)) {
+        this.senders.push(this.connection.addTrack(track, stream!));
+      }
     }
   }
 

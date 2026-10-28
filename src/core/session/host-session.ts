@@ -20,6 +20,7 @@ import {
   type ChatMessage,
   type HostMessage,
   type Participant,
+  type ShareDenial,
 } from '../protocol/messages';
 import { SessionError } from './session-error';
 
@@ -62,6 +63,16 @@ export interface HostSessionEvents {
   quality: QualityId;
   /** The load status changed: the effective quality, the cause, how the viewers fare. */
   load: LoadStatus;
+  /** A viewer's share started (its picture) or ended (`null`); see `incoming`. */
+  incoming: IncomingShare | null;
+  /** The viewers who asked to share and wait for the host's answer (ADR-0007). */
+  shareRequests: Participant[];
+}
+
+/** A viewer's share, as the host sees it: who, and the picture that arrives from them. */
+export interface IncomingShare {
+  sourceId: string;
+  stream: MediaStream;
 }
 
 interface Viewer {
@@ -101,6 +112,12 @@ export class HostSession {
   private readonly now: () => number;
   private readonly log = createLogger('session.host');
   private shared: MediaStream | null = null;
+  /** The viewer whose share the host allowed; set from the grant to the end of the share. */
+  private sharerId: string | null = null;
+  /** The sharer's picture, once its first track arrived and it is passed on. */
+  private forwarded: IncomingShare | null = null;
+  /** Viewers who asked to share, oldest first. */
+  private readonly requests = new Set<string>();
   private currentQuality: QualityId = DEFAULT_QUALITY;
   private readonly monitor = new LoadMonitor();
   private readonly monitorIntervalMs: number;
@@ -260,8 +277,51 @@ export class HostSession {
     return this.shared;
   }
 
-  /** Shares a stream with every viewer, now and for viewers who join later. Replaces a running share. */
+  /** A viewer's picture that the host shows and passes on, or `null` (ADR-0007). */
+  get incoming(): IncomingShare | null {
+    return this.forwarded;
+  }
+
+  /** The viewers who asked to share and wait for an answer, oldest first. */
+  get shareRequests(): Participant[] {
+    return [...this.requests].flatMap((id) => this.viewers.get(id)?.participant ?? []);
+  }
+
+  /** Lets the viewer share. Another request that waits is answered `busy` at once. */
+  allowShare(viewerId: string): void {
+    const viewer = this.viewers.get(viewerId);
+    if (!viewer || !this.requests.delete(viewerId)) return;
+    if (this.sending || this.sharerId !== null) {
+      this.answerShare(viewer, 'busy');
+    } else {
+      this.sharerId = viewerId;
+      this.log.info('viewer share allowed');
+      this.sendTo(viewer.link, { type: 'share-granted' });
+      for (const other of [...this.requests]) this.denyShare(other, 'busy');
+    }
+    this.publishRequests();
+  }
+
+  /** Turns a request down. */
+  declineShare(viewerId: string): void {
+    if (this.requests.has(viewerId)) this.denyShare(viewerId, 'declined');
+  }
+
+  /** Ends the share of the viewer who shares, if any. The viewer is told. */
+  revokeShare(): void {
+    const viewer = this.sharerId === null ? undefined : this.viewers.get(this.sharerId);
+    if (!viewer) return;
+    this.log.info('viewer share revoked');
+    this.endIncoming();
+    this.sendTo(viewer.link, { type: 'share-revoked' });
+  }
+
+  /**
+   * Shares a stream with every viewer, now and for viewers who join later. Replaces a running
+   * share. A viewer's share ends: the host decides what is on the stage.
+   */
   startSharing(stream: MediaStream): void {
+    this.revokeShare();
     this.shared = stream;
     this.log.info('sharing started', { viewers: this.viewers.size });
     for (const { link } of this.viewers.values()) this.startSharingWith(link);
@@ -291,6 +351,8 @@ export class HostSession {
   removeViewer(id: string): void {
     const viewer = this.viewers.get(id);
     if (!viewer) return;
+    if (id === this.sharerId) this.endIncoming();
+    this.requests.delete(id);
     this.viewers.delete(id);
     this.monitor.forget(id);
     this.health.delete(id);
@@ -306,6 +368,7 @@ export class HostSession {
     this.publishRoster();
     this.publishSlots();
     this.publishLoad();
+    this.publishRequests();
   }
 
   close(): void {
@@ -320,6 +383,7 @@ export class HostSession {
     this.pending.clear();
     this.connecting.clear();
     this.viewers.clear();
+    this.requests.clear();
     this.leaving.clear();
     this.emitter.clear();
   }
@@ -333,23 +397,31 @@ export class HostSession {
     link.events.on('signal', (signal) => {
       if (signal.type === 'offer') {
         this.sendTo(link, { type: 'media-offer', sourceId: this.hostId, sdp: signal.sdp });
+      } else {
+        // The answer to the viewer's own offer; `sourceId` names who made the offer.
+        this.sendTo(link, { type: 'media-answer', sourceId: participant.id, sdp: signal.sdp });
       }
     });
+    link.events.on('stream', (stream) => this.handleViewerStream(participant.id, stream));
     link.events.on('close', () => {
-      if (this.viewers.delete(participant.id)) {
+      if (this.viewers.get(participant.id) === viewer) {
+        if (participant.id === this.sharerId) this.endIncoming();
+        this.viewers.delete(participant.id);
+        this.requests.delete(participant.id);
         this.log.info('viewer left', { viewers: this.viewers.size });
         this.monitor.forget(participant.id);
         this.health.delete(participant.id);
         this.publishRoster();
         this.publishSlots();
         this.publishLoad();
+        this.publishRequests();
       }
     });
     this.log.info('viewer joined', { viewers: this.viewers.size });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
     // The link keeps the limits and applies them whenever a video track gets negotiated.
     this.applyQuality(link);
-    if (this.shared) this.startSharingWith(link);
+    if (this.sending) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
     this.publishLoad();
@@ -369,6 +441,20 @@ export class HostSession {
         this.log.error('could not apply a media answer', describeThrown(error));
         link.close();
       });
+    } else if (message?.type === 'media-offer' && message.sourceId === sender.id) {
+      // Answered for every viewer, also after a share ended: the offer that takes the tracks away
+      // has to be answered, or the link cannot negotiate again. Only the allowed viewer's picture
+      // is passed on (`handleViewerStream`).
+      void link.receiveSignal({ type: 'offer', sdp: message.sdp }).catch((error) => {
+        this.log.error('could not apply a viewer media offer', describeThrown(error));
+        link.close();
+      });
+    } else if (message?.type === 'share-request') {
+      this.handleShareRequest(sender);
+    } else if (message?.type === 'share-stop') {
+      this.requests.delete(sender.id);
+      if (sender.id === this.sharerId) this.endIncoming();
+      this.publishRequests();
     } else {
       // Dropped without a reply, as the protocol says; the length helps tell junk from a bug.
       this.log.debug('dropped a message from a viewer', { length: raw.length });
@@ -377,8 +463,84 @@ export class HostSession {
 
   /** The announcement goes first, so the viewer knows the offer that follows is a share. */
   private startSharingWith(link: MediaLink): void {
-    this.sendTo(link, { type: 'media-started', sourceId: this.hostId });
-    this.guardMedia(link, () => link.setOutgoing(this.shared));
+    const sending = this.sending;
+    // The sharer does not get its own picture back.
+    if (!sending || link === this.viewers.get(this.sharerId ?? '')?.link) return;
+    this.sendTo(link, { type: 'media-started', sourceId: sending.sourceId });
+    this.guardMedia(link, () => link.setOutgoing(sending.stream));
+  }
+
+  /** What goes out to the viewers: the host's own share, or the forwarded picture of a viewer. */
+  private get sending(): IncomingShare | null {
+    return this.shared ? { sourceId: this.hostId, stream: this.shared } : this.forwarded;
+  }
+
+  private handleShareRequest(sender: Participant): void {
+    const viewer = this.viewers.get(sender.id);
+    if (!viewer || this.requests.has(sender.id) || sender.id === this.sharerId) return;
+    if (this.sending || this.sharerId !== null) {
+      this.answerShare(viewer, 'busy');
+      return;
+    }
+    this.requests.add(sender.id);
+    this.log.info('viewer asks to share', { waiting: this.requests.size });
+    this.publishRequests();
+  }
+
+  private denyShare(viewerId: string, reason: ShareDenial): void {
+    this.requests.delete(viewerId);
+    const viewer = this.viewers.get(viewerId);
+    if (viewer) this.answerShare(viewer, reason);
+    this.publishRequests();
+  }
+
+  private answerShare(viewer: Viewer, reason: ShareDenial): void {
+    this.log.info('viewer share turned down', { reason });
+    this.sendTo(viewer.link, { type: 'share-denied', reason });
+  }
+
+  /** The allowed viewer's first track arrived, or another one: show it and pass it on. */
+  private handleViewerStream(viewerId: string, stream: MediaStream): void {
+    if (viewerId !== this.sharerId) return;
+    if (this.forwarded) {
+      // A later track (the sound): the links sync to the stream as it is now.
+      for (const [id, { link }] of this.viewers) {
+        if (id !== viewerId) this.guardMedia(link, () => link.setOutgoing(stream));
+      }
+      return;
+    }
+    this.forwarded = { sourceId: viewerId, stream };
+    this.log.info('forwarding a viewer share', { viewers: this.viewers.size });
+    for (const [id, { link }] of this.viewers) {
+      if (id !== viewerId) this.startSharingWith(link);
+    }
+    this.startMonitoring();
+    this.emitter.emit('incoming', this.forwarded);
+    this.publishLoad();
+  }
+
+  /** The viewer's share is over, whatever ended it: stop passing it on and tell the others. */
+  private endIncoming(): void {
+    const sharerId = this.sharerId;
+    if (sharerId === null) return;
+    this.sharerId = null;
+    const forwarded = this.forwarded;
+    this.forwarded = null;
+    if (!forwarded) return;
+    this.log.info('viewer share ended');
+    this.stopMonitoring();
+    this.resetLoad();
+    for (const [id, { link }] of this.viewers) {
+      if (id === sharerId) continue;
+      this.unshareWith(link);
+      this.sendTo(link, { type: 'media-stopped', sourceId: sharerId });
+    }
+    this.emitter.emit('incoming', null);
+    this.publishLoad();
+  }
+
+  private publishRequests(): void {
+    this.emitter.emit('shareRequests', this.shareRequests);
   }
 
   private applyQuality(link: MediaLink): void {
@@ -408,17 +570,20 @@ export class HostSession {
 
   /** One round: read every link, let the monitor judge, and apply a changed quality to all. */
   private async readLinks(): Promise<void> {
-    if (this.reading || !this.shared || this.viewers.size === 0) return;
+    if (this.reading || !this.sending || this.viewers.size === 0) return;
     this.reading = true;
     try {
       const readings = new Map<string, LinkStats | null>();
       await Promise.all(
-        [...this.viewers].map(async ([id, { link }]) => {
-          readings.set(id, await link.stats().catch(() => null));
-        }),
+        // The sharing viewer sends no picture back; its link has nothing to read.
+        [...this.viewers]
+          .filter(([id]) => id !== this.sharerId)
+          .map(async ([id, { link }]) => {
+            readings.set(id, await link.stats().catch(() => null));
+          }),
       );
       // Sharing may have stopped, or the quality been chosen again, while the links were read.
-      if (!this.shared) return;
+      if (!this.sending) return;
       const decision = this.monitor.update({
         readings,
         limits: qualityPreset(this.effectiveQuality),

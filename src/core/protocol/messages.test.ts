@@ -142,3 +142,42 @@ describe('media messages', () => {
     ).toBeNull();
   });
 });
+
+describe('share messages (ADR-0007)', () => {
+  const SDP = 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n';
+
+  it('round-trips the viewer side: request, stop and an own offer', () => {
+    for (const message of [
+      { type: 'share-request' },
+      { type: 'share-stop' },
+      { type: 'media-offer', sourceId: 'p1', sdp: SDP },
+    ] as const) {
+      expect(parseViewerMessage(serialize(message))).toEqual(message);
+    }
+  });
+
+  it('round-trips the host side: grant, denial, revoke and an answer', () => {
+    for (const message of [
+      { type: 'share-granted' },
+      { type: 'share-denied', reason: 'declined' },
+      { type: 'share-denied', reason: 'busy' },
+      { type: 'share-revoked' },
+      { type: 'media-answer', sourceId: 'p1', sdp: SDP },
+    ] as const) {
+      expect(parseHostMessage(serialize(message))).toEqual(message);
+    }
+  });
+
+  it('refuses a denial with an unknown reason and an offer or answer without a description', () => {
+    expect(parseHostMessage('{"type":"share-denied","reason":"because"}')).toBeNull();
+    expect(parseHostMessage('{"type":"share-denied"}')).toBeNull();
+    expect(parseViewerMessage('{"type":"media-offer","sourceId":"p1","sdp":"nope"}')).toBeNull();
+    expect(parseHostMessage('{"type":"media-answer","sourceId":"","sdp":"v=0"}')).toBeNull();
+  });
+
+  it('accepts each message from its own side only', () => {
+    expect(parseHostMessage(serialize({ type: 'share-request' }))).toBeNull();
+    expect(parseViewerMessage(serialize({ type: 'share-granted' }))).toBeNull();
+    expect(parseViewerMessage(serialize({ type: 'share-revoked' }))).toBeNull();
+  });
+});

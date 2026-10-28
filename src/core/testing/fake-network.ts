@@ -22,6 +22,9 @@ export class FakeLink implements OfferingLink {
   failSends = false;
   /** What this side currently sends, as set through `setOutgoing`. */
   outgoing: MediaStream | null = null;
+  private outgoingTracks: unknown[] = [];
+  /** What the other side sends; one object for the life of the link, like the real link's. */
+  readonly remoteStream = new MediaStream();
   /** Descriptions received through `receiveSignal`, in order. */
   readonly received: LinkSignal[] = [];
   /** The latest limits set through `setMediaLimits`. */
@@ -64,8 +67,15 @@ export class FakeLink implements OfferingLink {
 
   setOutgoing(stream: MediaStream | null): void {
     if (this.currentState !== 'open') throw new Error('The link is not open.');
-    if (stream === this.outgoing) return;
+    // Tests also pass plain objects as streams.
+    const tracks = stream?.getTracks?.() ?? [];
+    const same =
+      stream === this.outgoing &&
+      tracks.length === this.outgoingTracks.length &&
+      tracks.every((track, i) => track === this.outgoingTracks[i]);
+    if (same) return;
     this.outgoing = stream;
+    this.outgoingTracks = [...tracks];
     // Like `negotiationneeded` in a browser, the offer comes after the caller has returned.
     const sdp = `v=0\r\nfake-media-${this.network.nextMedia++}\r\n`;
     queueMicrotask(() => this.emitter.emit('signal', { type: 'offer', sdp }));
@@ -99,7 +109,7 @@ export class FakeLink implements OfferingLink {
     this.received.push(signal);
     if (signal.type === 'offer') {
       this.emitter.emit('signal', { type: 'answer', sdp: 'v=0\r\nfake-media-answer\r\n' });
-      this.emitter.emit('stream', new MediaStream());
+      this.emitter.emit('stream', this.remoteStream);
     }
   }
 

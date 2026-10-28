@@ -20,9 +20,20 @@ export interface ChatMessage {
   sentAt: number;
 }
 
-/** Sent by a viewer to the host. */
+/** Why the host did not let a viewer share (ADR-0007). */
+export type ShareDenial = 'declined' | 'busy';
+
+/**
+ * Sent by a viewer to the host. In `media-offer` and `media-answer`, `sourceId` is the participant
+ * who made the offer: the host for an answer, the viewer itself for an offer.
+ */
 export type ViewerMessage =
-  { type: 'chat'; text: string } | { type: 'media-answer'; sourceId: string; sdp: string };
+  | { type: 'chat'; text: string }
+  | { type: 'media-answer'; sourceId: string; sdp: string }
+  /** The viewer holds a stream and asks to share it (ADR-0007). */
+  | { type: 'share-request' }
+  | { type: 'share-stop' }
+  | { type: 'media-offer'; sourceId: string; sdp: string };
 
 /** Sent by the host to a viewer. */
 export type HostMessage =
@@ -38,7 +49,13 @@ export type HostMessage =
   | { type: 'media-offer'; sourceId: string; sdp: string }
   | { type: 'media-stopped'; sourceId: string }
   /** The host removed this viewer; the connection closes right after (ADR-0006). */
-  | { type: 'removed' };
+  | { type: 'removed' }
+  | { type: 'share-granted' }
+  | { type: 'share-denied'; reason: ShareDenial }
+  /** The host ended the share of this viewer. */
+  | { type: 'share-revoked' }
+  /** The answer to the viewer's own `media-offer`. */
+  | { type: 'media-answer'; sourceId: string; sdp: string };
 
 export const MAX_CHAT_LENGTH = 1000;
 const MAX_SDP_LENGTH = 20_000;
@@ -62,6 +79,11 @@ export function parseViewerMessage(raw: string): ViewerMessage | null {
   if (data?.type === 'media-answer' && isNonEmptyString(data.sourceId) && isSdp(data.sdp)) {
     return { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp };
   }
+  if (data?.type === 'media-offer' && isNonEmptyString(data.sourceId) && isSdp(data.sdp)) {
+    return { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp };
+  }
+  if (data?.type === 'share-request') return { type: 'share-request' };
+  if (data?.type === 'share-stop') return { type: 'share-stop' };
   return null;
 }
 
@@ -92,6 +114,18 @@ export function parseHostMessage(raw: string): HostMessage | null {
         : null;
     case 'removed':
       return { type: 'removed' };
+    case 'share-granted':
+      return { type: 'share-granted' };
+    case 'share-denied':
+      return data.reason === 'declined' || data.reason === 'busy'
+        ? { type: 'share-denied', reason: data.reason }
+        : null;
+    case 'share-revoked':
+      return { type: 'share-revoked' };
+    case 'media-answer':
+      return isNonEmptyString(data.sourceId) && isSdp(data.sdp)
+        ? { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp }
+        : null;
     default:
       return null;
   }
