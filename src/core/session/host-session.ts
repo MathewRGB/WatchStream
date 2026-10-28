@@ -91,6 +91,8 @@ export class HostSession {
   /** Links whose reply was accepted but that are not open yet; they still hold a place. */
   private readonly connecting = new Set<MediaLink>();
   private readonly viewers = new Map<string, Viewer>();
+  /** Invitations whose connection is being made; they already hold a place. */
+  private making = 0;
   /** Links of removed viewers, open for a moment longer; see `removeViewer`. */
   private readonly leaving = new Map<MediaLink, ReturnType<typeof setTimeout>>();
   private readonly maxViewers: number;
@@ -133,7 +135,9 @@ export class HostSession {
   }
 
   get openSlots(): number {
-    return this.maxViewers - this.viewers.size - this.pending.size - this.connecting.size;
+    return (
+      this.maxViewers - this.viewers.size - this.pending.size - this.connecting.size - this.making
+    );
   }
 
   /** Creates a single-use invitation code for one viewer. */
@@ -146,8 +150,17 @@ export class HostSession {
       throw new SessionError('session-full', `A session holds at most ${this.maxViewers} viewers.`);
     }
     const inviteId = this.createId();
-    const { link, sdp } = await this.options.connector.createOffer();
-    this.pending.set(inviteId, link);
+    // Making the connection takes a moment. The place is held meanwhile, or several invitations
+    // asked for at once would all pass the check above and fill more places than there are.
+    this.making += 1;
+    let made: Awaited<ReturnType<PeerConnector['createOffer']>>;
+    try {
+      made = await this.options.connector.createOffer();
+      this.pending.set(inviteId, made.link);
+    } finally {
+      this.making -= 1;
+    }
+    const { sdp } = made;
     const candidates = summarizeCandidates(sdp);
     this.log.info('invitation created', { openSlots: this.openSlots, ...candidates });
     this.publishSlots();

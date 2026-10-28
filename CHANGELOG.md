@@ -9,6 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Several invitations at once: a number field next to **Invite a viewer** (up to the places that
+  are left) makes that many invitations in one step. Each is a card with its own code and a number
+  ("Invitation 3") that it keeps until it is used or cancelled. If some cannot be made, the others
+  are shown and the host is told why. The places are held while the connections are made, so that
+  invitations asked for at the same time can never fill more places than there are.
 - The host can remove a viewer: a button on each viewer in the People tab, with one question before
   it happens. The viewer is told "The host removed you from the session" and that they can join
   again with a new invitation, the place is free at once, and the others are not affected. The host

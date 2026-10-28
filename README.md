@@ -31,7 +31,9 @@ own player for such services is future work, see
 
 1. Click the WatchStream icon in the toolbar. The WatchStream page opens in a tab.
 2. **Host:** enter your name, choose **Host a session**, open the **Invite** tab in the sidebar and
-   choose **Invite a viewer**. Send the invitation code to one person via any messenger.
+   choose **Invite a viewer**. Send the invitation code to one person via any messenger. To invite
+   several people, set the number next to the button first; each invitation is numbered and is for
+   one person.
 3. **Viewer:** enter your name, choose **Join a session**, paste the invitation code and choose
    **Join**. The reply code is copied to your clipboard automatically and a notice says so; paste
    it into your chat with the host.

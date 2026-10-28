@@ -15,6 +15,8 @@ interface InvitationCardProps {
   inviteId: string;
   code: string;
   candidates: CandidateSummary;
+  /** Names the invitation when there are several, so the host knows which code goes to whom. */
+  label?: string;
   /** Called when the invitation is no longer shown (connected or removed). */
   onClose: (inviteId: string) => void;
 }
@@ -27,6 +29,7 @@ export function InvitationCard({
   inviteId,
   code,
   candidates,
+  label,
   onClose,
 }: InvitationCardProps) {
   const [reply, setReply] = useState('');
@@ -56,6 +59,11 @@ export function InvitationCard({
   return (
     <Card className="bg-background" data-testid="invitation">
       <CardContent className="flex flex-col gap-4">
+        {label && (
+          <p className="text-sm font-medium" data-testid="invitation-label">
+            {label}
+          </p>
+        )}
         <CodeBox label="1. Send this invitation code" code={code} testId="invitation-code" />
         <NoPublicAddressNotice candidates={candidates} />
         <CodeInput

@@ -77,6 +77,38 @@ describe('HostSession', () => {
     await expect(host.createInvitation()).rejects.toMatchObject({ reason: 'session-full' });
   });
 
+  it('cannot be given more invitations than there are places, also when they are asked for at once', async () => {
+    const { host } = createHost({ maxViewers: 2 });
+
+    const results = await Promise.allSettled([
+      host.createInvitation(),
+      host.createInvitation(),
+      host.createInvitation(),
+    ]);
+
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled', 'rejected']);
+    expect((results[2] as PromiseRejectedResult).reason).toMatchObject({ reason: 'session-full' });
+    expect(host.openSlots).toBe(0);
+  });
+
+  it('holds the place of an invitation while its connection is being made', async () => {
+    const { host } = createHost({ maxViewers: 2 });
+    const making = host.createInvitation();
+
+    expect(host.openSlots).toBe(1);
+    await making;
+    expect(host.openSlots).toBe(1);
+  });
+
+  it('gives the place back when the connection for an invitation cannot be made', async () => {
+    const { host, network } = createHost({ maxViewers: 2 });
+    network.createOffer = () => Promise.reject(new Error('no connection'));
+
+    await expect(host.createInvitation()).rejects.toThrow('no connection');
+
+    expect(host.openSlots).toBe(2);
+  });
+
   it('frees the slot of a cancelled invitation', async () => {
     const { host } = createHost({ maxViewers: 1 });
     const { inviteId } = await host.createInvitation();

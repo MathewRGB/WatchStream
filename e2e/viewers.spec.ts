@@ -94,3 +94,44 @@ test('the host removes a viewer, who is told why, while the other keeps watching
 
   for (const page of [host, gone, stays]) await page.page.close();
 });
+
+test('the host invites several viewers at once, and each code takes one person in', async () => {
+  const host = await openSessionPage();
+  await host.start('user1', 'host');
+  await host.openTab('invite');
+
+  await host.byTestId('invite-count').fill('3');
+  await host.byTestId('invite-count').press('Tab');
+  await expect(host.byTestId('invite-button')).toHaveText('Invite 3 viewers');
+  await host.byTestId('invite-button').click();
+
+  await expect(host.byTestId('invitation')).toHaveCount(3);
+  await expect(host.byTestId('invitation-label')).toHaveText([
+    'Invitation 1',
+    'Invitation 2',
+    'Invitation 3',
+  ]);
+  await expect(host.byTestId('open-slots')).toHaveText('Places left: 9');
+
+  const viewers: SessionPage[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const viewer = await openSessionPage();
+    await viewer.start(`viewer${i}`, 'join');
+    // The first card still open is the next one in line.
+    const card = host.byTestId('invitation').first();
+    const replyCode = await viewer.acceptInvitation(
+      await card.getByTestId('invitation-code').inputValue(),
+    );
+    await card.getByTestId('reply-input').fill(replyCode);
+    await card.getByTestId('connect-button').click();
+    await viewer.expectConnected();
+    viewers.push(viewer);
+  }
+
+  await host.expectParticipants(['user1', 'viewer1', 'viewer2', 'viewer3']);
+  await host.openTab('invite');
+  await expect(host.byTestId('invitation')).toHaveCount(0);
+  await expect(host.byTestId('open-slots')).toHaveText('Places left: 9');
+
+  for (const page of [host, ...viewers]) await page.page.close();
+});
