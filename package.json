@@ -14,6 +14,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "postinstall": "wxt prepare",
     "icons": "node scripts/generate-icons.mjs",
+    "measure:load": "node scripts/measure-host-load.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:firefox": "wxt build -b firefox && web-ext lint --source-dir .output/firefox-mv3",

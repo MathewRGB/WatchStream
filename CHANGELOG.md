@@ -9,6 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `npm run measure:load` (`scripts/measure-host-load.mjs`): measures what a host costs per viewer,
+  with the caps of the app's quality steps, optionally pinned to a number of cores on Linux. The
+  numbers in ADR-0006 come from it; a test keeps its quality steps in step with the app's. A manual
+  test guide for many viewers (`docs/manual-tests/m5-many-viewers.md`).
 - Several invitations at once: a number field next to **Invite a viewer** (up to the places that
   are left) makes that many invitations in one step. Each is a card with its own code and a number
   ("Invitation 3") that it keeps until it is used or cancelled. If some cannot be made, the others

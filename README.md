@@ -133,8 +133,17 @@ To load a build manually:
 | `npm run test:e2e`         | Builds both targets, then Playwright end-to-end tests                  |
 | `npm run check`            | Typecheck, lint, format check, unit and integration tests              |
 | `npm run lint:firefox`     | Validates the Firefox package with Mozilla's `web-ext lint`            |
+| `npm run measure:load`     | Measures what a host costs per viewer (see below)                      |
 
 The browser tests need Playwright's browsers once: `npx playwright install chromium firefox`.
+
+`npm run measure:load` is not a test. It sends one animated 1080p picture from one Chromium to N
+local connections in another, at the quality steps of the app, and prints a table: Mbit/s and frames
+per second each viewer gets, and how much encoder time that takes. Use it to see what your computer
+carries; on Linux `-- --host-cores 0-3 --viewer-cores 4-13` pins the host browser to a few cores,
+and `-- --run balanced:6 --run saver:12` picks the runs (`-- --help` lists everything). The numbers
+in ADR-0006 come from it. Software encoding in a headless browser and a demanding picture make them
+pessimistic: they show the shape, not what your host will do.
 
 `npm run lint:firefox` reports two `innerHTML` warnings. They come from React DOM inside the
 bundle, not from this repository: ESLint forbids `innerHTML` and `dangerouslySetInnerHTML` in our
@@ -179,8 +188,8 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       volume control, technical details for connection problems
 - [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
       when idle, a quiet symbol for a message
-- [ ] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up
-      (ADR-0006)
+- [ ] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
+      several invitations at once, removing a viewer (ADR-0006; built, manual check open)
 - [ ] **Later:** optional TURN service (after the test across two networks)
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
 - **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004);
@@ -193,6 +202,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [Architecture decision records (ADRs)](docs/adr/)
 - [Manual test guide for stream mode](docs/manual-tests/m3-stream-mode.md)
 - [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
+- [Manual test guide for many viewers](docs/manual-tests/m5-many-viewers.md)
 - [Checklist before the first store submission](docs/release-checklist.md)
 
 ## Disclaimer
