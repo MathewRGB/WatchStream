@@ -54,7 +54,8 @@ YouTube goes through stream mode. There are no per-site adapters and no sync mod
 5. **M5:** up to 12 viewers: a load monitor lowers the quality when the host cannot keep up,
    several invitations at once, removing a viewer
    ([ADR-0006](ADR-0006-more-than-three-viewers.md); done).
-6. **Later:** the optional TURN service (waits for the test across two networks); viewers can share
+6. **Later:** the optional TURN service (the test across two networks passed without it, so it waits for
+   reports of failures); viewers can share
    too, which is required (see ADR-0005 section 5). Not scheduled yet.
 
 ### 3. The sidebar in full screen

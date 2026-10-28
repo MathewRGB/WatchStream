@@ -117,8 +117,9 @@ integration test reads the values back from the real senders.
   count (up to 12; the host's load is watched and the quality lowered, see
   [ADR-0006](ADR-0006-more-than-three-viewers.md)).
 - Accepted at the end of M3 (2026-10-27) after the maintainer's manual runs with real pickers, tab
-  audio and the quality presets on two devices in one network. Not yet covered: a run across two
-  different public networks, which decides whether a relay (TURN) is needed in M4.
+  audio and the quality presets on two devices in one network. A run between two different public
+  IP addresses (one side through a VPN) followed on 2026-10-28 and connected, so a relay (TURN) was
+  not needed for it.
 
 ### 5. Streaming by clients is planned, not built in M3
 

@@ -8,8 +8,8 @@ browser.
 
 > **Status:** milestone M5 is done. Host and viewers connect directly, chat, and the host can
 > share a tab, window or screen that up to twelve viewers see and hear, with a quality setting and
-> a volume control. A test across two different networks is still open. The extension is not yet
-> published in any store.
+> a volume control. A test between two different public IP addresses (one side through a VPN)
+> succeeded. The extension is not yet published in any store.
 
 ## How it works
 
@@ -179,9 +179,9 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 
 ## Roadmap
 
-- [ ] **M1:** connection setup by code, chat — tested automatically in Chromium and Firefox and
-      manually by the maintainer in Chrome, Brave and Firefox; a test across two different
-      networks is still to be confirmed
+- [x] **M1:** connection setup by code, chat — tested automatically in Chromium and Firefox and
+      manually by the maintainer in Chrome, Brave and Firefox, and between two different public IP
+      addresses (2026-10-28, one side through a VPN)
 - [x] **M2:** app shell: one window without page scrolling, stage with full-screen mode, sidebar
       with tabs, reply code copied automatically
 - [x] **M3:** stream mode: share a tab, window or screen, sound in stereo, quality presets,
@@ -190,7 +190,8 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       when idle, a quiet symbol for a message
 - [x] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
       several invitations at once, removing a viewer (ADR-0006)
-- [ ] **Later:** optional TURN service (after the test across two networks)
+- [ ] **Later:** optional TURN service (the test across two networks passed without it; add it if users report
+      failures)
 - [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
 - **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004);
   viewers passing the picture on to other viewers, for more than 12 viewers and less load on the

@@ -35,4 +35,4 @@ exhaustive.
 - [ ] `npm run check` and `npm run test:e2e` pass.
 - [ ] `npm run lint:firefox` shows only the two known `innerHTML` warnings from React DOM.
 - [ ] `npm run zip` and `npm run zip:firefox` produce the packages; load each by hand once.
-- [ ] The two-network test passed (`docs/manual-tests/m3-stream-mode.md`).
+- [x] The two-network test passed (`docs/manual-tests/m3-stream-mode.md`).
