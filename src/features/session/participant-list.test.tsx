@@ -19,6 +19,36 @@ describe('ParticipantList', () => {
     ]);
   });
 
+  it('marks a viewer who is slow, for the host who passes the health, and nobody else', () => {
+    const health = new Map<string, 'good' | 'slow'>([
+      ['h', 'good'],
+      ['v1', 'slow'],
+    ]);
+    render(<ParticipantList participants={participants} selfId="h" health={health} />);
+
+    const [host, viewer] = screen.getAllByTestId('participant');
+    expect(within(host!).queryByTestId('participant-slow')).toBeNull();
+    expect(within(viewer!).getByTestId('participant-slow')).toHaveTextContent('slow');
+    expect(within(viewer!).getByTestId('participant-slow')).toHaveAttribute(
+      'title',
+      expect.stringContaining('not keeping up'),
+    );
+  });
+
+  it('shows no mark without health, as for a viewer, and none for a viewer who is fine', () => {
+    const { rerender } = render(<ParticipantList participants={participants} selfId="v1" />);
+    expect(screen.queryByTestId('participant-slow')).toBeNull();
+
+    rerender(
+      <ParticipantList
+        participants={participants}
+        selfId="h"
+        health={new Map([['v1', 'good' as const]])}
+      />,
+    );
+    expect(screen.queryByTestId('participant-slow')).toBeNull();
+  });
+
   it('marks the host and the own entry', () => {
     render(<ParticipantList participants={participants} selfId="v1" />);
 

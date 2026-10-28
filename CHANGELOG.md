@@ -15,7 +15,12 @@ adheres to [Semantic Versioning](https://semver.org/).
   second, so it is not used). When the computer or the connection cannot keep up for most viewers,
   the quality goes down one step at a time, never below Minimal; after ninety calm seconds it goes
   up again. One viewer on a poor connection is marked slow and does not lower the rest. The quality
-  the host chooses is the most that is sent. The host is not told on screen yet.
+  the host chooses is the most that is sent.
+- The host sees what is happening: a line on the stage while sharing ("720p · 8 viewers"), which
+  says why when the quality was lowered ("Lowered to Saver (480p · 8 viewers): your computer is
+  busy") and warns "Some viewers may get the picture late" when nothing more can be lowered, and a
+  "slow" mark in the People tab for a viewer who is not keeping up. The line fades with the other
+  controls in full screen. The Settings tab says that the chosen quality is the most that is sent.
 - A fourth picture quality, Minimal (360p, 15 frames per second, 0.6 Mbit/s), for many viewers or a
   slow computer. It costs the encoder about an eighth of Balanced. It is the floor the load monitor
   of ADR-0006 will lower the quality to when the host cannot keep up.

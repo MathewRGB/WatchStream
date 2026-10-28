@@ -40,7 +40,11 @@ own player for such services is future work, see
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
    it on their stage, with a mute button and a volume slider; **Stop sharing** (or the browser's own stop button) ends it. The host can
-   lower or raise the picture quality in the **Settings** tab.
+   lower or raise the picture quality in the **Settings** tab; that is the most that is sent. A
+   line on the stage says what is sent and to how many viewers ("720p · 8 viewers"). With many
+   viewers WatchStream lowers the quality by itself when your computer or connection cannot keep
+   up, says so on that line, and raises it again later. The **People** tab marks a viewer who is not
+   keeping up; viewers see none of this.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.

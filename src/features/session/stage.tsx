@@ -27,7 +27,13 @@ export function Stage({ children, emptyMessage, overlay }: StageProps) {
         </div>
       )}
       {overlay && (
-        <div className={cn('absolute top-3 left-3 flex items-center gap-2', FADE_WHEN_IDLE)}>
+        // Wraps instead of running under the full-screen button at the other corner.
+        <div
+          className={cn(
+            'absolute top-3 left-3 flex max-w-[calc(100%-4.5rem)] flex-wrap items-center gap-2',
+            FADE_WHEN_IDLE,
+          )}
+        >
           {overlay}
         </div>
       )}

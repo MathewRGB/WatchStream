@@ -16,6 +16,21 @@ describe('SettingsTab', () => {
     expect(screen.getByTestId('quality-sharp')).not.toBeChecked();
   });
 
+  it('says that the quality is the most that is sent and may be lowered by itself', () => {
+    render(<SettingsTab quality="balanced" onQualityChange={() => {}} />);
+
+    expect(screen.getByTestId('quality-automatic-note')).toHaveTextContent(
+      /most that is sent.*lowers it by itself/,
+    );
+  });
+
+  it('offers Minimal as the lowest step', () => {
+    render(<SettingsTab quality="balanced" onQualityChange={() => {}} />);
+
+    expect(screen.getByTestId('quality-minimal')).toBeInTheDocument();
+    expect(screen.getAllByRole('radio')[0]).toBe(screen.getByTestId('quality-minimal'));
+  });
+
   it('reports the preset the host chooses', async () => {
     const onChange = vi.fn();
     render(<SettingsTab quality="balanced" onQualityChange={onChange} />);

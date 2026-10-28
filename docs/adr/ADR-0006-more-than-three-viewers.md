@@ -136,10 +136,13 @@ readings, 10 and 90 seconds) are first guesses and live in one module.
 ### 4. The host always sees what is happening
 
 - On the stage, while sharing, one short line: "720p · 8 viewers", and when lowered, why:
-  "Lowered to Saver: your computer or connection cannot keep up". At Minimal and still struggling:
-  "Some viewers may get the picture late." It fades with the other controls in full screen.
-- In the People tab each viewer has a small status (good, slow) with the numbers in its title text.
-  Viewers see nothing new.
+  "Lowered to Saver (480p · 8 viewers): your computer is busy" or "... your connection cannot keep
+  up". At the lowest step and still struggling: "... cannot keep up. Some viewers may get the
+  picture late." It fades with the other controls in full screen and wraps in a narrow window.
+- In the People tab a viewer who is not keeping up carries a small "slow" mark, with a title that
+  says what it means. Viewers see nothing new.
+- The Settings tab says that the chosen quality is the most that is sent and may be lowered by
+  itself.
 
 ### 5. Many viewers need two small tools
 

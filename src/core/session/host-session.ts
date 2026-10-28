@@ -220,7 +220,7 @@ export class HostSession {
       chosen: this.currentQuality,
       effective: this.effectiveQuality,
       viewers: this.viewers.size,
-      cause: this.penalty > 0 ? this.lowerCause : null,
+      cause: this.penalty > 0 || this.overloaded ? this.lowerCause : null,
       overloaded: this.overloaded,
       health: this.health,
     };

@@ -49,6 +49,24 @@ describe('useHostSession', () => {
     expect(result.current.openSlots).toBe(MAX_VIEWERS);
   });
 
+  it('follows the load: the viewers count and the quality that is sent', async () => {
+    const { host, network } = createHost();
+    const { result } = renderHook(() => useHostSession(host));
+    expect(result.current.load).toMatchObject({
+      viewers: 0,
+      chosen: 'balanced',
+      effective: 'balanced',
+    });
+
+    await act(async () => {
+      await joinViewer(host, network, 'user2');
+    });
+    expect(result.current.load.viewers).toBe(1);
+
+    act(() => host.setQuality('sharp'));
+    expect(result.current.load).toMatchObject({ chosen: 'sharp', effective: 'sharp' });
+  });
+
   it('stops listening after unmounting', () => {
     const { host } = createHost();
     const { unmount } = renderHook(() => useHostSession(host));

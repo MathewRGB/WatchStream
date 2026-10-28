@@ -16,6 +16,7 @@ import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
 import { countIncoming } from './incoming';
 import { InviteTab } from './invite-tab';
+import { LoadLine } from './load-line';
 import { ParticipantList } from './participant-list';
 import { Sidebar, type SidebarTab } from './sidebar';
 import { SettingsTab } from './settings-tab';
@@ -30,7 +31,7 @@ interface HostViewProps {
 }
 
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
-  const { participants, openSlots, sharedStream, quality } = useHostSession(session);
+  const { participants, openSlots, sharedStream, quality, load } = useHostSession(session);
   const share = useScreenShare(session, capture);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
@@ -47,7 +48,9 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       label: 'People',
       icon: <Users />,
       count: participants.length,
-      content: <ParticipantList participants={participants} selfId={session.hostId} />,
+      content: (
+        <ParticipantList participants={participants} selfId={session.hostId} health={load.health} />
+      ),
     },
     {
       id: 'chat',
@@ -100,6 +103,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
                   <MonitorUp /> Share
                 </Button>
               )}
+              {sharedStream && viewers > 0 && <LoadLine load={load} />}
               {share.error && (
                 <p
                   role="alert"
