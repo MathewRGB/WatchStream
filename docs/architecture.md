@@ -65,7 +65,8 @@ Consequences: two copy-and-paste steps per viewer. Codes contain the sender's IP
 should go only to the invited person. A code without a public address is flagged at once (a VPN,
 a firewall or a blocked STUN server), before anyone spends minutes passing codes around. A link
 that has not opened yet is not closed when the browser reports it failed: the viewer's ICE starts
-before a person has carried the reply to the host. Only the host's 20-second timeout ends it.
+before a person has carried the reply to the host. Only the host's 20-second timeout ends it. A
+viewer who has waited a minute for the host is told to leave and join again with a new invitation.
 
 Not done: a clickable link or a signalling service (it would need a server; the connector
 interface leaves room for a media-free one).
@@ -117,6 +118,9 @@ Sound is captured without echo cancellation, noise suppression and automatic gai
 those filters are made for voices and muffle music. The descriptions ask Opus for stereo, up to
 192 kbit/s and in-band error correction (`tuneOpus`). With the browsers' voice defaults Chromium
 sent about 29 kbit/s; tuned, both browsers send 90-160 kbit/s at Balanced.
+
+The host's own preview is built from the video track only. With the sound in it the preview would
+rely on being muted, and the host could hear the shared tab twice.
 
 The host picks one of four qualities (`src/core/media/quality.ts`): Minimal (360p, 15 fps),
 Saver (480p, 24 fps), Balanced (720p, 30 fps, the default) and Sharp (1080p, 30 fps). They are
@@ -209,10 +213,15 @@ CPU. The sharer sends at the quality its browser picks; only the host applies th
   classes in `stage-fullscreen.ts`). The pointer resting on the sidebar is not idle. A pointer move
   to the same position is ignored: a browser sends one when the element under a resting pointer
   changes, which fading does.
+- **Volume** is a slider next to the viewer's mute button. Moving it while muted turns the sound
+  back on, and the level is remembered for the next session; muting is not, so nobody joins the
+  next session wondering why there is no sound. The host's preview has no sound controls.
 - **A message in full screen** shows a small chat symbol near the right edge for one second, unless
   the open sidebar is in view.
 - Traps that cost time: popups rendered into `body` (Radix portals) are invisible in full screen;
-  and the off-screen sidebar must never scroll into view. The workspace uses `overflow: clip`, and
+  the handle at the edge must stay in the page, unseen and inert, while the sidebar covers it (an
+  element that is gone cannot report that the pointer left, and the sidebar then never closed); and
+  the off-screen sidebar must never scroll into view. The workspace uses `overflow: clip`, and
   the chat scrolls only its own list, never with `scrollIntoView`, which scrolled the picture
   sideways.
 
@@ -243,6 +252,11 @@ src/
   `useSyncExternalStore` with a change counter as snapshot (`useChangeCounter`), because the
   getters hand out fresh arrays. Sessions are created in event handlers, not in effects: Strict
   Mode runs effects twice and would drop open invitations.
+- Diagnostics: connection errors and the "session ended" screen offer "Copy technical details"
+  (the connection state, what each side's code offered, the latest log lines), and an error page
+  with the same details replaces a blank screen when the interface itself fails. Uncaught errors
+  and unhandled rejections go to the log. Firefox refuses to read a closed connection, so the
+  details are taken from the last state seen before it closed.
 - The log (`src/core/log/logger.ts`) takes only plain values and is written to carry counts,
   states and error names, never codes, descriptions, names or chat text. "Copy technical details"
   shows its latest lines.
