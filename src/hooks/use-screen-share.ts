@@ -14,9 +14,14 @@ export interface ScreenShareControls {
 /**
  * Lets the host pick a source and share it. The hook owns the captured tracks:
  * it stops them when the share ends, whether the host, the browser's own "stop
- * sharing" button or leaving the page ended it.
+ * sharing" button or leaving the page ended it. `tabSoundTrack` supplies a track for a share that
+ * came without sound.
  */
-export function useScreenShare(session: HostSession, capture: CaptureDisplay): ScreenShareControls {
+export function useScreenShare(
+  session: HostSession,
+  capture: CaptureDisplay,
+  tabSoundTrack: () => MediaStreamTrack | null = () => null,
+): ScreenShareControls {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +36,11 @@ export function useScreenShare(session: HostSession, capture: CaptureDisplay): S
     setStarting(true);
     try {
       const stream = await capture();
+      // Firefox shares no sound of its own; the sound taken from a tab fills that gap.
+      if (stream.getAudioTracks().length === 0) {
+        const sound = tabSoundTrack();
+        if (sound) stream.addTrack(sound);
+      }
       stop();
       session.startSharing(stream);
       stream.getVideoTracks()[0]?.addEventListener('ended', () => {
@@ -41,7 +51,7 @@ export function useScreenShare(session: HostSession, capture: CaptureDisplay): S
     } finally {
       setStarting(false);
     }
-  }, [capture, session, stop]);
+  }, [capture, session, stop, tabSoundTrack]);
 
   useEffect(
     () => () => {

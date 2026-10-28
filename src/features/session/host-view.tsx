@@ -11,6 +11,7 @@ import type { HostSession } from '@/core/session/host-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useHostSession } from '@/hooks/use-host-session';
 import { useScreenShare } from '@/hooks/use-screen-share';
+import { useTabSound } from '@/hooks/use-tab-sound';
 import type { CaptureDisplay } from '@/lib/capture';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
@@ -35,7 +36,8 @@ interface HostViewProps {
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   const { participants, openSlots, sharedStream, incoming, shareRequests, quality, load } =
     useHostSession(session);
-  const share = useScreenShare(session, capture);
+  const tabSound = useTabSound(session);
+  const share = useScreenShare(session, capture, tabSound.soundTrack);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'A viewer';
@@ -81,7 +83,13 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       id: 'settings',
       label: 'Settings',
       icon: <SlidersHorizontal />,
-      content: <SettingsTab quality={quality} onQualityChange={(id) => session.setQuality(id)} />,
+      content: (
+        <SettingsTab
+          quality={quality}
+          onQualityChange={(id) => session.setQuality(id)}
+          tabSound={tabSound.supported ? tabSound : undefined}
+        />
+      ),
     },
   ];
 
