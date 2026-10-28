@@ -8,7 +8,7 @@ export interface MediaLimits {
   maxFramerate: number;
 }
 
-export type QualityId = 'saver' | 'balanced' | 'sharp';
+export type QualityId = 'minimal' | 'saver' | 'balanced' | 'sharp';
 
 export interface QualityPreset extends MediaLimits {
   id: QualityId;
@@ -17,10 +17,21 @@ export interface QualityPreset extends MediaLimits {
 }
 
 /**
- * The host sends one copy of the picture to every viewer, so the upload needed
- * is roughly the bitrate times the number of viewers (at most three).
+ * The steps, from the lowest to the highest. The host sends one copy of the picture to every
+ * viewer, so the upload needed is roughly the bitrate times the number of viewers, and the encoder
+ * works once per viewer. The host chooses the highest step it wants; the load monitor goes down
+ * from there when the host cannot keep up (ADR-0006).
  */
 export const QUALITY_PRESETS: readonly QualityPreset[] = [
+  {
+    id: 'minimal',
+    label: 'Minimal',
+    description: '360p, 15 fps, sound 64 kbit/s. For many viewers or a slow computer.',
+    maxBitrateBps: 600_000,
+    maxAudioBitrateBps: 64_000,
+    maxHeight: 360,
+    maxFramerate: 15,
+  },
   {
     id: 'saver',
     label: 'Saver',
@@ -54,4 +65,15 @@ export const DEFAULT_QUALITY: QualityId = 'balanced';
 
 export function qualityPreset(id: QualityId): QualityPreset {
   return QUALITY_PRESETS.find((preset) => preset.id === id)!;
+}
+
+/** `steps` below `chosen`, never lower than the lowest step. */
+export function lowerQuality(chosen: QualityId, steps: number): QualityId {
+  const index = QUALITY_PRESETS.findIndex((preset) => preset.id === chosen);
+  return QUALITY_PRESETS[Math.max(0, index - Math.max(0, steps))]!.id;
+}
+
+/** How many steps `chosen` has below it, that is how far the load monitor can go. */
+export function stepsBelow(chosen: QualityId): number {
+  return QUALITY_PRESETS.findIndex((preset) => preset.id === chosen);
 }

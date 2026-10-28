@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A fourth picture quality, Minimal (360p, 15 frames per second, 0.6 Mbit/s), for many viewers or a
+  slow computer. It costs the encoder about an eighth of Balanced. It is the floor the load monitor
+  of ADR-0006 will lower the quality to when the host cannot keep up.
 - ADR-0006: up to twelve viewers, with a load monitor that lowers the quality when the host cannot
   keep up. It holds the measurements behind the decision (one encode per viewer makes the host's
   CPU the first limit, and the browser's own quality-limitation flag does not show it) and keeps
