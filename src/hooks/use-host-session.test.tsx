@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MAX_VIEWERS } from '@/core/session/host-session';
 import { createHost, flush, joinViewer } from '@/core/testing/session-fixtures';
 import { useHostSession } from './use-host-session';
 
@@ -11,7 +12,7 @@ describe('useHostSession', () => {
     const { result } = renderHook(() => useHostSession(host));
 
     expect(result.current.participants.map((p) => p.name)).toEqual(['user1']);
-    expect(result.current.openSlots).toBe(3);
+    expect(result.current.openSlots).toBe(MAX_VIEWERS);
   });
 
   it('updates the free places when an invitation is created and cancelled', async () => {
@@ -22,10 +23,10 @@ describe('useHostSession', () => {
     await act(async () => {
       inviteId = (await host.createInvitation()).inviteId;
     });
-    expect(result.current.openSlots).toBe(2);
+    expect(result.current.openSlots).toBe(MAX_VIEWERS - 1);
 
     act(() => host.cancelInvitation(inviteId));
-    expect(result.current.openSlots).toBe(3);
+    expect(result.current.openSlots).toBe(MAX_VIEWERS);
   });
 
   it('updates participants and places when a viewer joins and leaves', async () => {
@@ -38,14 +39,14 @@ describe('useHostSession', () => {
       leave = () => viewer.leave();
     });
     expect(result.current.participants.map((p) => p.name)).toEqual(['Host', 'user2']);
-    expect(result.current.openSlots).toBe(2);
+    expect(result.current.openSlots).toBe(MAX_VIEWERS - 1);
 
     await act(async () => {
       leave();
       await flush();
     });
     expect(result.current.participants.map((p) => p.name)).toEqual(['Host']);
-    expect(result.current.openSlots).toBe(3);
+    expect(result.current.openSlots).toBe(MAX_VIEWERS);
   });
 
   it('stops listening after unmounting', () => {

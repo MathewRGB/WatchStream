@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decodeInvitation, HandshakeCodeError } from '../handshake/handshake-code';
 import { clearLogHistory, logHistory, setLogSink } from '../log/logger';
 import { createHost, flush, joinViewer } from '../testing/session-fixtures';
+import { MAX_VIEWERS } from './host-session';
 import { SessionError } from './session-error';
 import { ViewerSession } from './viewer-session';
 
@@ -10,7 +11,7 @@ describe('HostSession', () => {
     const { host } = createHost({ hostName: 'user1' });
 
     expect(host.participants).toEqual([{ id: host.hostId, name: 'user1', role: 'host' }]);
-    expect(host.openSlots).toBe(3);
+    expect(host.openSlots).toBe(MAX_VIEWERS);
   });
 
   it('creates an invitation code that names the host', async () => {
@@ -21,7 +22,30 @@ describe('HostSession', () => {
 
     expect(invitation.inviteId).toBe(inviteId);
     expect(invitation.hostName).toBe('user1');
-    expect(host.openSlots).toBe(2);
+    expect(host.openSlots).toBe(MAX_VIEWERS - 1);
+  });
+
+  it('holds twelve viewers, who all see each other, and refuses a thirteenth', async () => {
+    expect(MAX_VIEWERS).toBe(12);
+    const { host, network } = createHost();
+    const viewers = [];
+    for (let i = 1; i <= MAX_VIEWERS; i++) {
+      viewers.push((await joinViewer(host, network, `viewer${i}`)).viewer);
+    }
+
+    expect(host.openSlots).toBe(0);
+    expect(host.participants).toHaveLength(MAX_VIEWERS + 1);
+    for (const viewer of viewers) expect(viewer.participants).toHaveLength(MAX_VIEWERS + 1);
+    await expect(host.createInvitation()).rejects.toMatchObject({ reason: 'session-full' });
+    expect(() => host.sendChat('Everyone here?')).not.toThrow();
+    await flush();
+    for (const viewer of viewers) expect(viewer.participants.at(0)?.role).toBe('host');
+  });
+
+  it('never holds more than the ceiling, whatever it is asked for', () => {
+    const { host } = createHost({ maxViewers: 50 });
+
+    expect(host.openSlots).toBe(MAX_VIEWERS);
   });
 
   it('adds a viewer once the reply is accepted and the link opens', async () => {
@@ -99,7 +123,7 @@ describe('HostSession', () => {
       const { inviteId } = await host.createInvitation();
       host.cancelInvitation(inviteId);
 
-      expect(onSlots.mock.calls).toEqual([[2], [3]]);
+      expect(onSlots.mock.calls).toEqual([[MAX_VIEWERS - 1], [MAX_VIEWERS]]);
     });
 
     it('does not report cancelling an unknown invitation', () => {
@@ -121,7 +145,7 @@ describe('HostSession', () => {
 
       await host.acceptReply(replyCode);
 
-      expect(onSlots.mock.calls).toEqual([[2]]);
+      expect(onSlots.mock.calls).toEqual([[MAX_VIEWERS - 1]]);
     });
 
     it('gives the place back when connecting fails', async () => {
@@ -134,7 +158,7 @@ describe('HostSession', () => {
 
       await host.acceptReply(replyCode).catch(() => undefined);
 
-      expect(onSlots.mock.calls).toEqual([[3]]);
+      expect(onSlots.mock.calls).toEqual([[MAX_VIEWERS]]);
     });
 
     it('reports a place freed by a leaving viewer', async () => {
@@ -146,7 +170,7 @@ describe('HostSession', () => {
       viewer.leave();
       await flush();
 
-      expect(onSlots.mock.calls).toEqual([[3]]);
+      expect(onSlots.mock.calls).toEqual([[MAX_VIEWERS]]);
     });
   });
 
@@ -455,7 +479,7 @@ describe('HostSession', () => {
           data: expect.objectContaining({ cause: 'timeout' }),
         }),
       );
-      expect(host.openSlots).toBe(3);
+      expect(host.openSlots).toBe(MAX_VIEWERS);
     });
 
     it('logs who came and went by count only, and a dropped broken link', async () => {

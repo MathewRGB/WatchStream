@@ -18,6 +18,7 @@ import { SessionError } from './session-error';
 export interface HostSessionOptions {
   hostName: string;
   connector: PeerConnector;
+  /** Fewer viewers than `MAX_VIEWERS`, for tests; more is not possible. */
   maxViewers?: number;
   /** How long to wait for the connection after a reply was accepted. */
   connectTimeoutMs?: number;
@@ -41,7 +42,12 @@ interface Viewer {
   link: MediaLink;
 }
 
-export const DEFAULT_MAX_VIEWERS = 3;
+/**
+ * The most viewers a session holds (ADR-0006). A ceiling in the code and no setting: what a host's
+ * computer and connection carry is for the load monitor to find out, and with many viewers some
+ * of them may get the picture late or at a lower quality.
+ */
+export const MAX_VIEWERS = 12;
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000;
 
 /**
@@ -64,7 +70,7 @@ export class HostSession {
   private currentQuality: QualityId = DEFAULT_QUALITY;
 
   constructor(private readonly options: HostSessionOptions) {
-    this.maxViewers = options.maxViewers ?? DEFAULT_MAX_VIEWERS;
+    this.maxViewers = Math.min(options.maxViewers ?? MAX_VIEWERS, MAX_VIEWERS);
     this.connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS;
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.now = options.now ?? Date.now;

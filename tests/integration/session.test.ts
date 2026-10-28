@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage, Participant } from '../../src/core/protocol/messages';
+import type { ViewerSession } from '../../src/core/session/viewer-session';
 import { join, startHost, waitFor } from './helpers';
 
 interface ChatSource {
@@ -32,6 +33,28 @@ describe('host and viewer sessions over WebRTC', () => {
     expect(user3.participants.map((p) => p.name)).toEqual(names);
     expect(user2.state).toBe('connected');
   });
+
+  it('holds twelve viewers, who share one roster and one chat, and refuses a thirteenth', async () => {
+    const host = startHost();
+    const viewers: ViewerSession[] = [];
+    for (let i = 1; i <= 12; i++) viewers.push(await join(host, `viewer${i}`));
+
+    for (const viewer of viewers) {
+      await waitFor<void>((resolve) => {
+        if (viewer.participants.length === 13) resolve();
+        else viewer.events.on('roster', (roster) => roster.length === 13 && resolve());
+      });
+    }
+    expect(host.participants).toHaveLength(13);
+    expect(host.openSlots).toBe(0);
+    await expect(host.createInvitation()).rejects.toMatchObject({ reason: 'session-full' });
+
+    const received = Promise.all([nextChat(host), ...viewers.map(nextChat)]);
+    viewers[6]!.sendChat('Twelve of us');
+    for (const message of await received) {
+      expect(message).toMatchObject({ senderName: 'viewer7', text: 'Twelve of us' });
+    }
+  }, 60_000);
 
   it('relays chat from one viewer to the host and the other viewer', async () => {
     const host = startHost();

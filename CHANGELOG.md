@@ -125,6 +125,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- A session now holds up to twelve viewers instead of three. The number is fixed, not a setting.
+  With many viewers the host's computer may not keep up and some viewers may get the picture late
+  or at a lower quality; a load monitor that lowers the quality for that comes next (ADR-0006).
+  Tested with twelve real connections in Chromium and Firefox (one roster, one chat, a thirteenth
+  invitation refused), six viewers playing one picture, and a host with five viewers in the real
+  extension.
 - Sync mode and services with copy protection (Netflix, Disney+, Prime Video, Max) are no longer
   planned. ADR-0001 and ADR-0004 describe stream mode only and keep sync mode as future work at
   their end; M4 is now the sidebar in full screen and the optional TURN service.

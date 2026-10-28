@@ -135,11 +135,9 @@ describe('WatchStream app', () => {
   it('shows how many places are left and disables inviting when all are taken', async () => {
     const host = openPage(network);
     await start(host, 'user1', 'host');
-    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
+    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 12');
 
-    await createInvitation(host);
-    await createInvitation(host);
-    await createInvitation(host);
+    for (let i = 0; i < 12; i++) await createInvitation(host);
 
     expect(host.getByTestId('invite-button')).toBeDisabled();
     expect(host.getByTestId('open-slots')).toHaveTextContent('The session is full.');
@@ -153,7 +151,7 @@ describe('WatchStream app', () => {
     await userEvent.click(host.getByTestId('cancel-invitation'));
 
     expect(host.queryAllByTestId('invitation')).toHaveLength(0);
-    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 3');
+    expect(host.getByTestId('open-slots')).toHaveTextContent('Places left: 12');
   });
 
   describe('reply code on the clipboard', () => {

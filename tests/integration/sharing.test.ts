@@ -99,6 +99,18 @@ describe('sharing over WebRTC', () => {
     expect(await plays(second!.stream)).toBe(true);
   });
 
+  it('sends the stream to six viewers at once, all of whom can play it', async () => {
+    const host = startHost();
+    const viewers: ViewerSession[] = [];
+    for (let i = 1; i <= 6; i++) viewers.push(await join(host, `viewer${i}`));
+    const arrivals = viewers.map(nextMedia);
+
+    host.startSharing(createTestStream());
+
+    const media = await Promise.all(arrivals);
+    for (const shared of media) expect(await plays(shared!.stream)).toBe(true);
+  }, 60_000);
+
   it('shares with a viewer who joins while the host is already sharing', async () => {
     const host = startHost();
     host.startSharing(createTestStream());

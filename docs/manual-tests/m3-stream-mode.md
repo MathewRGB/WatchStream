@@ -50,7 +50,7 @@ sound. Sharing a whole screen or window works the same way.
 
 ## 4. Late joiner and several viewers
 
-1. While the host shares, invite a second viewer (up to three). Expect them to see the share as
+1. While the host shares, invite a further viewer (a session holds up to twelve). Expect them to see the share as
    soon as they are connected.
 2. Close one viewer's WatchStream tab. Expect the others to keep watching and the host's People
    list to drop that viewer.

@@ -2,7 +2,7 @@
 
 Watch streams together, browser to browser, without your own media server.
 
-WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to three
+WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to twelve
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
 browser.
 
@@ -58,16 +58,17 @@ brings them back. The sidebar stays while the pointer rests on it.
 A message from somebody else shows a small chat symbol near the right edge for one second, also
 when everything else has faded. It does not appear while the sidebar is open.
 
-Each invitation is for one person; a session holds up to three viewers. Keep the WatchStream tab
+Each invitation is for one person; a session holds up to twelve viewers. Keep the WatchStream tab
 open: closing it ends the session.
 
 ## Limitations
 
 - Services with copy protection (Netflix, Disney+, etc.) cannot be watched together: shared, their
   picture is black. WatchStream does not circumvent copy protection.
-- In stream mode the host's upload bandwidth limits the quality. It is designed for 2-3 viewers.
-  The host sends a separate copy to each viewer, so Sharp needs about 6 Mbit/s of upload per
-  viewer. The sound adds 64 to 192 kbit/s, depending on the quality.
+- In stream mode the host sends a separate copy to each viewer, so its computer and upload limit
+  the quality: Sharp needs about 6 Mbit/s of upload and one encode per viewer. A session holds up
+  to twelve viewers; with many of them some may get the picture late or at a lower quality. The
+  sound adds 64 to 192 kbit/s, depending on the quality.
 - Firefox cannot capture audio as a host in stream mode.
 - Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
   additional relay server (TURN).
