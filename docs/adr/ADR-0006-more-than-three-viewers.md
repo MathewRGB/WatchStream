@@ -111,21 +111,27 @@ the effective step's frame rate)`:
 - A link is **behind** when `expected` is at least 5 and the frames encoded per second are under
   80 % of it. Comparing with the source keeps a still picture, which produces few frames, from
   counting.
-- A link is **squeezed** when the available outgoing bitrate (where the browser gives it) is under
-  90 % of the bitrate cap, or when more than 5 % of its packets are lost. A low bitrate alone is no
-  symptom: a still picture is cheap.
+- A link is **squeezed** when more than 5 % of its packets are lost, or when the available
+  outgoing bitrate (where the browser gives it) is under 70 % of the bitrate cap _and_ the link
+  already sends at least 70 % of it. A low bitrate alone is no symptom: a still picture is cheap,
+  and the browser's estimate does not climb while little is sent, so a low estimate on a quiet link
+  means nothing.
+- The first 8 seconds of a link are not judged: the browser is still finding its rate. A reading in
+  which a counter fell (the sender was replaced) is skipped.
 - The **host is struggling** when at least half of the links, and at least two when there are more
   than two (all of them when there are one or two), are behind or squeezed for three readings in a
   row. All links suffering together is the signature of the host's CPU or upload. One viewer on a
   poor connection is affected alone and is left to the browser's rate control for that connection;
-  that viewer is shown as slow, and the rest keep their quality.
+  that viewer is shown as slow, and the rest keep their quality. The cause is "the computer" when
+  most of the affected links are behind and "the connection" otherwise.
 - When the host is struggling, `penalty` goes up by one, and the next decision waits 10 seconds so
-  that the effect can show. When no link has been affected for 90 seconds, `penalty` goes down by
-  one. At Minimal with the host still struggling, nothing more is done and the host is told so.
+  that the effect can show. When the host has not been struggling for 90 seconds (one slow viewer
+  does not count), `penalty` goes down by one, and the next step up waits another 90. At Minimal
+  with the host still struggling, nothing more is done and the host is told so.
 
-The decision logic is pure (readings in, steps out) and takes its time from outside, so it is
-tested with sequences of readings and no timers. The constants (80 %, 90 %, 5 %, 3 readings, 10
-and 90 seconds) are first guesses and live in one module.
+The decision logic is pure (readings in, a decision out) and takes its time from the readings, so
+it is tested with simulated sequences and no timers. The constants (80 %, 70 %, 5 %, 8 seconds, 3
+readings, 10 and 90 seconds) are first guesses and live in one module.
 
 ### 4. The host always sees what is happening
 
