@@ -69,6 +69,42 @@ test('a host with five viewers: one roster, one chat and one picture for everyon
   for (const page of [host, ...viewers]) await page.page.close();
 });
 
+test('a viewer shares in the real extension: the host decides, four others watch', async () => {
+  const host = await openSessionPage();
+  const sharer = await openSessionPage();
+  await host.start('user1', 'host');
+  await connect(host, sharer, 'sharer');
+  const watchers: SessionPage[] = [];
+  for (let i = 1; i <= 4; i++) {
+    const watcher = await openSessionPage();
+    await connect(host, watcher, `watcher${i}`);
+    watchers.push(watcher);
+  }
+
+  await sharer.requestShare();
+  await expect(host.byTestId('share-request-banner')).toContainText('sharer wants to share');
+  await host.allowShare();
+
+  await host.expectPlaying();
+  for (const watcher of watchers) await watcher.expectPlaying();
+  await host.openTab('people');
+  await expect(host.byTestId('participant-sharing')).toHaveCount(1);
+  // The host sends the same load line for a forwarded picture as for its own.
+  await expect(host.byTestId('load-line')).toHaveText('720p · 5 viewers');
+
+  // A request while the stage is taken is answered at once.
+  await watchers[0]!.byTestId('share-button').click();
+  await expect(watchers[0]!.byTestId('share-notice')).toHaveText(
+    'Something is already being shared.',
+  );
+
+  await host.byTestId('stop-viewer-share').click();
+  await expect(sharer.byTestId('share-notice')).toHaveText('user1 ended your share.');
+  for (const watcher of watchers) await expect(watcher.byTestId('stage-empty')).toBeVisible();
+
+  for (const page of [host, sharer, ...watchers]) await page.page.close();
+});
+
 test('the host removes a viewer, who is told why, while the other keeps watching', async () => {
   const host = await openSessionPage();
   const gone = await openSessionPage();

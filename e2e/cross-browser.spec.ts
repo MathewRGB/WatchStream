@@ -111,6 +111,54 @@ test('a viewer who joins during a share sees it', async () => {
   await late.expectPlaying();
 });
 
+test('a Firefox viewer shares through a Chromium host to a Chromium viewer, twice', async () => {
+  const host = await openIn(chromium);
+  const sharer = await openIn(firefox);
+  const watcher = await openIn(chromium);
+  await host.start('Host', 'host');
+  await connect(host, sharer, 'Sharer');
+  await connect(host, watcher, 'Watcher');
+
+  for (let round = 0; round < 2; round++) {
+    await sharer.requestShare();
+    await expect(host.byTestId('share-request-banner')).toContainText('Sharer wants to share');
+    await host.allowShare();
+    await expect(sharer.byTestId('stop-share')).toBeVisible();
+
+    // The host shows the viewer's picture and passes it on; the sharer sees its own.
+    await host.expectPlaying();
+    await watcher.expectPlaying();
+    await expect(host.byTestId('stage-label')).toHaveText('Sharer is sharing');
+    await expect(watcher.byTestId('stage-label')).toHaveText('Sharer is sharing');
+    await expect(sharer.byTestId('stage-label')).toHaveText('You are sharing');
+    // The sound travels with the picture, though it arrives as a second track.
+    await expect.poll(() => watcher.stageAudioTrackCount()).toBe(1);
+    await expect.poll(() => host.stageAudioTrackCount()).toBe(1);
+
+    await sharer.stopSharing();
+    await expect(host.byTestId('stage-empty')).toBeVisible();
+    await expect(watcher.byTestId('stage-empty')).toBeVisible();
+  }
+});
+
+test('the host takes the stage back from a sharing viewer', async () => {
+  const host = await openIn(chromium);
+  const sharer = await openIn(chromium);
+  const watcher = await openIn(firefox);
+  await host.start('Host', 'host');
+  await connect(host, sharer, 'Sharer');
+  await connect(host, watcher, 'Watcher');
+  await sharer.requestShare();
+  await host.allowShare();
+  await watcher.expectPlaying();
+
+  await host.share();
+
+  await expect(sharer.byTestId('share-notice')).toHaveText('Host ended your share.');
+  await expect(watcher.byTestId('stage-label')).toHaveText('Host is sharing');
+  await watcher.expectPlaying();
+});
+
 test('a Firefox viewer sees why the session ended, with technical details', async () => {
   const host = await openIn(chromium);
   const viewer = await openIn(firefox);

@@ -66,6 +66,7 @@ export function SessionApp({ connector, storage, capture = captureDisplay }: Ses
         <ViewerView
           connector={connector}
           storage={storage}
+          capture={capture}
           viewerName={screen.name}
           onLeave={() => setScreen({ kind: 'start' })}
         />

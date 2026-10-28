@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Users } from 'lucide-react';
+import { MessageSquare, MonitorUp, MonitorX, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CandidateSummary } from '@/core/peer/candidates';
@@ -7,7 +7,10 @@ import type { PeerConnector } from '@/core/peer/message-link';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useViewerSession } from '@/hooks/use-viewer-session';
+import { useViewerShare } from '@/hooks/use-viewer-share';
 import { useVolume } from '@/hooks/use-volume';
+import type { ShareEnd } from '@/core/session/viewer-session';
+import type { CaptureDisplay } from '@/lib/capture';
 import { copyText } from '@/lib/clipboard';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
@@ -28,6 +31,8 @@ interface ViewerViewProps {
   connector: PeerConnector;
   /** Remembers the volume. */
   storage: Pick<Storage, 'getItem' | 'setItem'>;
+  /** Asks the user what to share when they want to share too. */
+  capture: CaptureDisplay;
   viewerName: string;
   /** Called when the user leaves; the view has already closed its session. */
   onLeave: () => void;
@@ -41,7 +46,7 @@ interface Joined {
   candidates: CandidateSummary;
 }
 
-export function ViewerView({ connector, storage, viewerName, onLeave }: ViewerViewProps) {
+export function ViewerView({ connector, storage, capture, viewerName, onLeave }: ViewerViewProps) {
   const [joined, setJoined] = useState<Joined | null>(null);
 
   const leave = () => {
@@ -57,6 +62,7 @@ export function ViewerView({ connector, storage, viewerName, onLeave }: ViewerVi
         copied={joined.copied}
         candidates={joined.candidates}
         storage={storage}
+        capture={capture}
         onLeave={leave}
       />
     );
@@ -146,6 +152,7 @@ interface JoinedSessionProps {
   copied: boolean;
   candidates: CandidateSummary;
   storage: Pick<Storage, 'getItem' | 'setItem'>;
+  capture: CaptureDisplay;
   onLeave: () => void;
 }
 
@@ -158,8 +165,17 @@ function JoinedSession(props: JoinedSessionProps) {
   return <JoiningView {...props} />;
 }
 
-function ConnectedView({ session, storage, onLeave }: JoinedSessionProps) {
-  const { participants, participantId, media } = useViewerSession(session);
+/** What the viewer is told when the host did not let them share, or ended it. */
+const SHARE_END_TEXT: Record<ShareEnd, (host: string) => string> = {
+  declined: (host) => `${host} did not allow sharing.`,
+  busy: () => 'Something is already being shared.',
+  revoked: (host) => `${host} ended your share.`,
+};
+
+function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProps) {
+  const { participants, participantId, media, share, shareEnd, ownShare } =
+    useViewerSession(session);
+  const sharing = useViewerShare(session, capture);
   const messages = useChatMessages(session);
   const { volume, setVolume } = useVolume(storage);
   const { hostName } = session;
@@ -194,14 +210,82 @@ function ConnectedView({ session, storage, onLeave }: JoinedSessionProps) {
       status={<span data-testid="viewer-state">Connected to {hostName}</span>}
       actions={<LeaveButton onClick={onLeave} />}
       stage={
-        <Stage emptyMessage={`Waiting for ${hostName} to share something.`}>
-          {media && (
-            <StageVideo
-              stream={media.stream}
-              volume={volume}
-              onVolumeChange={setVolume}
-              label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
-            />
+        <Stage
+          emptyMessage={`Waiting for ${hostName} to share something.`}
+          overlay={
+            <>
+              {share === 'idle' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void sharing.start()}
+                  disabled={sharing.starting}
+                  data-testid="share-button"
+                >
+                  <MonitorUp /> Share
+                </Button>
+              )}
+              {share === 'requested' && (
+                <>
+                  <p
+                    role="status"
+                    className="rounded-md bg-background/70 px-2 py-1 text-sm"
+                    data-testid="share-waiting"
+                  >
+                    Waiting for {hostName} to allow it
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={sharing.stop}
+                    data-testid="share-cancel"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+              {share === 'sharing' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={sharing.stop}
+                  data-testid="stop-share"
+                >
+                  <MonitorX /> Stop sharing
+                </Button>
+              )}
+              {share === 'idle' && shareEnd && (
+                <p
+                  role="status"
+                  className="rounded-md bg-background/70 px-2 py-1 text-sm"
+                  data-testid="share-notice"
+                >
+                  {SHARE_END_TEXT[shareEnd](hostName)}
+                </p>
+              )}
+              {sharing.error && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-background/70 px-2 py-1 text-sm text-destructive"
+                  data-testid="share-error"
+                >
+                  {sharing.error}
+                </p>
+              )}
+            </>
+          }
+        >
+          {share === 'sharing' && ownShare ? (
+            <StageVideo stream={ownShare} silent label="You are sharing" />
+          ) : (
+            media && (
+              <StageVideo
+                stream={media.stream}
+                volume={volume}
+                onVolumeChange={setVolume}
+                label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
+              />
+            )
           )}
         </Stage>
       }

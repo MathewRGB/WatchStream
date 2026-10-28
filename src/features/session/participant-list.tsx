@@ -12,9 +12,24 @@ interface ParticipantListProps {
   health?: ReadonlyMap<string, LinkHealth>;
   /** The host only: removes a viewer from the session. Without it there is no button. */
   onRemove?: (participantId: string) => void;
+  /** The host only: viewers who asked to share and wait for the host's answer (ADR-0007). */
+  requests?: readonly string[];
+  /** Who shares right now; marked with a badge. */
+  sharerId?: string | null;
+  onAllowShare?: (participantId: string) => void;
+  onDeclineShare?: (participantId: string) => void;
 }
 
-export function ParticipantList({ participants, selfId, health, onRemove }: ParticipantListProps) {
+export function ParticipantList({
+  participants,
+  selfId,
+  health,
+  onRemove,
+  requests = [],
+  sharerId = null,
+  onAllowShare,
+  onDeclineShare,
+}: ParticipantListProps) {
   return (
     <ul className="flex flex-col gap-2" data-testid="participants">
       {participants.map((participant) => (
@@ -30,6 +45,33 @@ export function ParticipantList({ participants, selfId, health, onRemove }: Part
             >
               slow
             </Badge>
+          )}
+          {participant.id === sharerId && (
+            <Badge variant="secondary" data-testid="participant-sharing">
+              sharing
+            </Badge>
+          )}
+          {requests.includes(participant.id) && (
+            <span className="flex items-center gap-1" data-testid="participant-share-request">
+              <Badge variant="outline">wants to share</Badge>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onAllowShare?.(participant.id)}
+                data-testid="participant-share-allow"
+              >
+                Allow
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onDeclineShare?.(participant.id)}
+                data-testid="participant-share-decline"
+              >
+                Decline
+              </Button>
+            </span>
           )}
           {onRemove && participant.role === 'viewer' && (
             <RemoveButton name={participant.name} onConfirm={() => onRemove(participant.id)} />

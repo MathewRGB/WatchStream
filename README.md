@@ -6,9 +6,9 @@ WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
 browser.
 
-> **Status:** milestone M5 is done. Host and viewers connect directly, chat, and the host can
+> **Status:** milestone M6 is done. Host and viewers connect directly, chat, and the host can
 > share a tab, window or screen that up to twelve viewers see and hear, with a quality setting and
-> a volume control. A test between two different public IP addresses (one side through a VPN)
+> a volume control. A viewer can share too, once the host allows it. A test between two different public IP addresses (one side through a VPN)
 > succeeded. The extension is not yet published in any store.
 
 ## How it works
@@ -48,6 +48,11 @@ own player for such services is future work, see
    up, says so on that line, and raises it again later. The **People** tab marks a viewer who is not
    keeping up; viewers see none of this. The host can remove a viewer there, after one question;
    that viewer can come back with a new invitation.
+7. **Viewer:** to share something yourself, choose **Share** on the stage and pick a tab, window or
+   screen. The host sees "<name> wants to share" on the stage and in the People tab and decides
+   with **Allow** or **Decline**. Once allowed, the host and all other viewers see your picture,
+   with your sound. You can stop at any time; the host can end it too, and starting a share of
+   their own takes the stage back. One picture is on the stage at a time.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.
@@ -192,10 +197,12 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       several invitations at once, removing a viewer (ADR-0006)
 - [ ] **Later:** optional TURN service (the test across two networks passed without it; add it if users report
       failures)
-- [ ] **Later (required):** viewers can share too; the host approves and forwards (ADR-0005)
-- **Future work (not planned):** sync mode for services with copy protection (ADR-0001, ADR-0004);
-  viewers passing the picture on to other viewers, for more than 12 viewers and less load on the
-  host (ADR-0006)
+- [x] **M6:** viewers can share too: a viewer picks a source and asks, the host allows it with one
+      click and passes the picture on to everyone else (ADR-0007)
+- **Future work (not planned, after the release):** sync mode for services with copy protection
+  (ADR-0001, ADR-0004); viewers passing the picture on to other viewers, for more than 12 viewers
+  and less load on the host (ADR-0006); handing the host role to a viewer when the host leaves
+  (ADR-0007)
 
 ## Documentation
 
@@ -204,6 +211,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [Manual test guide for stream mode](docs/manual-tests/m3-stream-mode.md)
 - [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
 - [Manual test guide for many viewers](docs/manual-tests/m5-many-viewers.md)
+- [Manual test guide for a viewer who shares](docs/manual-tests/m6-viewer-share.md)
 - [Checklist before the first store submission](docs/release-checklist.md)
 
 ## Disclaimer

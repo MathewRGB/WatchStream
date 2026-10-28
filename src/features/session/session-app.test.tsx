@@ -67,6 +67,20 @@ async function connect(network: FakeNetwork, host: Page, name: string): Promise<
   return viewer;
 }
 
+/** Like `connect`, but the viewer's page picks the given stream when it shares. */
+async function connectSharing(
+  network: FakeNetwork,
+  host: Page,
+  name: string,
+  capture: () => Promise<MediaStream>,
+): Promise<Page> {
+  const viewer = openPage(network, memoryStorage(), capture);
+  await start(viewer, name, 'join');
+  await pasteReply(host, await joinWith(viewer, await createInvitation(host)));
+  await waitFor(() => expect(viewer.getByTestId('viewer-state')).toHaveTextContent('Connected'));
+  return viewer;
+}
+
 const names = (page: Page) => page.getAllByTestId('participant-name').map((n) => n.textContent);
 
 describe('WatchStream app', () => {
@@ -287,6 +301,72 @@ describe('WatchStream app', () => {
     await waitFor(() => expect(viewer.getByTestId('stage-empty')).toBeInTheDocument());
     expect(host.getByTestId('share-button')).toBeInTheDocument();
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('lets a viewer share once the host allows it: the host and the others see it', async () => {
+    const host = openPage(network, memoryStorage());
+    await start(host, 'user1', 'host');
+    const sharer = fakeCapturedStream();
+    const first = await connectSharing(network, host, 'user2', async () => sharer.stream);
+    const second = await connect(network, host, 'user3');
+
+    await userEvent.click(first.getByTestId('share-button'));
+
+    // The viewer waits, the host is asked.
+    expect(await first.findByTestId('share-waiting')).toHaveTextContent('Waiting for user1');
+    expect(await host.findByTestId('share-request-banner')).toHaveTextContent(
+      'user2 wants to share',
+    );
+    await userEvent.click(host.getByTestId('share-allow'));
+
+    await waitFor(() => {
+      expect(host.getByTestId('stage-label')).toHaveTextContent('user2 is sharing');
+      expect(second.getByTestId('stage-label')).toHaveTextContent('user2 is sharing');
+    });
+    expect(first.getByTestId('stage-label')).toHaveTextContent('You are sharing');
+    expect(host.queryByTestId('share-request-banner')).toBeNull();
+    expect(host.getByTestId('participant-sharing')).toBeInTheDocument();
+
+    await userEvent.click(first.getByTestId('stop-share'));
+
+    await waitFor(() => {
+      expect(host.getByTestId('stage-empty')).toBeInTheDocument();
+      expect(second.getByTestId('stage-empty')).toBeInTheDocument();
+    });
+    expect(sharer.track.stop).toHaveBeenCalled();
+    expect(first.getByTestId('share-button')).toBeInTheDocument();
+  });
+
+  it('tells a viewer that the host did not allow sharing, and lets them stop the capture', async () => {
+    const host = openPage(network, memoryStorage());
+    await start(host, 'user1', 'host');
+    const sharer = fakeCapturedStream();
+    const viewer = await connectSharing(network, host, 'user2', async () => sharer.stream);
+
+    await userEvent.click(viewer.getByTestId('share-button'));
+    await userEvent.click(await host.findByTestId('share-decline'));
+
+    expect(await viewer.findByTestId('share-notice')).toHaveTextContent(
+      'user1 did not allow sharing.',
+    );
+    expect(sharer.track.stop).toHaveBeenCalled();
+    expect(viewer.getByTestId('share-button')).toBeInTheDocument();
+  });
+
+  it('lets the host take away a viewer share', async () => {
+    const host = openPage(network, memoryStorage());
+    await start(host, 'user1', 'host');
+    const sharer = fakeCapturedStream();
+    const viewer = await connectSharing(network, host, 'user2', async () => sharer.stream);
+    await userEvent.click(viewer.getByTestId('share-button'));
+    await userEvent.click(await host.findByTestId('share-allow'));
+    await waitFor(() => expect(host.getByTestId('stop-viewer-share')).toBeInTheDocument());
+
+    await userEvent.click(host.getByTestId('stop-viewer-share'));
+
+    expect(await viewer.findByTestId('share-notice')).toHaveTextContent('user1 ended your share.');
+    expect(sharer.track.stop).toHaveBeenCalled();
+    await waitFor(() => expect(host.getByTestId('stage-empty')).toBeInTheDocument());
   });
 
   it('warns on both sides when a code holds no public address', async () => {

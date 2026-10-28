@@ -1,10 +1,12 @@
 import {
+  Check,
   MessageSquare,
   MonitorUp,
   MonitorX,
   SlidersHorizontal,
   UserPlus,
   Users,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { HostSession } from '@/core/session/host-session';
@@ -31,10 +33,13 @@ interface HostViewProps {
 }
 
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
-  const { participants, openSlots, sharedStream, quality, load } = useHostSession(session);
+  const { participants, openSlots, sharedStream, incoming, shareRequests, quality, load } =
+    useHostSession(session);
   const share = useScreenShare(session, capture);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
+  const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'A viewer';
+  const asking = shareRequests[0];
 
   const tabs: SidebarTab[] = [
     {
@@ -54,6 +59,10 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
           selfId={session.hostId}
           health={load.health}
           onRemove={(id) => session.removeViewer(id)}
+          requests={shareRequests.map((p) => p.id)}
+          sharerId={incoming?.sourceId ?? null}
+          onAllowShare={(id) => session.allowShare(id)}
+          onDeclineShare={(id) => session.declineShare(id)}
         />
       ),
     },
@@ -108,7 +117,42 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
                   <MonitorUp /> Share
                 </Button>
               )}
-              {sharedStream && viewers > 0 && <LoadLine load={load} />}
+              {incoming && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => session.revokeShare()}
+                  data-testid="stop-viewer-share"
+                >
+                  <MonitorX /> Stop {nameOf(incoming.sourceId)}&apos;s share
+                </Button>
+              )}
+              {asking && (
+                <p
+                  role="status"
+                  className="flex items-center gap-2 rounded-md bg-background/70 px-2 py-1 text-sm"
+                  data-testid="share-request-banner"
+                >
+                  {nameOf(asking.id)} wants to share
+                  {shareRequests.length > 1 && ` (+${shareRequests.length - 1})`}
+                  <Button
+                    size="sm"
+                    onClick={() => session.allowShare(asking.id)}
+                    data-testid="share-allow"
+                  >
+                    <Check /> Allow
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => session.declineShare(asking.id)}
+                    data-testid="share-decline"
+                  >
+                    <X /> Decline
+                  </Button>
+                </p>
+              )}
+              {(sharedStream || incoming) && viewers > 0 && <LoadLine load={load} />}
               {share.error && (
                 <p
                   role="alert"
@@ -121,7 +165,14 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
             </>
           }
         >
-          {sharedStream && <StageVideo stream={sharedStream} silent label="You are sharing" />}
+          {incoming ? (
+            <StageVideo
+              stream={incoming.stream}
+              label={`${nameOf(incoming.sourceId)} is sharing`}
+            />
+          ) : (
+            sharedStream && <StageVideo stream={sharedStream} silent label="You are sharing" />
+          )}
         </Stage>
       }
       sidebar={<Sidebar tabs={tabs} defaultTab="invite" />}

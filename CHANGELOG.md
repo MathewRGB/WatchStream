@@ -9,6 +9,21 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A viewer can share too (M6, ADR-0007). The viewer chooses **Share**, picks a tab, window or
+  screen and waits while the host is asked. The host sees "<name> wants to share" on the stage and
+  in the People tab and decides with **Allow** or **Decline**. Once allowed, the host shows the
+  viewer's picture with its sound and passes it on to all other viewers, who see "<name> is
+  sharing". One picture is on the stage at a time: a request while something is shared is answered
+  at once, the host can end a viewer's share, and the host's own share takes the stage back. The
+  viewer is told if the host said no, or ended the share, and the captured source is stopped. The
+  quality limits and the automatic lowering of ADR-0006 apply to a forwarded picture too. New
+  messages `share-request`, `share-stop`, `share-granted`, `share-denied`, `share-revoked`, and
+  `media-offer` from a viewer and `media-answer` from the host. Viewers still never connect to each
+  other. Tested with the fake network, in Chromium and Firefox with real connections (twice in a
+  row, with sound) and in the real extension. A manual test guide
+  (`docs/manual-tests/m6-viewer-share.md`).
+- ADR-0007: how viewers share, and, as future work, handing the host role to a viewer when the host
+  leaves (with what is known about it).
 - `npm run measure:load` (`scripts/measure-host-load.mjs`): measures what a host costs per viewer,
   with the caps of the app's quality steps, optionally pinned to a number of cores on Linux. The
   numbers in ADR-0006 come from it; a test keeps its quality steps in step with the app's. A manual

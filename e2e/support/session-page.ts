@@ -73,6 +73,17 @@ export class SessionPage {
     await expect(this.byTestId('stop-share')).toBeVisible();
   }
 
+  /** Viewer: picks the (fake) source and asks the host; waits until the host is asked. */
+  async requestShare(): Promise<void> {
+    await this.byTestId('share-button').click();
+    await expect(this.byTestId('share-waiting')).toBeVisible();
+  }
+
+  /** Host: allows the viewer who asked, from the request on the stage. */
+  async allowShare(): Promise<void> {
+    await this.byTestId('share-allow').click();
+  }
+
   async stopSharing(): Promise<void> {
     await this.byTestId('stop-share').click();
     await expect(this.byTestId('share-button')).toBeVisible();
