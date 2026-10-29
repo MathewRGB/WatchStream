@@ -11,6 +11,9 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Added
 
+- The host offers H.264 before VP8 (a graphics chip can encode it; not in Firefox), and the shared picture is
+  marked as motion with a preference for keeping the frame rate, so an overloaded host lowers the
+  resolution instead of stuttering.
 - Watch together, browser to browser, in Chrome, Brave and Firefox (Firefox 140 or newer): the host
   shares a tab, window or screen, and the viewers see and hear it. No WatchStream server; video,
   sound and chat go directly between host and viewers.

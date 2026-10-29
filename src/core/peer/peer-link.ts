@@ -4,6 +4,7 @@ import type { MediaLimits } from '../media/quality';
 import { summarizeCandidates } from './candidates';
 import { readLinkStats, type LinkStats } from './link-stats';
 import { tuneOpus } from './opus';
+import { preferVideoCodecs } from './video-codecs';
 import type { LinkDiagnostics } from './diagnostics';
 import type {
   LinkEvents,
@@ -170,7 +171,9 @@ export class PeerLink implements OfferingLink {
     }
     for (const track of wanted) {
       if (!this.senders.some((sender) => sender.track === track)) {
-        this.senders.push(this.connection.addTrack(track, stream!));
+        const sender = this.connection.addTrack(track, stream!);
+        this.senders.push(sender);
+        if (track.kind === 'video') this.preferCodecs(sender);
       }
     }
   }
@@ -253,6 +256,21 @@ export class PeerLink implements OfferingLink {
     channel.addEventListener('close', () => this.markClosed('channel closed'));
   }
 
+  /** Asks for H.264 first (see `preferVideoCodecs`); a browser without the call keeps its order. */
+  private preferCodecs(sender: RTCRtpSender): void {
+    // Firefox gets its H.264 from a plugin it downloads on demand; without it a preference for
+    // H.264 leaves the picture out. Its own order (VP8 first) stays.
+    if (typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent)) return;
+    const transceiver = this.connection.getTransceivers().find((t) => t.sender === sender);
+    const codecs = RTCRtpSender.getCapabilities?.('video')?.codecs;
+    if (!transceiver || !codecs || !transceiver.setCodecPreferences) return;
+    try {
+      transceiver.setCodecPreferences(preferVideoCodecs(codecs));
+    } catch (error) {
+      this.log.warn('could not set codec preferences', describeThrown(error));
+    }
+  }
+
   private async applyLimits(): Promise<void> {
     const limits = this.limits;
     if (!limits) return;
@@ -266,6 +284,10 @@ export class PeerLink implements OfferingLink {
           encoding.maxBitrate = limits.maxAudioBitrateBps;
         } else {
           const height = track.getSettings().height ?? limits.maxHeight;
+          // What is shared is mostly film and sport: smooth motion over sharp single frames. When
+          // the encoder falls behind, it lowers the resolution and keeps the frame rate.
+          track.contentHint = 'motion';
+          parameters.degradationPreference = 'maintain-framerate';
           encoding.maxBitrate = limits.maxBitrateBps;
           encoding.maxFramerate = limits.maxFramerate;
           encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);

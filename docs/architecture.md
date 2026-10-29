@@ -153,6 +153,16 @@ applied per viewer link with `RTCRtpSender.setParameters`, at once and while sha
 its limits and applies them again after every negotiation, because the browser only accepts them
 once one is complete.
 
+**Codec and encoder hints.** The host asks for H.264 first and keeps VP8 as the fallback
+(`preferVideoCodecs`, applied with `setCodecPreferences` when a video track is added; only the
+order changes, so a viewer without H.264 still connects; not in Firefox, which loads its H.264
+as a plugin on demand and sent no picture without it, so it keeps VP8 first). A graphics chip can encode H.264, which
+Windows browsers use by default; on Linux, Chrome and Brave encode WebRTC video in software unless
+hardware encoding is switched on in the browser, so there the codec alone changes little. The
+video track gets `contentHint = 'motion'` and the sender `degradationPreference =
+'maintain-framerate'`: when the encoder falls behind, the picture gets smaller instead of
+stuttering.
+
 ## 7. Up to twelve viewers, and a load monitor
 
 A session holds at most **12 viewers** (`MAX_VIEWERS`), a ceiling and not a setting. What a host
