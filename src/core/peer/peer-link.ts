@@ -3,8 +3,9 @@ import { createLogger, describeThrown, type Logger } from '../log/logger';
 import type { MediaLimits } from '../media/quality';
 import { summarizeCandidates } from './candidates';
 import { readLinkStats, type LinkStats } from './link-stats';
+import { readReceiveStats, type ReceiveStats } from './receive-stats';
 import { tuneOpus } from './opus';
-import { preferVideoCodecs } from './video-codecs';
+import { DEFAULT_CODEC, preferVideoCodecs, type CodecId } from './video-codecs';
 import type { LinkDiagnostics } from './diagnostics';
 import type {
   LinkEvents,
@@ -57,6 +58,7 @@ export class PeerLink implements OfferingLink {
   private readonly senders: RTCRtpSender[] = [];
   private outgoing: MediaStream | null = null;
   private limits: MediaLimits | null = null;
+  private codec: CodecId = DEFAULT_CODEC;
   private makingOffer = false;
   private ignoreOffer = false;
   /**
@@ -218,6 +220,16 @@ export class PeerLink implements OfferingLink {
     }
   }
 
+  async receiveStats(): Promise<ReceiveStats | null> {
+    if (this.currentState === 'closed') return null;
+    try {
+      const reports = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
+      return readReceiveStats(reports.values(), performance.now());
+    } catch {
+      return null;
+    }
+  }
+
   diagnostics(): LinkDiagnostics {
     try {
       this.lastDiagnostics = this.readDiagnostics();
@@ -256,19 +268,35 @@ export class PeerLink implements OfferingLink {
     channel.addEventListener('close', () => this.markClosed('channel closed'));
   }
 
-  /** Asks for H.264 first (see `preferVideoCodecs`); a browser without the call keeps its order. */
-  private preferCodecs(sender: RTCRtpSender): void {
+  /**
+   * Orders the codecs this video sender offers (see `preferVideoCodecs`). A browser without the
+   * call keeps its own order. Returns whether the order was set.
+   */
+  private preferCodecs(sender: RTCRtpSender): boolean {
     // Firefox gets its H.264 from a plugin it downloads on demand; without it a preference for
     // H.264 leaves the picture out. Its own order (VP8 first) stays.
-    if (typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent)) return;
+    if (typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent)) return false;
     const transceiver = this.connection.getTransceivers().find((t) => t.sender === sender);
     const codecs = RTCRtpSender.getCapabilities?.('video')?.codecs;
-    if (!transceiver || !codecs || !transceiver.setCodecPreferences) return;
+    if (!transceiver || !codecs || !transceiver.setCodecPreferences) return false;
     try {
-      transceiver.setCodecPreferences(preferVideoCodecs(codecs));
+      transceiver.setCodecPreferences(preferVideoCodecs(codecs, this.codec));
+      return true;
     } catch (error) {
       this.log.warn('could not set codec preferences', describeThrown(error));
+      return false;
     }
+  }
+
+  async setVideoCodec(codec: CodecId): Promise<void> {
+    if (codec === this.codec) return;
+    this.codec = codec;
+    let changed = false;
+    for (const sender of this.senders) {
+      if (sender.track?.kind === 'video' && this.preferCodecs(sender)) changed = true;
+    }
+    // The order counts from the next offer on; a picture that is already sent needs one now.
+    if (changed) await this.negotiate();
   }
 
   private async applyLimits(): Promise<void> {

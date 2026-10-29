@@ -2,6 +2,8 @@ import type { Emitter } from '../events/emitter';
 import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from './diagnostics';
 import type { LinkStats } from './link-stats';
+import type { ReceiveStats } from './receive-stats';
+import type { CodecId } from './video-codecs';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
 
@@ -43,10 +45,20 @@ export interface MediaLink extends MessageLink {
   /** Caps what is sent of the video: now, and again after every renegotiation. */
   setMediaLimits(limits: MediaLimits): Promise<void>;
   /**
+   * Which codec the picture is offered in first (see `video-codecs.ts`). Counts from the next
+   * negotiation on, and starts one when a picture is already sent. Never removes a fallback.
+   */
+  setVideoCodec(codec: CodecId): Promise<void>;
+  /**
    * Counters of the picture this link sends, for the host's load monitor. `null` while
    * no picture is sent and once the link is closed.
    */
   stats(): Promise<LinkStats | null>;
+  /**
+   * Counters of the picture this link receives, for the viewer's report to the host. `null`
+   * while no picture arrives and once the link is closed.
+   */
+  receiveStats(): Promise<ReceiveStats | null>;
   /** Applies a description from the other side. May emit an answer as `signal`. */
   receiveSignal(signal: LinkSignal): Promise<void>;
 }

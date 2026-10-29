@@ -5,6 +5,8 @@ import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
+import type { ReceiveReport } from '../peer/receive-stats';
+import { DEFAULT_CODEC, type CodecId } from '../peer/video-codecs';
 import {
   normalizeChatText,
   parseViewerMessage,
@@ -41,12 +43,16 @@ export interface HostSessionEvents {
   sharing: MediaStream | null;
   /** The picture quality the host chose changed (payload: the new preset). */
   quality: QualityId;
+  /** The video codec the host chose changed (payload: the new choice). */
+  codec: CodecId;
   /** The load status changed: whether the host struggles, the cause, how the viewers fare. */
   load: LoadStatus;
   /** A viewer's share started (its picture) or ended (`null`); see `incoming`. */
   incoming: IncomingShare | null;
   /** The viewers who asked to share and wait for the host's answer. */
   shareRequests: Participant[];
+  /** A viewer told how the picture arrives; see `receiveReports`. */
+  receiveReports: ReadonlyMap<string, ReceiveReport>;
 }
 
 /** A viewer's share, as the host sees it: who, and the picture that arrives from them. */
@@ -82,6 +88,8 @@ export class HostSession {
   /** Links whose reply was accepted but that are not open yet; they still hold a place. */
   private readonly connecting = new Set<MediaLink>();
   private readonly viewers = new Map<string, Viewer>();
+  /** The latest report of each viewer on how the picture arrives; gone with the picture. */
+  private reports = new Map<string, ReceiveReport>();
   /** Invitations whose connection is being made; they already hold a place. */
   private making = 0;
   /** Links of removed viewers, open for a moment longer; see `removeViewer`. */
@@ -99,6 +107,7 @@ export class HostSession {
   /** Viewers who asked to share, oldest first. */
   private readonly requests = new Set<string>();
   private currentQuality: QualityId = DEFAULT_QUALITY;
+  private currentCodec: CodecId = DEFAULT_CODEC;
   private readonly loadControl: LoadControl;
   private lastLoadKey = '';
 
@@ -221,6 +230,11 @@ export class HostSession {
     return this.currentQuality;
   }
 
+  /** How the picture arrives at each viewer, as the viewers say; empty while nothing is shared. */
+  get receiveReports(): ReadonlyMap<string, ReceiveReport> {
+    return this.reports;
+  }
+
   get load(): LoadStatus {
     return this.loadControl.status(this.viewers.size);
   }
@@ -234,6 +248,25 @@ export class HostSession {
     this.loadControl.reset();
     for (const { link } of this.viewers.values()) this.applyQuality(link);
     this.emitter.emit('quality', id);
+    this.publishLoad();
+  }
+
+  /** The video codec the host chose; it is offered first, with the others behind it. */
+  get codec(): CodecId {
+    return this.currentCodec;
+  }
+
+  /**
+   * Sets the codec that is offered first, at once and for later viewers. While a picture is sent
+   * the links negotiate again; the load monitor starts over, because what it learned was about the
+   * old codec.
+   */
+  setCodec(id: CodecId): void {
+    if (id === this.currentCodec) return;
+    this.currentCodec = id;
+    this.loadControl.reset();
+    for (const { link } of this.viewers.values()) this.applyCodec(link);
+    this.emitter.emit('codec', id);
     this.publishLoad();
   }
 
@@ -315,6 +348,7 @@ export class HostSession {
       this.unshareWith(link);
       this.sendTo(link, { type: 'media-stopped', sourceId: this.hostId });
     }
+    this.clearReports();
     this.emitter.emit('sharing', null);
     this.publishLoad();
   }
@@ -331,6 +365,7 @@ export class HostSession {
     this.requests.delete(id);
     this.viewers.delete(id);
     this.loadControl.forget(id);
+    this.setReport(id, null);
     this.log.info('viewer removed', { viewers: this.viewers.size });
     this.sendTo(viewer.link, { type: 'removed' });
     this.leaving.set(
@@ -385,6 +420,7 @@ export class HostSession {
         this.requests.delete(participant.id);
         this.log.info('viewer left', { viewers: this.viewers.size });
         this.loadControl.forget(participant.id);
+        this.setReport(participant.id, null);
         this.publishRoster();
         this.publishSlots();
         this.publishLoad();
@@ -395,6 +431,7 @@ export class HostSession {
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
     // The link keeps the limits and applies them whenever a video track gets negotiated.
     this.applyQuality(link);
+    this.applyCodec(link);
     if (this.sending) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
@@ -423,6 +460,9 @@ export class HostSession {
         this.log.error('could not apply a viewer media offer', describeThrown(error));
         link.close();
       });
+    } else if (message?.type === 'receive-report') {
+      // Only while a picture goes out: a late report must not outlive the share it was about.
+      if (this.sending) this.setReport(sender.id, message.report);
     } else if (message?.type === 'share-request') {
       this.handleShareRequest(sender);
     } else if (message?.type === 'share-stop') {
@@ -504,6 +544,7 @@ export class HostSession {
     this.log.info('viewer share ended');
     this.loadControl.stop();
     this.loadControl.reset();
+    this.clearReports();
     for (const [id, { link }] of this.viewers) {
       if (id === sharerId) continue;
       this.unshareWith(link);
@@ -524,6 +565,13 @@ export class HostSession {
     });
   }
 
+  private applyCodec(link: MediaLink): void {
+    // Only an order: failing to set it leaves the browser's own, and no one is dropped.
+    void link.setVideoCodec(this.currentCodec).catch((error) => {
+      this.log.warn('could not set the video codec', describeThrown(error));
+    });
+  }
+
   /** The links that get the picture: every viewer but the one who shares it. */
   private sendingLinks(): Map<string, MediaLink> {
     if (!this.sending) return new Map();
@@ -532,6 +580,20 @@ export class HostSession {
         .filter(([id]) => id !== this.sharerId)
         .map(([id, { link }]) => [id, link] as const),
     );
+  }
+
+  private clearReports(): void {
+    if (this.reports.size === 0) return;
+    this.reports = new Map();
+    this.emitter.emit('receiveReports', this.reports);
+  }
+
+  private setReport(id: string, report: ReceiveReport | null): void {
+    const next = new Map(this.reports);
+    if (report) next.set(id, report);
+    else if (!next.delete(id)) return;
+    this.reports = next;
+    this.emitter.emit('receiveReports', next);
   }
 
   /** Tells the listeners, but only when something they show has changed. */

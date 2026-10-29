@@ -11,6 +11,12 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Added
 
+- Viewers report how the picture arrives (packets lost, frames a second, wait before showing,
+  freezes, round trip). The host sees it under each viewer's name in the People tab, with a hint
+  at the cause when the picture does not arrive well.
+- The host can choose the video codec in Settings (automatic, H.264, VP9, VP8, AV1, as far as the
+  browser offers them). The other codecs stay behind the choice, so a viewer that cannot use it
+  still gets a picture.
 - The host offers H.264 before VP8 (a graphics chip can encode it; not in Firefox), and the shared picture is
   marked as motion with a preference for keeping the frame rate, so an overloaded host lowers the
   resolution instead of stuttering.

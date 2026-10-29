@@ -1,5 +1,5 @@
 import { HostSession, type HostSessionOptions } from '../session/host-session';
-import { ViewerSession } from '../session/viewer-session';
+import { ViewerSession, type JoinOptions } from '../session/viewer-session';
 import { FakeNetwork } from './fake-network';
 
 /** Lets queued microtasks (fake message delivery) run. */
@@ -18,11 +18,17 @@ export function createHost(options: Partial<HostSessionOptions> = {}) {
   return { host, network };
 }
 
-export async function joinViewer(host: HostSession, network: FakeNetwork, viewerName: string) {
+export async function joinViewer(
+  host: HostSession,
+  network: FakeNetwork,
+  viewerName: string,
+  options: Pick<JoinOptions, 'reportIntervalMs'> = {},
+) {
   const { code } = await host.createInvitation();
   const { session, replyCode } = await ViewerSession.join(code, {
     viewerName,
     connector: network,
+    ...options,
   });
   const participant = await host.acceptReply(replyCode);
   await flush();

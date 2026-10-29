@@ -2,6 +2,8 @@ import { Emitter } from '../events/emitter';
 import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from '../peer/diagnostics';
 import type { LinkStats } from '../peer/link-stats';
+import type { ReceiveStats } from '../peer/receive-stats';
+import type { CodecId } from '../peer/video-codecs';
 import type {
   LinkEvents,
   LinkSignal,
@@ -98,11 +100,25 @@ export class FakeLink implements OfferingLink {
     this.limits = limits;
   }
 
+  /** The latest codec set through `setVideoCodec`. */
+  codec: CodecId = 'auto';
+
+  async setVideoCodec(codec: CodecId): Promise<void> {
+    this.codec = codec;
+  }
+
   /** What `stats()` answers; a test sets it, as the browser would count on. `null`: no picture. */
   statsReading: LinkStats | null = null;
 
   async stats(): Promise<LinkStats | null> {
     return this.currentState === 'closed' ? null : this.statsReading;
+  }
+
+  /** What `receiveStats()` answers; a test sets it. `null`: no picture arrives. */
+  receiveReading: ReceiveStats | null = null;
+
+  async receiveStats(): Promise<ReceiveStats | null> {
+    return this.currentState === 'closed' ? null : this.receiveReading;
   }
 
   async receiveSignal(signal: LinkSignal): Promise<void> {

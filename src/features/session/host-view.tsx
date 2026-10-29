@@ -8,6 +8,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { availableCodecOptions } from '@/core/peer/video-codecs';
 import type { HostSession } from '@/core/session/host-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { useHostSession } from '@/hooks/use-host-session';
@@ -35,8 +36,26 @@ interface HostViewProps {
 }
 
 export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
-  const { participants, openSlots, sharedStream, incoming, shareRequests, quality, load } =
-    useHostSession(session);
+  const {
+    participants,
+    openSlots,
+    sharedStream,
+    incoming,
+    shareRequests,
+    quality,
+    codec,
+    load,
+    receiveReports,
+  } = useHostSession(session);
+  const codecOptions = useMemo(
+    () =>
+      availableCodecOptions(
+        typeof RTCRtpSender === 'undefined'
+          ? undefined
+          : RTCRtpSender.getCapabilities?.('video')?.codecs,
+      ),
+    [],
+  );
   const tabSound = useTabSound(session);
   const autoSound = useMemo(
     () => ({ prepare: tabSound.prepareAuto, track: tabSound.autoSoundTrack }),
@@ -64,6 +83,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
           participants={participants}
           selfId={session.hostId}
           health={load.health}
+          receive={receiveReports}
           onRemove={(id) => session.removeViewer(id)}
           requests={shareRequests.map((p) => p.id)}
           sharerId={incoming?.sourceId ?? null}
@@ -92,6 +112,9 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
         <SettingsTab
           quality={quality}
           onQualityChange={(id) => session.setQuality(id)}
+          codec={codec}
+          codecOptions={codecOptions}
+          onCodecChange={(id) => session.setCodec(id)}
           tabSound={tabSound.supported ? tabSound : undefined}
         />
       ),

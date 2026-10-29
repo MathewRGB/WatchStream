@@ -61,6 +61,21 @@ ignore messages that a newer version added.
 - Negotiations run on the link that is already open ("perfect negotiation": the host side is
   impolite, the viewer side polite).
 
+### Reception reports
+
+| Direction     | Message                              |
+| ------------- | ------------------------------------ |
+| viewer → host | `{ type: "receive-report", report }` |
+
+- Sent about every two seconds while a viewer shows a picture, and not before the second reading
+  (a report is the change between two readings). `report` has the fields `loss` (0 to 1), `fps`,
+  `kbps`, `jitterMs`, `bufferMs`, `freezes`, `freezeMs`, `height` and `rttMs`. Each is a number
+  from 0 to 1 000 000, or `null` when the browser does not report it; a missing field reads as
+  `null`, extra fields are cut, and a report with any other value is dropped as a whole.
+- The host keeps the latest report of each viewer while a picture goes out, shows it in the People
+  tab and forgets it when the picture ends or the viewer leaves. It changes nothing by itself.
+- The numbers contain no address or name; they are the viewer's counters, summarised.
+
 ### Viewer shares
 
 | Direction     | Message                                                  |

@@ -156,7 +156,13 @@ once one is complete.
 **Codec and encoder hints.** The host asks for H.264 first and keeps VP8 as the fallback
 (`preferVideoCodecs`, applied with `setCodecPreferences` when a video track is added; only the
 order changes, so a viewer without H.264 still connects; not in Firefox, which loads its H.264
-as a plugin on demand and sent no picture without it, so it keeps VP8 first). A graphics chip can encode H.264, which
+as a plugin on demand and sent no picture without it, so it keeps VP8 first).
+The host can choose the codec in Settings (`CodecId`: automatic, H.264, VP9, VP8, AV1; only those
+the browser lists, and no section where it takes no preference). The choice goes first and H.264
+and VP8 stay behind it, so nothing is removed and a viewer that cannot use it gets the next one.
+It reaches every link and later viewers (`setVideoCodec`); while a picture is sent the link
+negotiates again. VP9 needs about a third less data for the same picture and costs the processor
+more, AV1 even more, which is why the choice is the host's and the default stays automatic. A graphics chip can encode H.264, which
 Windows browsers use by default; on Linux, Chrome and Brave encode WebRTC video in software unless
 hardware encoding is switched on in the browser, so there the codec alone changes little. The
 video track gets `contentHint = 'motion'` and the sender `degradationPreference =
@@ -204,6 +210,16 @@ and takes its time from the readings, so it is tested with sequences and no time
 Many viewers also need two tools: several invitations at once (each a card with its own number;
 places are held while their connections are made) and removing a viewer (`removed`, then the link
 closes a third of a second later so the message gets out).
+
+**What reaches the viewers.** The host's counters say what it sent, not what arrived. A viewer
+that shows the picture therefore reads its own receive counters every two seconds
+(`src/core/peer/receive-stats.ts`) and sends the change as a `receive-report`: packets lost, frames
+shown a second, jitter, how long a frame waits in the jitter buffer, freezes and the round trip.
+The People tab shows them under the viewer's name, and a guess at the cause when the picture does
+not arrive well (`describe-receive.ts`: loss first, then a long wait, then freezes). Why: a host
+that does not struggle can still have viewers who see a late, stuttering picture, and only the
+receiving side can tell a lossy path from a slow computer. The report is information for the host;
+the quality is still the host's choice.
 
 Not done: a viewer count or fixed limits per quality as settings (the host would have to guess;
 machines differ by a factor of ten), reading `qualityLimitationReason`, asking for the upload speed

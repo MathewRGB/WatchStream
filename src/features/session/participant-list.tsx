@@ -3,7 +3,9 @@ import { UserMinus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { LinkHealth } from '@/core/media/load-monitor';
+import type { ReceiveReport } from '@/core/peer/receive-stats';
 import type { Participant } from '@/core/protocol/messages';
+import { describeReceive } from './describe-receive';
 
 interface ParticipantListProps {
   participants: Participant[];
@@ -18,6 +20,8 @@ interface ParticipantListProps {
   sharerId?: string | null;
   onAllowShare?: (participantId: string) => void;
   onDeclineShare?: (participantId: string) => void;
+  /** The host only: how the picture arrives at each viewer, as the viewers report it. */
+  receive?: ReadonlyMap<string, ReceiveReport>;
 }
 
 export function ParticipantList({
@@ -29,55 +33,77 @@ export function ParticipantList({
   sharerId = null,
   onAllowShare,
   onDeclineShare,
+  receive,
 }: ParticipantListProps) {
   return (
     <ul className="flex flex-col gap-2" data-testid="participants">
-      {participants.map((participant) => (
-        <li key={participant.id} className="flex items-center gap-2" data-testid="participant">
-          <span data-testid="participant-name">{participant.name}</span>
-          {participant.role === 'host' && <Badge variant="secondary">host</Badge>}
-          {participant.id === selfId && <Badge variant="outline">you</Badge>}
-          {health?.get(participant.id) === 'slow' && (
-            <Badge
-              variant="outline"
-              title="This viewer's connection or computer is not keeping up with the picture."
-              data-testid="participant-slow"
-            >
-              slow
-            </Badge>
-          )}
-          {participant.id === sharerId && (
-            <Badge variant="secondary" data-testid="participant-sharing">
-              sharing
-            </Badge>
-          )}
-          {requests.includes(participant.id) && (
-            <span className="flex items-center gap-1" data-testid="participant-share-request">
-              <Badge variant="outline">wants to share</Badge>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => onAllowShare?.(participant.id)}
-                data-testid="participant-share-allow"
+      {participants.map((participant) => {
+        const received = receive?.get(participant.id);
+        const line = received ? describeReceive(received) : null;
+        return (
+          <li
+            key={participant.id}
+            className="flex flex-wrap items-center gap-2"
+            data-testid="participant"
+          >
+            <span data-testid="participant-name">{participant.name}</span>
+            {participant.role === 'host' && <Badge variant="secondary">host</Badge>}
+            {participant.id === selfId && <Badge variant="outline">you</Badge>}
+            {health?.get(participant.id) === 'slow' && (
+              <Badge
+                variant="outline"
+                title="This viewer's connection or computer is not keeping up with the picture."
+                data-testid="participant-slow"
               >
-                Allow
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onDeclineShare?.(participant.id)}
-                data-testid="participant-share-decline"
+                slow
+              </Badge>
+            )}
+            {participant.id === sharerId && (
+              <Badge variant="secondary" data-testid="participant-sharing">
+                sharing
+              </Badge>
+            )}
+            {requests.includes(participant.id) && (
+              <span className="flex items-center gap-1" data-testid="participant-share-request">
+                <Badge variant="outline">wants to share</Badge>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onAllowShare?.(participant.id)}
+                  data-testid="participant-share-allow"
+                >
+                  Allow
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDeclineShare?.(participant.id)}
+                  data-testid="participant-share-decline"
+                >
+                  Decline
+                </Button>
+              </span>
+            )}
+            {onRemove && participant.role === 'viewer' && (
+              <RemoveButton name={participant.name} onConfirm={() => onRemove(participant.id)} />
+            )}
+            {line && (
+              <p
+                className="basis-full text-xs text-muted-foreground"
+                data-testid="participant-receive"
               >
-                Decline
-              </Button>
-            </span>
-          )}
-          {onRemove && participant.role === 'viewer' && (
-            <RemoveButton name={participant.name} onConfirm={() => onRemove(participant.id)} />
-          )}
-        </li>
-      ))}
+                {line.text}
+                {line.problem && (
+                  <span className="mt-0.5 block text-foreground" data-testid="participant-problem">
+                    {line.problem}
+                  </span>
+                )}
+              </p>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

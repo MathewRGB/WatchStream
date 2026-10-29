@@ -1,3 +1,4 @@
+import type { ReceiveReport } from '../peer/receive-stats';
 import { isSessionDescription } from '../peer/session-description';
 
 /**
@@ -35,7 +36,9 @@ export type ViewerMessage =
   /** The viewer holds a stream and asks to share it. */
   | { type: 'share-request' }
   | { type: 'share-stop' }
-  | { type: 'media-offer'; sourceId: string; sdp: string };
+  | { type: 'media-offer'; sourceId: string; sdp: string }
+  /** How the picture arrives at the viewer, about every two seconds while it is shown. */
+  | { type: 'receive-report'; report: ReceiveReport };
 
 /** Sent by the host to a viewer. */
 export type HostMessage =
@@ -94,7 +97,52 @@ export function parseViewerMessage(raw: string): ViewerMessage | null {
   }
   if (data?.type === 'share-request') return { type: 'share-request' };
   if (data?.type === 'share-stop') return { type: 'share-stop' };
+  if (data?.type === 'receive-report') {
+    const report = parseReceiveReport(data.report);
+    return report === null ? null : { type: 'receive-report', report };
+  }
   return null;
+}
+
+/** Largest value any field of a report may hold; a sanity bound, not a measurement limit. */
+const MAX_REPORT_VALUE = 1_000_000;
+
+const REPORT_FIELDS = [
+  'loss',
+  'fps',
+  'kbps',
+  'jitterMs',
+  'bufferMs',
+  'freezes',
+  'freezeMs',
+  'height',
+  'rttMs',
+] as const;
+
+/**
+ * A report with every field a finite number in range or `null`; anything else is dropped as a
+ * whole, extra fields are cut. The host shows these numbers, so they are checked like any input.
+ */
+export function parseReceiveReport(value: unknown): ReceiveReport | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const data = value as Record<string, unknown>;
+  const report: Record<string, number | null> = {};
+  for (const field of REPORT_FIELDS) {
+    const entry = data[field] ?? null;
+    if (entry === null) {
+      report[field] = null;
+    } else if (
+      typeof entry === 'number' &&
+      Number.isFinite(entry) &&
+      entry >= 0 &&
+      entry <= (field === 'loss' ? 1 : MAX_REPORT_VALUE)
+    ) {
+      report[field] = entry;
+    } else {
+      return null;
+    }
+  }
+  return report as unknown as ReceiveReport;
 }
 
 export function parseHostMessage(raw: string): HostMessage | null {

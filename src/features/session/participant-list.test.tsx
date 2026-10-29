@@ -36,6 +36,39 @@ describe('ParticipantList', () => {
     );
   });
 
+  it('shows what reaches a viewer and why it does not arrive well, for the host who has reports', () => {
+    const receive = new Map([
+      [
+        'v1',
+        {
+          loss: 0.08,
+          fps: 12,
+          kbps: 900,
+          jitterMs: 40,
+          bufferMs: 500,
+          freezes: 2,
+          freezeMs: 800,
+          height: 480,
+          rttMs: 300,
+        },
+      ],
+    ]);
+    render(<ParticipantList participants={participants} selfId="h" receive={receive} />);
+
+    const [host, viewer] = screen.getAllByTestId('participant');
+    expect(within(host!).queryByTestId('participant-receive')).toBeNull();
+    expect(within(viewer!).getByTestId('participant-receive')).toHaveTextContent('8.0 % lost');
+    expect(within(viewer!).getByTestId('participant-problem')).toHaveTextContent(
+      /Packets are lost/,
+    );
+  });
+
+  it('shows nothing about reception without reports', () => {
+    render(<ParticipantList participants={participants} selfId="v1" />);
+
+    expect(screen.queryByTestId('participant-receive')).toBeNull();
+  });
+
   it('shows no mark without health, as for a viewer, and none for a viewer who is fine', () => {
     const { rerender } = render(<ParticipantList participants={participants} selfId="v1" />);
     expect(screen.queryByTestId('participant-slow')).toBeNull();

@@ -4,6 +4,7 @@ import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
 import type { MediaLink, PeerConnector } from '../peer/message-link';
+import { summarizeReceive, type ReceiveStats } from '../peer/receive-stats';
 import {
   normalizeChatText,
   parseHostMessage,
@@ -44,7 +45,11 @@ export interface ViewerSessionEvents {
 export interface JoinOptions {
   viewerName: string;
   connector: PeerConnector;
+  /** How often the viewer tells the host how the picture arrives; for tests. */
+  reportIntervalMs?: number;
 }
+
+const DEFAULT_REPORT_INTERVAL_MS = 2_000;
 
 /** The viewer side of a watch session. It follows whatever the host sends. */
 export class ViewerSession {
@@ -64,13 +69,18 @@ export class ViewerSession {
   private shareEnd: ShareEnd | null = null;
   /** The stream the viewer holds: waiting for the host's answer, or sent. */
   private ownStream: MediaStream | null = null;
+  private reportTimer: ReturnType<typeof setInterval> | null = null;
+  private lastReading: ReceiveStats | null = null;
+  private reading = false;
 
   private constructor(
     readonly hostName: string,
     private readonly link: MediaLink,
+    private readonly reportIntervalMs: number,
   ) {
     link.events.on('open', () => this.setState('connected'));
     link.events.on('close', () => {
+      this.stopReporting();
       this.setState('disconnected');
       if (this.shareState !== 'idle') this.setShare('idle', null);
     });
@@ -89,6 +99,7 @@ export class ViewerSession {
     link.events.on('stream', (stream) => {
       if (this.sharer === null || stream === this.currentMedia?.stream) return;
       this.currentMedia = { sourceId: this.sharer, stream };
+      this.startReporting();
       this.emitter.emit('media', this.currentMedia);
     });
   }
@@ -109,7 +120,11 @@ export class ViewerSession {
       sdp,
     });
     return {
-      session: new ViewerSession(invitation.hostName, link),
+      session: new ViewerSession(
+        invitation.hostName,
+        link,
+        options.reportIntervalMs ?? DEFAULT_REPORT_INTERVAL_MS,
+      ),
       replyCode,
       candidates: summarizeCandidates(sdp),
     };
@@ -197,6 +212,7 @@ export class ViewerSession {
 
   leave(): void {
     this.left = true;
+    this.stopReporting();
     this.log.info('left the session');
     this.link.close();
     this.emitter.clear();
@@ -229,6 +245,7 @@ export class ViewerSession {
         if (this.sharer === message.sourceId) this.sharer = null;
         if (this.currentMedia?.sourceId === message.sourceId) {
           this.currentMedia = null;
+          this.stopReporting();
           this.emitter.emit('media', null);
         }
         break;
@@ -265,6 +282,42 @@ export class ViewerSession {
         break;
       default:
         this.log.debug('dropped a message from the host', { length: raw.length });
+    }
+  }
+
+  /**
+   * While a picture is shown the viewer tells the host how it arrives: the host sees what it sent,
+   * only the viewer sees what got through and how long it waits to show it. The report is the
+   * change since the last reading, so the first reading only sets the starting point.
+   */
+  private startReporting(): void {
+    if (this.reportTimer !== null) return;
+    this.reportTimer = setInterval(() => void this.report(), this.reportIntervalMs);
+  }
+
+  private stopReporting(): void {
+    if (this.reportTimer !== null) clearInterval(this.reportTimer);
+    this.reportTimer = null;
+    this.lastReading = null;
+  }
+
+  private async report(): Promise<void> {
+    if (this.reading || this.link.state !== 'open') return;
+    this.reading = true;
+    try {
+      const current = await this.link.receiveStats();
+      // The picture may have ended while the browser was reading.
+      if (this.reportTimer === null) return;
+      const previous = this.lastReading;
+      this.lastReading = current;
+      const report = previous && current ? summarizeReceive(previous, current) : null;
+      if (report && this.link.state === 'open') {
+        this.link.send(serialize({ type: 'receive-report', report }));
+      }
+    } catch (error) {
+      this.log.debug('could not report the picture', describeThrown(error));
+    } finally {
+      this.reading = false;
     }
   }
 

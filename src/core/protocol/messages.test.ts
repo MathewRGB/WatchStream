@@ -181,3 +181,53 @@ describe('share messages', () => {
     expect(parseViewerMessage(serialize({ type: 'share-revoked' }))).toBeNull();
   });
 });
+
+describe('receive-report message', () => {
+  const report = {
+    loss: 0.02,
+    fps: 24,
+    kbps: 1800,
+    jitterMs: 12,
+    bufferMs: 180,
+    freezes: 0,
+    freezeMs: 0,
+    height: 720,
+    rttMs: 150,
+  };
+
+  it('round-trips a report, with fields the browser could not fill as null', () => {
+    const sent = { ...report, bufferMs: null, freezes: null };
+
+    expect(parseViewerMessage(JSON.stringify({ type: 'receive-report', report: sent }))).toEqual({
+      type: 'receive-report',
+      report: sent,
+    });
+  });
+
+  it('treats a missing field as null and drops extra fields', () => {
+    const partial = { ...report, rttMs: undefined, x: 1 };
+
+    expect(parseViewerMessage(JSON.stringify({ type: 'receive-report', report: partial }))).toEqual(
+      { type: 'receive-report', report: { ...report, rttMs: null } },
+    );
+  });
+
+  it.each([
+    ['a loss above one', { ...report, loss: 1.5 }],
+    ['a negative number', { ...report, fps: -1 }],
+    ['a number out of range', { ...report, kbps: 1e9 }],
+    ['a string', { ...report, fps: '24' }],
+    ['an object', { ...report, jitterMs: { value: 1 } }],
+  ])('drops a report with %s', (_name, bad) => {
+    expect(parseViewerMessage(JSON.stringify({ type: 'receive-report', report: bad }))).toBeNull();
+  });
+
+  it('drops a message without a report', () => {
+    expect(parseViewerMessage(JSON.stringify({ type: 'receive-report' }))).toBeNull();
+    expect(parseViewerMessage(JSON.stringify({ type: 'receive-report', report: 5 }))).toBeNull();
+  });
+
+  it('is not something the host sends', () => {
+    expect(parseHostMessage(JSON.stringify({ type: 'receive-report', report }))).toBeNull();
+  });
+});

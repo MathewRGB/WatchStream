@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LinkStats } from '../../src/core/peer/link-stats';
 import type { MediaLink } from '../../src/core/peer/message-link';
+import type { ReceiveReport } from '../../src/core/peer/receive-stats';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
 import { createTestStream, createTestStreamWithAudio, join, startHost, waitFor } from './helpers';
 
@@ -267,4 +268,69 @@ describe('statistics of a link over WebRTC', () => {
     host.close();
     expect(await link.stats()).toBeNull();
   }, 30_000);
+});
+
+describe('viewer reports over WebRTC', () => {
+  it('tell the host how the picture arrives, as the viewer measures it', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    const media = (await arrived)!;
+    // A picture that nothing shows is not decoded.
+    expect(await plays(media.stream)).toBe(true);
+
+    const report = await waitFor<ReceiveReport>((resolve) => {
+      const poll = () => {
+        const current = host.receiveReports.get(viewer.participantId!);
+        if (current && current.fps !== null && current.fps > 0) resolve(current);
+        else setTimeout(poll, 250);
+      };
+      poll();
+    }, 20_000);
+
+    expect(report.fps).toBeGreaterThan(0);
+    expect(report.kbps).toBeGreaterThan(0);
+    expect(report.height).toBeGreaterThan(0);
+    expect(report.loss === null || (report.loss >= 0 && report.loss <= 1)).toBe(true);
+
+    host.stopSharing();
+    await waitFor<void>((resolve) => {
+      const poll = () => (host.receiveReports.size === 0 ? resolve() : setTimeout(poll, 100));
+      poll();
+    }, 5_000);
+  }, 40_000);
+});
+
+/** The codec the host's video sender really encodes with, e.g. `video/VP9`. */
+async function sentCodec(link: HostLink): Promise<string | null> {
+  const sender = link.senders.find((s) => s.track?.kind === 'video');
+  if (!sender) return null;
+  const reports = [...(await sender.getStats()).values()] as Array<Record<string, unknown>>;
+  const outbound = reports.find((r) => r.type === 'outbound-rtp' && r.kind === 'video');
+  const codec = reports.find((r) => r.type === 'codec' && r.id === outbound?.codecId);
+  return typeof codec?.mimeType === 'string' ? codec.mimeType : null;
+}
+
+// Firefox takes no codec preference (it keeps VP8 first), so the choice is a Chromium matter.
+describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over WebRTC', () => {
+  it('changes the codec that is really sent, also while sharing, and the picture keeps playing', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    const media = (await arrived)!;
+    expect(await plays(media.stream)).toBe(true);
+    const link = hostLinks(host)[0]!;
+    expect(await sentCodec(link)).toBe('video/H264');
+
+    host.setCodec('vp9');
+
+    await waitFor<void>((resolve) => {
+      const poll = async () =>
+        (await sentCodec(link)) === 'video/VP9' ? resolve() : setTimeout(() => void poll(), 250);
+      void poll();
+    }, 15_000);
+    expect(await plays(media.stream)).toBe(true);
+  }, 40_000);
 });
