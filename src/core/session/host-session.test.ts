@@ -217,6 +217,25 @@ describe('HostSession', () => {
     });
   });
 
+  it('refuses a reply meant for another invitation and leaves both invitations open', async () => {
+    const { host, network } = createHost();
+    const first = await host.createInvitation();
+    const second = await host.createInvitation();
+    const { replyCode } = await ViewerSession.join(first.code, {
+      viewerName: 'J',
+      connector: network,
+    });
+
+    await expect(host.acceptReply(replyCode, second.inviteId)).rejects.toMatchObject({
+      reason: 'wrong-invitation',
+    });
+    expect(host.participants).toHaveLength(1);
+    expect(host.openSlots).toBe(MAX_VIEWERS - 2);
+
+    await host.acceptReply(replyCode, first.inviteId);
+    expect(host.participants.map((p) => p.name)).toEqual(['Host', 'J']);
+  });
+
   it('rejects a reply for a cancelled invitation', async () => {
     const { host, network } = createHost();
     const { inviteId, code } = await host.createInvitation();

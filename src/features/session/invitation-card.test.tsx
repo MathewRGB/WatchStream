@@ -48,6 +48,22 @@ describe('InvitationCard', () => {
     expect(screen.getByTestId('cancel-invitation')).toHaveTextContent('Remove');
   });
 
+  it('asks for the right card when the reply belongs to another invitation, and lets it be pasted again', async () => {
+    const acceptReply = vi.fn(async () => {
+      throw new SessionError('wrong-invitation', 'x');
+    });
+    renderCard(acceptReply);
+
+    await connectWithReply();
+
+    expect(await screen.findByTestId('invitation-status')).toHaveTextContent(
+      'belongs to another invitation',
+    );
+    expect(acceptReply).toHaveBeenCalledWith('WSR1.def', 'invite-1');
+    expect(screen.getByTestId('connect-button')).toBeEnabled();
+    expect(screen.getByTestId('cancel-invitation')).toHaveTextContent('Cancel');
+  });
+
   it('shows no technical details for a damaged code', async () => {
     renderCard(async () => {
       throw new SessionError('unknown-invitation', 'x');

@@ -25,7 +25,8 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   sound and chat go directly between host and viewers.
 - Joining by code: the host sends an invitation code through any messenger, the viewer sends a
   reply code back. A code with no public network address, which cannot be reached from another
-  network, is flagged at once.
+  network, is flagged at once. A reply pasted into the card of another invitation is refused with
+  a hint, and both invitations stay open.
 - Up to twelve viewers. The host can invite several at once and remove a viewer.
 - Sharing: the picture quality is chosen in Settings (Minimal, Saver, Balanced, Sharp) and is what
   is sent. When the host's computer or connection cannot keep up, the stage says so; the quality is

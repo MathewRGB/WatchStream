@@ -23,6 +23,8 @@ export function describeError(error: unknown): string {
           'firewall, a VPN or carrier-grade NAT. Create a new invitation to try again; the ' +
           'technical details below say which side had no public address.'
         );
+      case 'wrong-invitation':
+        return 'This reply belongs to another invitation. Paste it into the card of the invitation you sent to that person.';
       case 'unknown-invitation':
         return 'This reply does not match an open invitation. It may have been used or cancelled already.';
       default:

@@ -179,9 +179,19 @@ export class HostSession {
     this.publishSlots();
   }
 
-  /** Applies a viewer's reply code and resolves once the viewer has joined. */
-  async acceptReply(code: string): Promise<Participant> {
+  /**
+   * Applies a viewer's reply code and resolves once the viewer has joined. With `inviteId`, a
+   * reply to another invitation is refused before anything happens, so that a code pasted into
+   * the wrong card neither connects someone else nor leaves that card's invitation behind.
+   */
+  async acceptReply(code: string, inviteId?: string): Promise<Participant> {
     const reply = await decodeReply(code);
+    if (inviteId !== undefined && reply.inviteId !== inviteId && this.pending.has(reply.inviteId)) {
+      throw new SessionError(
+        'wrong-invitation',
+        'This reply belongs to another invitation of this session.',
+      );
+    }
     const link = this.pending.get(reply.inviteId);
     if (!link) {
       throw new SessionError(
