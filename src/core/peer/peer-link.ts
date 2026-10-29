@@ -60,7 +60,6 @@ export class PeerLink implements OfferingLink {
   private limits: MediaLimits | null = null;
   private codec: CodecId = DEFAULT_CODEC;
   private makingOffer = false;
-  private ignoreOffer = false;
   /**
    * Everything the other side sends ends up in this one stream. The streams
    * that come with `track` events are not used: a browser makes new ones for
@@ -183,8 +182,9 @@ export class PeerLink implements OfferingLink {
   async receiveSignal(signal: LinkSignal): Promise<void> {
     const collision =
       signal.type === 'offer' && (this.makingOffer || this.connection.signalingState !== 'stable');
-    this.ignoreOffer = !this.polite && collision;
-    if (this.ignoreOffer) {
+    // With every candidate inside the descriptions, a crossing offer is the only thing the impolite
+    // side ever drops, so the decision is not kept.
+    if (!this.polite && collision) {
       this.log.info('ignored a crossing offer');
       return;
     }
@@ -209,25 +209,29 @@ export class PeerLink implements OfferingLink {
     await this.applyLimits();
   }
 
-  async stats(): Promise<LinkStats | null> {
+  stats(): Promise<LinkStats | null> {
+    return this.readStats(readLinkStats);
+  }
+
+  receiveStats(): Promise<ReceiveStats | null> {
+    return this.readStats(readReceiveStats);
+  }
+
+  /** Reads the browser's statistics with `read`; `null` once the link is closed. */
+  private async readStats<T>(
+    read: (reports: Iterable<StatsReport>, now: number) => T | null,
+  ): Promise<T | null> {
     if (this.currentState === 'closed') return null;
     try {
-      const reports = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
-      return readLinkStats(reports.values(), performance.now());
+      return read((await this.statsReports()).values(), performance.now());
     } catch {
       // Firefox refuses to read a closed connection; there is nothing to say then.
       return null;
     }
   }
 
-  async receiveStats(): Promise<ReceiveStats | null> {
-    if (this.currentState === 'closed') return null;
-    try {
-      const reports = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
-      return readReceiveStats(reports.values(), performance.now());
-    } catch {
-      return null;
-    }
+  private async statsReports(): Promise<Map<string, StatsReport>> {
+    return (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
   }
 
   diagnostics(): LinkDiagnostics {
@@ -396,7 +400,7 @@ export class PeerLink implements OfferingLink {
 
   private async recordPath(): Promise<void> {
     try {
-      const stats = (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
+      const stats = await this.statsReports();
       let pair: StatsReport | undefined;
       for (const report of stats.values()) {
         if (report.type === 'transport' && report.selectedCandidatePairId) {
