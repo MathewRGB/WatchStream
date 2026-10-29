@@ -105,13 +105,18 @@ export async function detectAudibleTab(): Promise<TabChoice | null> {
  * Takes the sound of the video in a tab. The host is asked for access to that site (this has to
  * be the first thing that happens after the click), the script is injected, and the first frame
  * that sends sound wins. `onEnded` runs when the sound stops without `stop` being called: the tab
- * was closed or went to another page.
+ * was closed or went to another page. `context` is an audio context made during the click, which
+ * the browser lets start; one made later can stay suspended.
  */
-export async function startTabSound(tab: TabChoice, onEnded: () => void): Promise<TabSoundHandle> {
+export async function startTabSound(
+  tab: TabChoice,
+  onEnded: () => void,
+  context?: AudioContext,
+): Promise<TabSoundHandle> {
   const granted = await browser.permissions.request({ origins: [`${tab.origin}/*`] });
   if (!granted) throw new TabSoundError('permission');
 
-  const sink = new TabSoundSink();
+  const sink = new TabSoundSink(context);
   let adopted: ReturnType<typeof browser.runtime.connect> | null = null;
   let stopped = false;
 

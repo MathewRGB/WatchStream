@@ -13,6 +13,9 @@ import {
   type TabSoundHandle,
 } from '@/lib/tab-sound';
 
+/** How long a share waits for the sound's audio context to start. */
+const RUNNING_TIMEOUT_MS = 1500;
+
 export interface TabSoundControls {
   /** False where the browser shares tab sound itself. */
   supported: boolean;
@@ -52,6 +55,13 @@ export function useTabSound(session: HostSession): TabSoundControls {
   const clones = useRef(new Set<MediaStreamTrack>());
   // `undefined` until asked; a refusal is not asked again while the page stays open.
   const autoAllowed = useRef<boolean | undefined>(undefined);
+  // Made in the click that starts a share, because the browser lets only such a context start.
+  const warm = useRef<AudioContext | null>(null);
+
+  const dropWarm = useCallback(() => {
+    void warm.current?.close().catch(() => undefined);
+    warm.current = null;
+  }, []);
 
   const dropClones = useCallback(() => {
     const stream = session.sharedStream;
@@ -95,37 +105,62 @@ export function useTabSound(session: HostSession): TabSoundControls {
   }, []);
 
   const attach = useCallback(
-    async (tab: TabChoice) => {
+    async (tab: TabChoice, context?: AudioContext) => {
       stop();
-      const started = await startTabSound(tab, () => {
-        handle.current = null;
-        setActiveTitle(null);
-        dropClones();
-      });
+      const started = await startTabSound(
+        tab,
+        () => {
+          handle.current = null;
+          setActiveTitle(null);
+          dropClones();
+        },
+        context,
+      );
       handle.current = started;
       setActiveTitle(started.title);
       setChoices(null);
+      return started;
     },
     [dropClones, stop],
   );
 
   const prepareAuto = useCallback(async () => {
-    if (!supported || handle.current || autoAllowed.current !== undefined) return;
+    if (!supported || handle.current) return;
+    // Before the first await: this is still the click.
+    dropWarm();
+    try {
+      warm.current = new AudioContext();
+      warm.current.resume().catch(() => undefined);
+    } catch {
+      warm.current = null;
+    }
+    if (autoAllowed.current !== undefined) return;
     try {
       autoAllowed.current = (await autoDetectAllowed()) || (await requestAutoDetect());
     } catch {
       autoAllowed.current = false;
     }
-  }, [supported]);
+  }, [dropWarm, supported]);
 
   const autoSoundTrack = useCallback(async () => {
-    if (!supported || !autoAllowed.current || handle.current) return null;
+    const context = warm.current ?? undefined;
+    warm.current = null;
+    if (!supported || !autoAllowed.current || handle.current) {
+      void context?.close().catch(() => undefined);
+      return null;
+    }
     try {
       const tab = await detectAudibleTab();
-      if (!tab) return null;
-      await attach(tab);
+      if (!tab) {
+        void context?.close().catch(() => undefined);
+        return null;
+      }
+      const started = await attach(tab, context);
+      // A track from a context that is not running yet would go out silent.
+      await started.sink.running(RUNNING_TIMEOUT_MS);
       return soundTrack();
     } catch {
+      void context?.close().catch(() => undefined);
       return null; // Nothing found is no failure; the host can still choose a tab in Settings.
     }
   }, [attach, soundTrack, supported]);
@@ -156,7 +191,13 @@ export function useTabSound(session: HostSession): TabSoundControls {
     [attach, session, soundTrack],
   );
 
-  useEffect(() => () => handle.current?.stop(), []);
+  useEffect(
+    () => () => {
+      handle.current?.stop();
+      dropWarm();
+    },
+    [dropWarm],
+  );
 
   return {
     supported,

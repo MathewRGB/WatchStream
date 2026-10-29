@@ -75,6 +75,12 @@ async function loudest(track: MediaStreamTrack, timeoutMs = 6000): Promise<numbe
 }
 
 describe('tab sound', () => {
+  it('reports that its audio context runs', async () => {
+    const sink = new TabSoundSink();
+    cleanupAfterTest(() => sink.close());
+    expect(await sink.running(3000)).toBe(true);
+  });
+
   it('turns the sound of a playing element into a live track', async () => {
     await playingElement();
     const sink = new TabSoundSink();

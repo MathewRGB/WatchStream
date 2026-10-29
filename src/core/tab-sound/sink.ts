@@ -28,6 +28,25 @@ export class TabSoundSink {
     context.resume().catch(() => undefined);
   }
 
+  /**
+   * Whether the context runs, waiting up to `timeoutMs` for it to start. A context that was not
+   * created or resumed during a click can stay suspended, and then the track is silent.
+   */
+  async running(timeoutMs: number): Promise<boolean> {
+    if (this.isRunning()) return true;
+    const resumed = this.context.resume().then(
+      () => true,
+      () => false,
+    );
+    const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), timeoutMs));
+    return (await Promise.race([resumed, timeout])) && this.isRunning();
+  }
+
+  // A method, so that the state is read again after the awaits and not narrowed by the compiler.
+  private isRunning(): boolean {
+    return this.context.state === 'running';
+  }
+
   push(message: PcmMessage): void {
     if (this.closed) return;
     const { channels, sampleRate } = message;
