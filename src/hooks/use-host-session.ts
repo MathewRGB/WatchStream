@@ -4,7 +4,20 @@ import type { ReceiveReport } from '@/core/peer/receive-stats';
 import type { CodecId } from '@/core/peer/video-codecs';
 import type { Participant } from '@/core/protocol/messages';
 import type { HostSession, IncomingShare, LoadStatus } from '@/core/session/host-session';
-import { useChangeCounter, type Subscribe } from './use-change-counter';
+import { onAnyOf, useChangeCounter, type Subscribe } from './use-change-counter';
+
+/** Every event that changes something in the snapshot. */
+const EVENTS = [
+  'roster',
+  'slots',
+  'sharing',
+  'quality',
+  'codec',
+  'load',
+  'incoming',
+  'shareRequests',
+  'receiveReports',
+] as const;
 
 export interface HostSnapshot {
   participants: Participant[];
@@ -27,28 +40,7 @@ export interface HostSnapshot {
 /** The participants and free places of a host session, kept up to date. */
 export function useHostSession(session: HostSession): HostSnapshot {
   const subscribe = useCallback<Subscribe>(
-    (onChange) => {
-      const offRoster = session.events.on('roster', onChange);
-      const offSlots = session.events.on('slots', onChange);
-      const offSharing = session.events.on('sharing', onChange);
-      const offQuality = session.events.on('quality', onChange);
-      const offCodec = session.events.on('codec', onChange);
-      const offLoad = session.events.on('load', onChange);
-      const offIncoming = session.events.on('incoming', onChange);
-      const offRequests = session.events.on('shareRequests', onChange);
-      const offReports = session.events.on('receiveReports', onChange);
-      return () => {
-        offRoster();
-        offSlots();
-        offSharing();
-        offQuality();
-        offCodec();
-        offLoad();
-        offIncoming();
-        offRequests();
-        offReports();
-      };
-    },
+    (onChange) => onAnyOf(session.events, EVENTS, onChange),
     [session],
   );
   useChangeCounter(subscribe);

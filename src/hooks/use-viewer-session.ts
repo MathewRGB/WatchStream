@@ -7,7 +7,10 @@ import type {
   ViewerSession,
   ViewerState,
 } from '@/core/session/viewer-session';
-import { useChangeCounter, type Subscribe } from './use-change-counter';
+import { onAnyOf, useChangeCounter, type Subscribe } from './use-change-counter';
+
+/** Every event that changes something in the snapshot. */
+const EVENTS = ['state', 'roster', 'media', 'share'] as const;
 
 export interface ViewerSnapshot {
   state: ViewerState;
@@ -26,18 +29,7 @@ export interface ViewerSnapshot {
 /** The connection state and participants of a viewer session, kept up to date. */
 export function useViewerSession(session: ViewerSession): ViewerSnapshot {
   const subscribe = useCallback<Subscribe>(
-    (onChange) => {
-      const offState = session.events.on('state', onChange);
-      const offRoster = session.events.on('roster', onChange);
-      const offMedia = session.events.on('media', onChange);
-      const offShare = session.events.on('share', onChange);
-      return () => {
-        offState();
-        offRoster();
-        offMedia();
-        offShare();
-      };
-    },
+    (onChange) => onAnyOf(session.events, EVENTS, onChange),
     [session],
   );
   useChangeCounter(subscribe);
