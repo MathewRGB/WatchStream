@@ -371,12 +371,7 @@ export class HostSession {
   removeViewer(id: string): void {
     const viewer = this.viewers.get(id);
     if (!viewer) return;
-    if (id === this.sharerId) this.endIncoming();
-    this.requests.delete(id);
-    this.viewers.delete(id);
-    this.loadControl.forget(id);
-    this.setReport(id, null);
-    this.log.info('viewer removed', { viewers: this.viewers.size });
+    this.dropViewer(id, 'viewer removed');
     this.sendTo(viewer.link, { type: 'removed' });
     this.leaving.set(
       viewer.link,
@@ -385,10 +380,6 @@ export class HostSession {
         viewer.link.close();
       }, REMOVED_GRACE_MS),
     );
-    this.publishRoster();
-    this.publishSlots();
-    this.publishLoad();
-    this.publishRequests();
   }
 
   close(): void {
@@ -424,18 +415,8 @@ export class HostSession {
     });
     link.events.on('stream', (stream) => this.handleViewerStream(participant.id, stream));
     link.events.on('close', () => {
-      if (this.viewers.get(participant.id) === viewer) {
-        if (participant.id === this.sharerId) this.endIncoming();
-        this.viewers.delete(participant.id);
-        this.requests.delete(participant.id);
-        this.log.info('viewer left', { viewers: this.viewers.size });
-        this.loadControl.forget(participant.id);
-        this.setReport(participant.id, null);
-        this.publishRoster();
-        this.publishSlots();
-        this.publishLoad();
-        this.publishRequests();
-      }
+      if (this.viewers.get(participant.id) === viewer)
+        this.dropViewer(participant.id, 'viewer left');
     });
     this.log.info('viewer joined', { viewers: this.viewers.size });
     this.sendTo(link, { type: 'welcome', participantId: participant.id });
@@ -446,6 +427,23 @@ export class HostSession {
     this.publishRoster();
     this.publishSlots();
     this.publishLoad();
+  }
+
+  /**
+   * Takes a viewer out of the session, whether the host removed them or the connection ended, and
+   * tells everyone what changed. Their share ends, their request is gone, their place is free.
+   */
+  private dropViewer(id: string, event: 'viewer removed' | 'viewer left'): void {
+    if (id === this.sharerId) this.endIncoming();
+    this.requests.delete(id);
+    this.viewers.delete(id);
+    this.loadControl.forget(id);
+    this.setReport(id, null);
+    this.log.info(event, { viewers: this.viewers.size });
+    this.publishRoster();
+    this.publishSlots();
+    this.publishLoad();
+    this.publishRequests();
   }
 
   private handleViewerMessage(link: MediaLink, raw: string, sender: Participant): void {
