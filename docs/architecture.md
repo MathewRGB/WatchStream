@@ -171,9 +171,9 @@ synthetic 1080p picture, the host pinned to a number of cores):
 The numbers show a shape, not a limit to build in: a real screen is often easier, and a hardware
 encoder changes the cost a lot.
 
-So the chosen quality is the most that is sent, and a **load monitor** lowers it when the host
-cannot keep up (`src/core/media/load-monitor.ts`, driven by `src/core/session/load-control.ts`).
-Every 2 seconds it reads each link's counters and judges the change:
+So the chosen quality is what is sent, and a **load monitor** tells the host when it cannot keep up
+(`src/core/media/load-monitor.ts`, driven by `src/core/session/load-control.ts`). It never changes the
+quality itself: the host does that in Settings. Every 2 seconds it reads each link's counters and judges the change:
 
 - A link is **behind** when it encodes under 80 % of the frames it should (the source's frame
   rate, capped by the quality; below 5 a second a picture is too still to judge).
@@ -182,13 +182,12 @@ Every 2 seconds it reads each link's counters and judges the change:
   alone means nothing: a still picture is cheap.
 - The first 8 seconds of a link are not judged, nor a reading whose counters fell.
 - The **host struggles** when half of the links (all of one or two) are affected for three
-  readings in a row. Then the quality goes down one step, and the next step waits 10 seconds. After
-  90 calm seconds it goes up one step. It never goes below Minimal; struggling there, the host is
-  told that some viewers may get the picture late. The cause is "your computer" when most affected
-  links are behind, "your connection" otherwise.
-- One viewer alone on a poor connection does not lower the rest; that viewer is marked slow.
+  readings in a row. Then the host is told, on the stage line, that some viewers may get the picture
+  late. The line goes back to normal after one reading in which the host keeps up. The cause is
+  "your computer" when most affected links are behind, "your connection" otherwise.
+- One viewer alone on a poor connection does not affect the rest; that viewer is marked slow.
 
-The host always sees what is sent ("720p · 8 viewers", and why it was lowered). The thresholds are
+The host always sees what is sent ("720p · 8 viewers"), and when it struggles, why. The thresholds are
 first guesses in one place (`LOAD_RULES`). The monitor is pure, readings in and a decision out,
 and takes its time from the readings, so it is tested with sequences and no timers.
 

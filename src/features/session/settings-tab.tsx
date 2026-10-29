@@ -21,8 +21,8 @@ export function SettingsTab({ quality, onQualityChange, tabSound }: SettingsTabP
           and the change applies at once, also while sharing.
         </p>
         <p className="text-sm text-muted-foreground" data-testid="quality-automatic-note">
-          This is the most that is sent. With many viewers, if your computer or connection cannot
-          keep up, WatchStream lowers it by itself and raises it again later. The line on the stage
+          This is what is sent. With many viewers, if your computer or connection cannot keep up,
+          WatchStream tells you on the stage and keeps the quality you chose. The line on the stage
           shows what is sent.
         </p>
         {QUALITY_PRESETS.map((preset) => (

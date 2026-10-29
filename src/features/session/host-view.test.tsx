@@ -55,7 +55,7 @@ describe('HostView and the load', () => {
     expect(screen.getByTestId('load-line')).toHaveAttribute('data-tone', 'normal');
   });
 
-  it('says so when the quality was lowered because the host could not keep up, and marks the slow', async () => {
+  it('says so when the host could not keep up, and marks the slow', async () => {
     const { host, network } = await hostViewWithViewers(4);
     vi.useFakeTimers();
     act(() => host.startSharing(fakeCapturedStream().stream));
@@ -70,9 +70,8 @@ describe('HostView and the load', () => {
     }
 
     const line = screen.getByTestId('load-line');
-    expect(line).toHaveAttribute('data-tone', expect.stringMatching(/lowered|overloaded/));
-    expect(line).toHaveTextContent(/Lowered to (Saver|Minimal)|your computer cannot keep up/);
-    expect(line).toHaveTextContent('your computer');
+    expect(line).toHaveAttribute('data-tone', 'struggling');
+    expect(line).toHaveTextContent('720p · 4 viewers: your computer cannot keep up.');
     // Everyone fell behind, so all four are marked; the People tab shows them.
     expect(
       within(screen.getByTestId('tab-panel-people')).getAllByTestId('participant-slow'),

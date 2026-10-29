@@ -20,25 +20,17 @@ export const LOAD_RULES = {
   graceMs: 8_000,
   /** Readings closer together than this are not compared. */
   minIntervalMs: 500,
-  /** Readings in a row with the host struggling before the quality goes down. */
-  readingsToAct: 3,
-  /** After a change, wait this long so that its effect can show. */
-  waitAfterChangeMs: 10_000,
-  /** The host must not have struggled for this long before the quality goes up a step. */
-  calmMs: 90_000,
+  /** Readings in a row with the host struggling before the host is told so. */
+  readingsToReport: 3,
 } as const;
 
 export type LinkHealth = 'good' | 'slow';
 
 export interface LoadDecision {
-  /** Steps taken off the quality the host chose. */
-  penalty: number;
-  /** Enough links are affected, in this reading. */
+  /** The host has struggled for enough readings in a row to be told so. */
   struggling: boolean;
   /** When struggling: do most affected links lag in encoding (the computer) or lose packets (the connection)? */
   cause: 'computer' | 'connection' | null;
-  /** Struggling with no step left to take. */
-  overloaded: boolean;
   /** Per link: slow when it is affected and the host as a whole is not, or even when it is. */
   links: ReadonlyMap<string, LinkHealth>;
 }
@@ -46,10 +38,8 @@ export interface LoadDecision {
 export interface LoadInput {
   /** The latest reading of each link, `null` for a link without a picture. */
   readings: ReadonlyMap<string, LinkStats | null>;
-  /** What the links are limited to now; frames and bitrate are judged against it. */
+  /** What the links are limited to; frames and bitrate are judged against it. */
   limits: MediaLimits;
-  /** How many steps below the chosen quality there are. */
-  stepsAvailable: number;
 }
 
 /** How many affected links make the host struggle: all of one or two, else half of them. */
@@ -65,18 +55,14 @@ function needed(links: number): number {
 export class LoadMonitor {
   private previous = new Map<string, LinkStats>();
   private firstSeen = new Map<string, number>();
-  private penalty = 0;
   private strikes = 0;
-  private lastChangeAt = Number.NEGATIVE_INFINITY;
-  private calmSince: number | null = null;
 
-  update({ readings, limits, stepsAvailable }: LoadInput): LoadDecision {
-    this.penalty = Math.min(this.penalty, stepsAvailable);
+  update({ readings, limits }: LoadInput): LoadDecision {
     const links = new Map<string, LinkHealth>();
     let now = Number.NEGATIVE_INFINITY;
     for (const stats of readings.values()) if (stats) now = Math.max(now, stats.at);
     for (const id of [...this.previous.keys()]) if (!readings.get(id)) this.forget(id);
-    if (now === Number.NEGATIVE_INFINITY) return this.decision(links, false, null, false);
+    if (now === Number.NEGATIVE_INFINITY) return this.decision(links, false, null);
 
     let evaluated = 0;
     let behindCount = 0;
@@ -115,33 +101,9 @@ export class LoadMonitor {
         ? 'computer'
         : 'connection'
       : null;
-    if (struggling) {
-      this.strikes += 1;
-      this.calmSince = null;
-    } else {
-      this.strikes = 0;
-      this.calmSince ??= now;
-    }
-
-    const readyToAct = struggling && this.strikes >= LOAD_RULES.readingsToAct;
-    let overloaded = false;
-    if (readyToAct && this.penalty < stepsAvailable) {
-      if (now - this.lastChangeAt >= LOAD_RULES.waitAfterChangeMs) {
-        this.penalty += 1;
-        this.lastChangeAt = now;
-        this.strikes = 0;
-      }
-    } else if (readyToAct) {
-      overloaded = true;
-    }
-
-    const calmFor = this.calmSince === null ? 0 : now - Math.max(this.calmSince, this.lastChangeAt);
-    if (!struggling && this.penalty > 0 && calmFor >= LOAD_RULES.calmMs) {
-      this.penalty -= 1;
-      this.lastChangeAt = now;
-      this.calmSince = now;
-    }
-    return this.decision(links, struggling, cause, overloaded);
+    this.strikes = struggling ? this.strikes + 1 : 0;
+    const reported = this.strikes >= LOAD_RULES.readingsToReport;
+    return this.decision(links, reported, reported ? cause : null);
   }
 
   /** A link has gone; what was known about it goes too. */
@@ -154,19 +116,15 @@ export class LoadMonitor {
   reset(): void {
     this.previous.clear();
     this.firstSeen.clear();
-    this.penalty = 0;
     this.strikes = 0;
-    this.lastChangeAt = Number.NEGATIVE_INFINITY;
-    this.calmSince = null;
   }
 
   private decision(
     links: ReadonlyMap<string, LinkHealth>,
     struggling: boolean,
     cause: LoadDecision['cause'],
-    overloaded: boolean,
   ): LoadDecision {
-    return { penalty: this.penalty, struggling, cause, overloaded, links };
+    return { struggling, cause, links };
   }
 
   /**

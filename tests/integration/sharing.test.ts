@@ -207,19 +207,19 @@ describe('the load monitor over WebRTC', () => {
     host.startSharing(createTestStream());
     await Promise.all(arrivals);
     const statuses: string[] = [];
-    host.events.on('load', (status) => statuses.push(`${status.effective}/${status.cause}`));
+    host.events.on('load', (status) => statuses.push(`${status.struggling}/${status.cause}`));
 
     await new Promise((resolve) => setTimeout(resolve, 14_000));
 
     // Positive control: the monitor read both links, or "nothing slow" would say nothing.
     expect(host.load.health.size).toBe(2);
-    expect(host.effectiveQuality).toBe('balanced');
-    expect(host.load).toMatchObject({ cause: null, overloaded: false });
+    expect(host.quality).toBe('balanced');
+    expect(host.load).toMatchObject({ struggling: false, cause: null });
     expect([...host.load.health.values()]).toEqual(['good', 'good']);
-    expect(statuses.filter((s) => !s.startsWith('balanced/null'))).toEqual([]);
+    expect(statuses.filter((s) => s !== 'false/null')).toEqual([]);
   }, 40_000);
 
-  it('applies a lowered quality to the encoder of every sender', async () => {
+  it('applies a chosen quality to the encoder of every sender', async () => {
     const host = startHost();
     for (const name of ['user2', 'user3', 'user4']) await join(host, name);
     host.startSharing(createTestStream());

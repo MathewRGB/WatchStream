@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { lowerQuality, qualityPreset } from '../media/quality';
+import { qualityPreset } from '../media/quality';
 import type { FakeLink, FakeNetwork } from '../testing/fake-network';
 import { createHost, joinViewer } from '../testing/session-fixtures';
 import type { HostSession, LoadStatus } from './host-session';
@@ -84,12 +84,16 @@ describe('HostSession and the load monitor', () => {
     await rounds(120, counters, links());
 
     expect(host.quality).toBe('balanced');
-    expect(host.effectiveQuality).toBe('balanced');
     for (const link of links()) expect(link.limits).toEqual(qualityPreset('balanced'));
-    expect(host.load).toMatchObject({ cause: null, overloaded: false, viewers: 4 });
+    expect(host.load).toMatchObject({
+      chosen: 'balanced',
+      struggling: false,
+      cause: null,
+      viewers: 4,
+    });
   });
 
-  it('lowers the quality for every viewer when the host cannot keep up, and says why', async () => {
+  it('tells the host when it cannot keep up, and keeps sending the chosen quality', async () => {
     const { host, links } = await hostWithViewers(4);
     const counters = new Counters();
     const statuses: LoadStatus[] = [];
@@ -99,39 +103,36 @@ describe('HostSession and the load monitor', () => {
     await rounds(40, counters, links(), bad);
 
     expect(host.quality).toBe('balanced');
-    expect(host.effectiveQuality).not.toBe('balanced');
-    for (const link of links()) expect(link.limits).toEqual(qualityPreset(host.effectiveQuality));
-    expect(host.load).toMatchObject({ chosen: 'balanced', cause: 'computer' });
-    expect(statuses.at(-1)?.effective).toBe(host.effectiveQuality);
+    for (const link of links()) expect(link.limits).toEqual(qualityPreset('balanced'));
+    expect(host.load).toMatchObject({ chosen: 'balanced', struggling: true, cause: 'computer' });
+    expect(statuses.at(-1)).toMatchObject({ struggling: true, cause: 'computer' });
   });
 
-  it('goes down one step at a time and stops at Minimal, then says it is overloaded', async () => {
+  it('never changes the quality by itself, however long the host struggles', async () => {
     const { host, links } = await hostWithViewers(4);
     const counters = new Counters();
-    const seen: string[] = [];
-    host.events.on('load', (status) => {
-      if (seen.at(-1) !== status.effective) seen.push(status.effective);
-    });
+    const chosen: string[] = [];
+    host.events.on('load', (status) => chosen.push(status.chosen));
     shareNow(host);
 
     await rounds(120, counters, links(), bad);
 
-    expect(seen).toEqual(['balanced', 'saver', 'minimal']);
-    expect(host.load).toMatchObject({ effective: 'minimal', overloaded: true });
+    expect(host.load.struggling).toBe(true);
+    expect(new Set(chosen)).toEqual(new Set(['balanced']));
+    for (const link of links()) expect(link.limits).toEqual(qualityPreset('balanced'));
   });
 
-  it('sends the lowered quality to a viewer who joins later', async () => {
+  it('sends the chosen quality to a viewer who joins later', async () => {
     const { host, network, links } = await hostWithViewers(4);
     const counters = new Counters();
     shareNow(host);
     await rounds(40, counters, links(), bad);
-    const lowered = host.effectiveQuality;
-    expect(lowered).not.toBe('balanced');
+    expect(host.load.struggling).toBe(true);
 
     await joinOnFakeClock(host, network, 'late');
 
     const late = network.offers.at(-1)!;
-    expect(late.limits).toEqual(qualityPreset(lowered));
+    expect(late.limits).toEqual(qualityPreset('balanced'));
   });
 
   it('marks one slow viewer and leaves the quality of the others alone', async () => {
@@ -141,7 +142,7 @@ describe('HostSession and the load monitor', () => {
 
     await rounds(120, counters, links(), (index) => (index === 2 ? { enc: 4 } : {}));
 
-    expect(host.effectiveQuality).toBe('balanced');
+    expect(host.load.struggling).toBe(false);
     const slow = [...host.load.health].filter(([, health]) => health === 'slow');
     expect(slow).toHaveLength(1);
     expect(slow[0]![0]).toBe(host.participants[3]!.id);
@@ -154,21 +155,19 @@ describe('HostSession and the load monitor', () => {
 
     await rounds(40, counters, links(), () => ({ loss: 0.15 }));
 
-    expect(host.effectiveQuality).not.toBe('balanced');
-    expect(host.load.cause).toBe('connection');
+    expect(host.load).toMatchObject({ struggling: true, cause: 'connection' });
   });
 
-  it('goes back up when the host has kept up for long enough', async () => {
+  it('stops telling the host it struggles once it has kept up again', async () => {
     const { host, links } = await hostWithViewers(4);
     const counters = new Counters();
     shareNow(host);
     await rounds(30, counters, links(), bad);
-    expect(host.effectiveQuality).not.toBe('balanced');
+    expect(host.load.struggling).toBe(true);
 
-    await rounds(400, counters, links());
+    await rounds(10, counters, links());
 
-    expect(host.effectiveQuality).toBe('balanced');
-    expect(host.load.cause).toBeNull();
+    expect(host.load).toMatchObject({ struggling: false, cause: null });
     for (const link of links()) expect(link.limits).toEqual(qualityPreset('balanced'));
   });
 
@@ -177,25 +176,13 @@ describe('HostSession and the load monitor', () => {
     const counters = new Counters();
     shareNow(host);
     await rounds(40, counters, links(), bad);
-    expect(host.effectiveQuality).not.toBe('balanced');
+    expect(host.load.struggling).toBe(true);
 
     host.setQuality('sharp');
 
-    expect(host.effectiveQuality).toBe('sharp');
+    expect(host.quality).toBe('sharp');
     for (const link of links()) expect(link.limits).toEqual(qualityPreset('sharp'));
-    expect(host.load).toMatchObject({ chosen: 'sharp', effective: 'sharp', cause: null });
-  });
-
-  it('never goes below what the chosen quality has under it', async () => {
-    const { host, links } = await hostWithViewers(4);
-    const counters = new Counters();
-    host.setQuality('saver');
-    shareNow(host);
-
-    await rounds(120, counters, links(), bad);
-
-    expect(host.effectiveQuality).toBe(lowerQuality('saver', 1));
-    expect(host.effectiveQuality).toBe('minimal');
+    expect(host.load).toMatchObject({ chosen: 'sharp', struggling: false, cause: null });
   });
 
   it('reads no statistics before something is shared, and none after it stops', async () => {
@@ -222,17 +209,16 @@ describe('HostSession and the load monitor', () => {
     expect(reads.mock.calls.length).toBe(count);
   });
 
-  it('goes back to the chosen quality when sharing stops', async () => {
+  it('stops telling the host it struggles when sharing stops', async () => {
     const { host, links } = await hostWithViewers(4);
     const counters = new Counters();
     shareNow(host);
     await rounds(40, counters, links(), bad);
-    expect(host.effectiveQuality).not.toBe('balanced');
+    expect(host.load.struggling).toBe(true);
 
     host.stopSharing();
 
-    expect(host.effectiveQuality).toBe('balanced');
-    expect(host.load).toMatchObject({ cause: null, overloaded: false });
+    expect(host.load).toMatchObject({ struggling: false, cause: null });
   });
 
   it('stops reading when the session ends', async () => {
@@ -260,7 +246,7 @@ describe('HostSession and the load monitor', () => {
 
     await rounds(60, counters, links(), bad);
 
-    expect(host.effectiveQuality).not.toBe('balanced');
+    expect(host.load.struggling).toBe(true);
   });
 
   it('forgets a viewer who leaves', async () => {

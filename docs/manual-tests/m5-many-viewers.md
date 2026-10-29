@@ -42,19 +42,18 @@ fewer on a weak computer). You can also run `npm run measure:load` first to see 
 does (see the README, "Development").
 
 1. Host: choose **Sharp** in **Settings** and share fast movement.
-2. Wait a minute. Expect, once the computer cannot keep up: the line changes to "Lowered to
-   Balanced (720p · N viewers): your computer is busy." (or "your connection cannot keep up" when
-   the upload is the limit), and the picture of every viewer becomes lighter but smooth.
-3. Keep going until the lowest step. Expect: "Some viewers may get the picture late."
-4. Look at **People**. Expect: a viewer on a poor connection carries a **slow** mark; the others
-   do not, and one slow viewer alone does not lower the picture for everybody.
-5. Remove viewers until the computer copes. Expect: after about a minute and a half of calm the
-   line says one step higher, and later one more, up to what you chose.
-6. In **Settings**, choose another quality while it is lowered. Expect: it applies at once and the
-   monitor starts over.
+2. Wait a minute. Expect, once the computer cannot keep up: the line turns red and says "720p ·
+   N viewers: your computer cannot keep up. Some viewers may get the picture late." (or "your
+   connection cannot keep up" when the upload is the limit). The quality stays at Sharp.
+3. Look at **People**. Expect: a viewer on a poor connection carries a **slow** mark; the others
+   do not, and one slow viewer alone does not make the line appear for everybody.
+4. Remove viewers until the computer copes. Expect: after a few readings the line is grey again,
+   at the same quality. Nothing changes by itself.
+5. Choose another quality in **Settings** while the line is red. Expect: the quality applies at
+   once, and the monitor starts over.
 
-Judge: does it lower soon enough, and not too eagerly? Is the text on the line clear? Does the
-picture on the viewers get better or worse in a way you would accept?
+Judge: does the line appear soon enough, and not too eagerly? Is the text on the line clear enough
+for the host to lower the quality by hand?
 
 ## 4. A still picture is not a problem
 
@@ -77,7 +76,7 @@ picture on the viewers get better or worse in a way you would accept?
 1. While sharing with many viewers, close the WatchStream tab of two of them. Expect: the others
    keep watching, the list and **Places left** follow, and the line shows the new number.
 2. Join again with a new invitation while sharing. Expect: the picture arrives, at the quality that
-   is sent now (lowered, if it is).
+   is chosen in Settings.
 
 ## Record the result
 

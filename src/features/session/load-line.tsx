@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { describeLoad } from './describe-load';
 import { StageNote } from './stage-note';
 
-/** What the host sends and to how many, on the stage; says so when the quality had to go down. */
+/** What the host sends and to how many, on the stage; says so when the host cannot keep up. */
 export function LoadLine({ load }: { load: LoadStatus }) {
   const { text, tone } = describeLoad(load);
   return (
@@ -11,8 +11,7 @@ export function LoadLine({ load }: { load: LoadStatus }) {
       role="status"
       className={cn(
         tone === 'normal' && 'text-muted-foreground',
-        tone === 'lowered' && 'text-foreground',
-        tone === 'overloaded' && 'text-destructive',
+        tone === 'struggling' && 'text-destructive',
       )}
       data-tone={tone}
       data-testid="load-line"

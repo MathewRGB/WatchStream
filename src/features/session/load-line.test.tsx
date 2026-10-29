@@ -6,10 +6,9 @@ import { LoadLine } from './load-line';
 
 const status = (overrides: Partial<LoadStatus> = {}): LoadStatus => ({
   chosen: 'balanced',
-  effective: 'balanced',
   viewers: 3,
+  struggling: false,
   cause: null,
-  overloaded: false,
   health: new Map(),
   ...overrides,
 });
@@ -24,17 +23,10 @@ describe('LoadLine', () => {
     expect(line).toHaveClass('text-muted-foreground');
   });
 
-  it('stands out when the quality was lowered', () => {
-    render(<LoadLine load={status({ effective: 'saver', cause: 'computer' })} />);
+  it('warns in the colour of a warning when the host cannot keep up', () => {
+    render(<LoadLine load={status({ struggling: true, cause: 'computer' })} />);
 
-    expect(screen.getByTestId('load-line')).toHaveTextContent('Lowered to Saver');
-    expect(screen.getByTestId('load-line')).toHaveAttribute('data-tone', 'lowered');
-    expect(screen.getByTestId('load-line')).not.toHaveClass('text-muted-foreground');
-  });
-
-  it('warns in the colour of a warning when the host cannot keep up at all', () => {
-    render(<LoadLine load={status({ effective: 'minimal', overloaded: true })} />);
-
+    expect(screen.getByTestId('load-line')).toHaveAttribute('data-tone', 'struggling');
     expect(screen.getByTestId('load-line')).toHaveClass('text-destructive');
     expect(screen.getByTestId('load-line')).toHaveTextContent('may get the picture late');
   });

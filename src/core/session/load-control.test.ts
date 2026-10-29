@@ -33,16 +33,14 @@ function link() {
 }
 
 function control(links: Map<string, ReturnType<typeof link>>) {
-  const onStep = vi.fn();
   const onReading = vi.fn();
   const load = new LoadControl({
     intervalMs: 2000,
     chosen: () => 'balanced',
     links: () => links,
-    onStep,
     onReading,
   });
-  return { load, onStep, onReading };
+  return { load, onReading };
 }
 
 describe('LoadControl', () => {
@@ -61,23 +59,25 @@ describe('LoadControl', () => {
     expect(a.stats).toHaveBeenCalledTimes(2);
   });
 
-  it('lowers a step when every link is behind, and says so', async () => {
+  it('reports that the host struggles when every link is behind, and keeps the chosen quality', async () => {
     const a = link();
-    const { load, onStep } = control(new Map([['a', a]]));
+    const { load } = control(new Map([['a', a]]));
     a.behind();
 
     load.start();
-    for (let i = 0; i < 20 && onStep.mock.calls.length === 0; i++) {
+    for (let i = 0; i < 20 && !load.status(1).struggling; i++) {
       await vi.advanceTimersByTimeAsync(2000);
     }
 
-    expect(onStep).toHaveBeenCalledWith('lowered');
-    expect(load.effective).toBe('saver');
-    expect(load.status(1)).toMatchObject({ chosen: 'balanced', cause: 'computer' });
+    expect(load.status(1)).toMatchObject({
+      chosen: 'balanced',
+      struggling: true,
+      cause: 'computer',
+    });
     expect(load.status(1).health.get('a')).toBe('slow');
   });
 
-  it('starts over on reset: the chosen quality again, nobody slow', async () => {
+  it('starts over on reset: nobody slow, and not struggling', async () => {
     const a = link();
     const { load } = control(new Map([['a', a]]));
     a.behind();
@@ -86,8 +86,7 @@ describe('LoadControl', () => {
 
     load.reset();
 
-    expect(load.effective).toBe('balanced');
-    expect(load.status(1)).toMatchObject({ cause: null, overloaded: false });
+    expect(load.status(1)).toMatchObject({ chosen: 'balanced', struggling: false, cause: null });
     expect(load.status(1).health.size).toBe(0);
   });
 
@@ -99,7 +98,6 @@ describe('LoadControl', () => {
       intervalMs: 2000,
       chosen: () => 'balanced',
       links: () => new Map([['a', slow]]),
-      onStep: vi.fn(),
       onReading,
     });
     load.start();

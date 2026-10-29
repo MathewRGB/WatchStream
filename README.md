@@ -43,10 +43,10 @@ own player for such services is future work, see
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
    it on their stage, with a mute button and a volume slider; **Stop sharing** (or the browser's own stop button) ends it. The host can
-   lower or raise the picture quality in the **Settings** tab; that is the most that is sent. A
+   choose the picture quality in the **Settings** tab; that is what is sent. A
    line on the stage says what is sent and to how many viewers ("720p · 8 viewers"). With many
-   viewers WatchStream lowers the quality by itself when your computer or connection cannot keep
-   up, says so on that line, and raises it again later. The **People** tab marks a viewer who is not
+   viewers, if your computer or connection cannot keep up, the line says so; the quality stays as
+   you chose it, so you can lower it yourself. The **People** tab marks a viewer who is not
    keeping up; viewers see none of this. The host can remove a viewer there, after one question;
    that viewer can come back with a new invitation.
 7. **Viewer:** to share something yourself, choose **Share** on the stage and pick a tab, window or
@@ -80,7 +80,7 @@ open: closing it ends the session.
   picture is black. WatchStream does not circumvent copy protection.
 - In stream mode the host sends a separate copy to each viewer, so its computer and upload limit
   the quality: Sharp needs about 6 Mbit/s of upload and one encode per viewer. A session holds up
-  to twelve viewers; with many of them some may get the picture late or at a lower quality. The
+  to twelve viewers; with many of them some may get the picture late. The
   sound adds 64 to 192 kbit/s, depending on the quality.
 - Firefox cannot share the sound of a tab itself. WatchStream takes it from the video in the tab
   instead: when you choose **Share**, it asks once for the tab list and access to your sites, then
@@ -202,7 +202,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
       volume control, technical details for connection problems
 - [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
       when idle, a quiet symbol for a message
-- [x] **M5:** up to 12 viewers, a load monitor lowers the quality when the host cannot keep up,
+- [x] **M5:** up to 12 viewers, a load monitor tells the host when it cannot keep up,
       several invitations at once, removing a viewer
 - [x] **M6:** viewers can share too: a viewer picks a source and asks, the host allows it with one
       click and passes the picture on to everyone else

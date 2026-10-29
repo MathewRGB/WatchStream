@@ -55,7 +55,7 @@ describe('useHostSession', () => {
     expect(result.current.load).toMatchObject({
       viewers: 0,
       chosen: 'balanced',
-      effective: 'balanced',
+      struggling: false,
     });
 
     await act(async () => {
@@ -64,7 +64,7 @@ describe('useHostSession', () => {
     expect(result.current.load.viewers).toBe(1);
 
     act(() => host.setQuality('sharp'));
-    expect(result.current.load).toMatchObject({ chosen: 'sharp', effective: 'sharp' });
+    expect(result.current.load).toMatchObject({ chosen: 'sharp', struggling: false });
   });
 
   it('stops listening after unmounting', () => {

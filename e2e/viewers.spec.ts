@@ -59,7 +59,7 @@ test('a host with five viewers: one roster, one chat and one picture for everyon
   // The host is told what it sends and to how many.
   await expect(host.byTestId('load-line')).toHaveText('720p · 5 viewers');
   // And the load monitor, reading the real statistics of five real links for longer than its
-  // grace period and three readings, finds nothing to lower and nobody slow.
+  // grace period and three readings, finds nothing to report and nobody slow.
   await host.page.waitForTimeout(15_000);
   await expect(host.byTestId('load-line')).toHaveText('720p · 5 viewers');
   await expect(host.byTestId('load-line')).toHaveAttribute('data-tone', 'normal');

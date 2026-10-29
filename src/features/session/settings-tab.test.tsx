@@ -16,11 +16,11 @@ describe('SettingsTab', () => {
     expect(screen.getByTestId('quality-sharp')).not.toBeChecked();
   });
 
-  it('says that the quality is the most that is sent and may be lowered by itself', () => {
+  it('says that the quality is what is sent and is never changed by itself', () => {
     render(<SettingsTab quality="balanced" onQualityChange={() => {}} />);
 
     expect(screen.getByTestId('quality-automatic-note')).toHaveTextContent(
-      /most that is sent.*lowers it by itself/,
+      /is what is sent.*keeps the quality you chose/,
     );
   });
 

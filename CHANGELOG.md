@@ -18,9 +18,9 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   reply code back. A code with no public network address, which cannot be reached from another
   network, is flagged at once.
 - Up to twelve viewers. The host can invite several at once and remove a viewer.
-- Sharing: the picture quality is chosen in Settings (Minimal, Saver, Balanced, Sharp) and is the
-  most that is sent. When the host's computer or connection cannot keep up, the quality is lowered
-  step by step and raised again later, and the stage says so. Sound is sent in stereo at a music
+- Sharing: the picture quality is chosen in Settings (Minimal, Saver, Balanced, Sharp) and is what
+  is sent. When the host's computer or connection cannot keep up, the stage says so; the quality is
+  never changed by itself. Sound is sent in stereo at a music
   bitrate. Viewers have a mute button and a volume slider.
 - Viewers can share too: a viewer picks a source and asks, the host allows it with one click and
   passes the picture on to everyone else. One picture is on the stage at a time; the host can end a

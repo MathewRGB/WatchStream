@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_QUALITY,
-  lowerQuality,
-  QUALITY_PRESETS,
-  qualityPreset,
-  stepsBelow,
-  type QualityId,
-} from './quality';
+import { DEFAULT_QUALITY, QUALITY_PRESETS, qualityPreset, type QualityId } from './quality';
 
 describe('quality steps', () => {
   it('runs from Minimal to Sharp, each step asking for more of everything it can', () => {
@@ -43,35 +36,5 @@ describe('quality steps', () => {
       expect(preset.description).not.toBe('');
     }
     expect(DEFAULT_QUALITY).toBe('balanced');
-  });
-});
-
-describe('lowerQuality', () => {
-  it.each<[QualityId, number, QualityId]>([
-    ['sharp', 0, 'sharp'],
-    ['sharp', 1, 'balanced'],
-    ['sharp', 2, 'saver'],
-    ['sharp', 3, 'minimal'],
-    ['balanced', 1, 'saver'],
-    ['saver', 1, 'minimal'],
-  ])('%s lowered by %i is %s', (chosen, steps, expected) => {
-    expect(lowerQuality(chosen, steps)).toBe(expected);
-  });
-
-  it('stops at Minimal, however far it is asked to go', () => {
-    expect(lowerQuality('sharp', 10)).toBe('minimal');
-    expect(lowerQuality('minimal', 1)).toBe('minimal');
-  });
-
-  it('does not go up for a negative number of steps', () => {
-    expect(lowerQuality('balanced', -2)).toBe('balanced');
-  });
-});
-
-describe('stepsBelow', () => {
-  it('counts the steps under a step', () => {
-    expect(stepsBelow('minimal')).toBe(0);
-    expect(stepsBelow('saver')).toBe(1);
-    expect(stepsBelow('sharp')).toBe(3);
   });
 });

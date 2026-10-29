@@ -41,7 +41,7 @@ export interface HostSessionEvents {
   sharing: MediaStream | null;
   /** The picture quality the host chose changed (payload: the new preset). */
   quality: QualityId;
-  /** The load status changed: the effective quality, the cause, how the viewers fare. */
+  /** The load status changed: whether the host struggles, the cause, how the viewers fare. */
   load: LoadStatus;
   /** A viewer's share started (its picture) or ended (`null`); see `incoming`. */
   incoming: IncomingShare | null;
@@ -63,7 +63,7 @@ interface Viewer {
 /**
  * The most viewers a session holds. A ceiling in the code and no setting: what a host's
  * computer and connection carry is for the load monitor to find out, and with many viewers some
- * of them may get the picture late or at a lower quality.
+ * of them may get the picture late.
  */
 export const MAX_VIEWERS = 12;
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000;
@@ -109,14 +109,6 @@ export class HostSession {
       intervalMs: options.monitorIntervalMs ?? DEFAULT_MONITOR_INTERVAL_MS,
       chosen: () => this.currentQuality,
       links: () => this.sendingLinks(),
-      onStep: (direction) => {
-        this.log.info(direction === 'lowered' ? 'quality lowered' : 'quality raised', {
-          to: this.effectiveQuality,
-          viewers: this.viewers.size,
-          cause: this.load.cause,
-        });
-        for (const { link } of this.viewers.values()) this.applyQuality(link);
-      },
       onReading: () => this.publishLoad(),
     });
     this.createId = options.createId ?? (() => crypto.randomUUID());
@@ -224,14 +216,9 @@ export class HostSession {
     this.publishChat(this.self, text);
   }
 
-  /** The quality the host chose: the most that is sent. */
+  /** The quality the host chose, which is what is sent. */
   get quality(): QualityId {
     return this.currentQuality;
-  }
-
-  /** What is sent now: the chosen quality, lowered while the host cannot keep up. */
-  get effectiveQuality(): QualityId {
-    return this.loadControl.effective;
   }
 
   get load(): LoadStatus {
@@ -239,7 +226,7 @@ export class HostSession {
   }
 
   /**
-   * Sets the most that goes out, at once and for later viewers. A new choice starts the load
+   * Sets the quality that goes out, at once and for later viewers. A new choice starts the load
    * monitor over: what it learned was about the old one.
    */
   setQuality(id: QualityId): void {
@@ -532,7 +519,7 @@ export class HostSession {
 
   private applyQuality(link: MediaLink): void {
     // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
-    void link.setMediaLimits(qualityPreset(this.effectiveQuality)).catch((error) => {
+    void link.setMediaLimits(qualityPreset(this.currentQuality)).catch((error) => {
       this.log.warn('could not set the video limits', describeThrown(error));
     });
   }
@@ -551,9 +538,9 @@ export class HostSession {
   private publishLoad(): void {
     const status = this.load;
     const key = [
-      status.effective,
+      status.chosen,
       status.cause,
-      status.overloaded,
+      status.struggling,
       status.viewers,
       [...status.health].map(([id, health]) => `${id}:${health}`).join(','),
     ].join('|');
