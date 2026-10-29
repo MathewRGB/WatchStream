@@ -2,6 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import type { HostSession } from '@/core/session/host-session';
 import { isCaptureCancelled, type CaptureDisplay } from '@/lib/capture';
 
+/** Where a share without sound can still get some (Firefox: the sound of the playing tab). */
+export interface AutoSound {
+  /** Runs first thing in the click, before the picker; may ask the host for access. */
+  prepare: () => Promise<void>;
+  /** Runs when the share came without sound. */
+  track: () => Promise<MediaStreamTrack | null>;
+}
+
 export interface ScreenShareControls {
   start: () => Promise<void>;
   stop: () => void;
@@ -21,6 +29,7 @@ export function useScreenShare(
   session: HostSession,
   capture: CaptureDisplay,
   tabSoundTrack: () => MediaStreamTrack | null = () => null,
+  autoSound?: AutoSound,
 ): ScreenShareControls {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +44,16 @@ export function useScreenShare(
     setError(null);
     setStarting(true);
     try {
+      // Before the picker: asking for access needs the click, and happens once.
+      await autoSound?.prepare().catch(() => undefined);
       const stream = await capture();
       // Firefox shares no sound of its own; the sound taken from a tab fills that gap.
       if (stream.getAudioTracks().length === 0) {
         const sound = tabSoundTrack();
+        if (sound) stream.addTrack(sound);
+      }
+      if (stream.getAudioTracks().length === 0 && autoSound) {
+        const sound = await autoSound.track().catch(() => null);
         if (sound) stream.addTrack(sound);
       }
       stop();
@@ -51,7 +66,7 @@ export function useScreenShare(
     } finally {
       setStarting(false);
     }
-  }, [capture, session, stop, tabSoundTrack]);
+  }, [autoSound, capture, session, stop, tabSoundTrack]);
 
   useEffect(
     () => () => {

@@ -122,6 +122,31 @@ players; different regions or versions of a title disturb the sync; the Netflix 
 tested without a subscription. It would need its own wire format, a clock estimate and its own
 milestone.
 
+## Sound level independent of the host's volume
+
+The wish: viewers always get the sound at full level and set their own volume; what the host does
+with the player's volume slider (or a muted tab) should not reach them (maintainer, 2026-10-29).
+
+**Why it happens.** The viewer's slider only sets `volume` on its own `<video>`; no level travels
+over the connection. The coupling is in the capture: sound taken from a media element comes after
+that element's `volume` and `muted`. The system volume is probably not part of it (not measured).
+Window and screen sharing with system sound depends on the operating system and has not been
+looked at.
+
+**Idea.**
+
+- **Firefox (tab sound):** the injected script sets the element to `volume = 1` and takes the
+  samples there, and applies the host's wanted level only as a gain on the branch to the host's own
+  speakers. The page's own volume slider needs to be followed (`volumechange`) and its value kept
+  as that gain. Fragile where a player resets the volume itself.
+- **Chrome and Brave:** `getDisplayMedia` tab audio comes after the player's volume and cannot be
+  changed. The same element tap as in Firefox would work, at the cost of the single-element and
+  protected-media limits. Until then a note for the host: leave the player at 100 % and use the
+  system volume.
+- **Viewer-side compensation:** the host sends the player level over the data channel and the
+  viewer divides it out. Cheap, but it amplifies noise at low levels and can clip; a limiter on the
+  viewer side would soften both. Probably a fallback, not the fix.
+
 ## Smaller items
 
 - **TURN:** an optional, self-configured relay for symmetric NAT and CGNAT. The test across two

@@ -9,6 +9,8 @@ const CONTENT_SCRIPT = '/content-scripts/tab-sound.js' as '/background.js';
 
 export interface TabChoice {
   id: number;
+  /** The window the tab is in. */
+  windowId?: number;
   title: string;
   /** `https://example.org`, what the host is asked to allow. */
   origin: string;
@@ -56,12 +58,47 @@ export async function listTabs(): Promise<TabChoice[]> {
     if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
     choices.push({
       id: tab.id,
+      windowId: tab.windowId,
       title: tab.title || url.hostname,
       origin: url.origin,
       audible: tab.audible === true,
     });
   }
   return choices.sort((a, b) => Number(b.audible) - Number(a.audible));
+}
+
+const AUTO_PERMISSIONS = { permissions: ['tabs' as const], origins: ['<all_urls>'] };
+
+/** Whether the host already allowed detecting the tab on its own. */
+export async function autoDetectAllowed(): Promise<boolean> {
+  return Promise.resolve(browser.permissions.contains(AUTO_PERMISSIONS));
+}
+
+/**
+ * Asks once for what detecting the tab needs: the tab list and access to the sites. It has to be
+ * the first thing after a click. Resolves at once when the host allowed it before.
+ */
+export function requestAutoDetect(): Promise<boolean> {
+  return browser.permissions.request(AUTO_PERMISSIONS);
+}
+
+/**
+ * The tab whose sound is meant, among the tabs that play sound now (the WatchStream page itself is
+ * not one of them). One tab is the answer. Several: the one in the host's own window if that is
+ * only one; otherwise nobody can say, and the host chooses from the list.
+ */
+export function pickAudibleTab(tabs: TabChoice[], ownWindowId?: number): TabChoice | null {
+  const audible = tabs.filter((tab) => tab.audible);
+  if (audible.length === 1) return audible[0] ?? null;
+  const here = audible.filter((tab) => tab.windowId === ownWindowId);
+  return ownWindowId !== undefined && here.length === 1 ? (here[0] ?? null) : null;
+}
+
+/** The tab that plays sound now, or `null` when there is none or it is not clear which. */
+export async function detectAudibleTab(): Promise<TabChoice | null> {
+  const own = await browser.tabs.getCurrent();
+  const tabs = (await listTabs()).filter((tab) => tab.id !== own?.id);
+  return pickAudibleTab(tabs, own?.windowId);
 }
 
 /**

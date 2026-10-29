@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HostSession } from '@/core/session/host-session';
 import {
   allowTabList,
+  autoDetectAllowed,
+  detectAudibleTab,
+  requestAutoDetect,
   listTabs,
   startTabSound,
   TabSoundError,
@@ -25,6 +28,13 @@ export interface TabSoundControls {
   stop: () => void;
   /** A track with the tab's sound for a share that starts now, or `null` without a source. */
   soundTrack: () => MediaStreamTrack | null;
+  /**
+   * Call first thing in the click that starts a share: asks, once, to find the tab on its own.
+   * Resolves whether that is allowed; never rejects.
+   */
+  prepareAuto: () => Promise<void>;
+  /** After the share started without sound: finds the playing tab and returns its sound, or `null`. */
+  autoSoundTrack: () => Promise<MediaStreamTrack | null>;
 }
 
 /**
@@ -40,6 +50,8 @@ export function useTabSound(session: HostSession): TabSoundControls {
   const [error, setError] = useState<string | null>(null);
   const handle = useRef<TabSoundHandle | null>(null);
   const clones = useRef(new Set<MediaStreamTrack>());
+  // `undefined` until asked; a refusal is not asked again while the page stays open.
+  const autoAllowed = useRef<boolean | undefined>(undefined);
 
   const dropClones = useCallback(() => {
     const stream = session.sharedStream;
@@ -82,20 +94,48 @@ export function useTabSound(session: HostSession): TabSoundControls {
     }
   }, []);
 
+  const attach = useCallback(
+    async (tab: TabChoice) => {
+      stop();
+      const started = await startTabSound(tab, () => {
+        handle.current = null;
+        setActiveTitle(null);
+        dropClones();
+      });
+      handle.current = started;
+      setActiveTitle(started.title);
+      setChoices(null);
+    },
+    [dropClones, stop],
+  );
+
+  const prepareAuto = useCallback(async () => {
+    if (!supported || handle.current || autoAllowed.current !== undefined) return;
+    try {
+      autoAllowed.current = (await autoDetectAllowed()) || (await requestAutoDetect());
+    } catch {
+      autoAllowed.current = false;
+    }
+  }, [supported]);
+
+  const autoSoundTrack = useCallback(async () => {
+    if (!supported || !autoAllowed.current || handle.current) return null;
+    try {
+      const tab = await detectAudibleTab();
+      if (!tab) return null;
+      await attach(tab);
+      return soundTrack();
+    } catch {
+      return null; // Nothing found is no failure; the host can still choose a tab in Settings.
+    }
+  }, [attach, soundTrack, supported]);
+
   const choose = useCallback(
     async (tab: TabChoice) => {
       setError(null);
       setStarting(true);
       try {
-        stop();
-        const started = await startTabSound(tab, () => {
-          handle.current = null;
-          setActiveTitle(null);
-          dropClones();
-        });
-        handle.current = started;
-        setActiveTitle(started.title);
-        setChoices(null);
+        await attach(tab);
         // A share that is running already gets the sound at once.
         const stream = session.sharedStream;
         if (stream && stream.getAudioTracks().length === 0) {
@@ -113,7 +153,7 @@ export function useTabSound(session: HostSession): TabSoundControls {
         setStarting(false);
       }
     },
-    [dropClones, session, soundTrack, stop],
+    [attach, session, soundTrack],
   );
 
   useEffect(() => () => handle.current?.stop(), []);
@@ -129,5 +169,7 @@ export function useTabSound(session: HostSession): TabSoundControls {
     choose,
     stop,
     soundTrack,
+    prepareAuto,
+    autoSoundTrack,
   };
 }

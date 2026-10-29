@@ -114,7 +114,9 @@ permission. Chrome and Brave offer "also share tab audio"; Firefox shares no sou
 `chrome.tabCapture` would change what a click on the icon means and needs two more permissions for
 nothing `getDisplayMedia` does not already give.
 
-**Tab sound in Firefox.** The host picks a tab in Settings; a script is injected into it
+**Tab sound in Firefox.** When a share starts without sound, WatchStream finds the tab that plays
+sound (`tabs.audible`; one tab, or the only one in the host's own window; `pickAudibleTab`) and
+uses it. The host can also pick a tab in Settings. A script is injected into the tab
 (`src/entrypoints/tab-sound.content.ts`, Firefox build only, registered at runtime and never
 declared in the manifest). It routes the page's `<video>` or `<audio>` through Web Audio
 (`createMediaElementSource`): to the speakers, so the host still hears it, and to a processor that
@@ -126,8 +128,10 @@ leave its tab, and the connection lives in the session tab, so the picture stays
 `getDisplayMedia` and only the sound travels as numbers. `mozCaptureStream` would mute the element
 for the host, and tapping the element is the only way that keeps the speakers in our hands.
 
-Costs, and why they are accepted: nothing is granted at install. `tabs` (to list titles) and the
-chosen site's origin are optional permissions asked for at the two clicks; `scripting` is the only
+Costs, and why they are accepted: nothing is granted at install. `tabs` and access to all sites
+are optional permissions, asked for once in a single prompt at the first **Share** click, before
+the picker (the click is what permits asking; a refusal is not asked again while the page stays
+open, and the host can still choose a tab by hand, which asks for that one site); `scripting` is the only
 permission added to the manifest. The sound is about 150 ms behind the picture (the lead plus the
 port), because a getDisplayMedia picture cannot be delayed to match. `ScriptProcessorNode` is
 deprecated but needs no module file, which a content script cannot load into the page's realm;

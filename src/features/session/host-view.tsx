@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   MessageSquare,
   MonitorUp,
@@ -37,7 +38,11 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   const { participants, openSlots, sharedStream, incoming, shareRequests, quality, load } =
     useHostSession(session);
   const tabSound = useTabSound(session);
-  const share = useScreenShare(session, capture, tabSound.soundTrack);
+  const autoSound = useMemo(
+    () => ({ prepare: tabSound.prepareAuto, track: tabSound.autoSoundTrack }),
+    [tabSound.prepareAuto, tabSound.autoSoundTrack],
+  );
+  const share = useScreenShare(session, capture, tabSound.soundTrack, autoSound);
   const messages = useChatMessages(session);
   const viewers = participants.length - 1;
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'A viewer';
