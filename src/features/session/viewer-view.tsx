@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MessageSquare, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,6 +101,15 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
   const [invitation, setInvitation] = useState('');
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Whether the form is still shown. Leaving while the join is under way unmounts it; the
+  // connection made meanwhile then belongs to nobody and is closed.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const join = async () => {
     setJoining(true);
@@ -111,7 +120,12 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
         connector,
       });
       // Right after the click, so the browser still counts it as a user action.
-      onJoined({ session, replyCode, candidates, copied: await copyText(replyCode) });
+      const copied = mounted.current && (await copyText(replyCode));
+      if (!mounted.current) {
+        session.leave();
+        return;
+      }
+      onJoined({ session, replyCode, candidates, copied });
     } catch (caught) {
       setError(describeError(caught));
       setJoining(false);

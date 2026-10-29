@@ -280,6 +280,21 @@ describe('WatchStream app', () => {
     expect(viewer.getByTestId('start-view')).toBeInTheDocument();
   });
 
+  it('closes the connection that a join under way makes when the viewer leaves meanwhile', async () => {
+    const host = openPage(network);
+    await start(host, 'user1', 'host');
+    const code = await createInvitation(host);
+    const viewer = openPage(network);
+    await start(viewer, 'user2', 'join');
+    await paste(viewer.getByTestId('invitation-input'), code);
+
+    fireEvent.click(viewer.getByTestId('join-session-button'));
+    fireEvent.click(viewer.getByTestId('leave-button'));
+
+    expect(viewer.getByTestId('start-view')).toBeInTheDocument();
+    await waitFor(() => expect(network.answers[0]?.state).toBe('closed'));
+  });
+
   it('shows what the host shares to the viewer and ends it again', async () => {
     const { stream, track } = fakeCapturedStream();
     const host = openPage(network, memoryStorage(), async () => stream);

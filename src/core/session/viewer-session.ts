@@ -114,11 +114,17 @@ export class ViewerSession {
   ): Promise<{ session: ViewerSession; replyCode: string; candidates: CandidateSummary }> {
     const invitation = await decodeInvitation(invitationCode);
     const { link, sdp } = await options.connector.acceptOffer(invitation.sdp);
-    const replyCode = await encodeReply({
-      inviteId: invitation.inviteId,
-      viewerName: options.viewerName,
-      sdp,
-    });
+    let replyCode: string;
+    try {
+      replyCode = await encodeReply({
+        inviteId: invitation.inviteId,
+        viewerName: options.viewerName,
+        sdp,
+      });
+    } catch (error) {
+      link.close();
+      throw error;
+    }
     return {
       session: new ViewerSession(
         invitation.hostName,
