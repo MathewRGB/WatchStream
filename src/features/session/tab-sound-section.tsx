@@ -10,9 +10,9 @@ export function TabSoundSection({ sound }: { sound: TabSoundControls }) {
       <p className="text-sm text-muted-foreground">
         Firefox shares the picture of a tab, but not its sound. WatchStream normally finds the tab
         that is playing when you start sharing. If that did not work, choose the tab with the video
-        here and WatchStream takes the sound from it and adds it to what you share. You still hear it
-        yourself. It works with players on web pages, not with protected streams, and the sound can
-        be a fraction of a second behind the picture.
+        here and WatchStream takes the sound from it and adds it to what you share. You still hear
+        it yourself. It works with players on web pages, not with protected streams, and the sound
+        can be a fraction of a second behind the picture.
       </p>
       {sound.activeTitle ? (
         <div className="flex items-center justify-between gap-2 rounded-md border p-3 text-sm">
