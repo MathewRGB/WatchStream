@@ -22,7 +22,8 @@ own player for such services is future work, see
 [future work](docs/future-work.md#sync-mode-for-protected-sites).
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
-  control data are end-to-end encrypted and never pass through a WatchStream server.
+  control data are encrypted on each connection and never pass through a WatchStream server. A
+  viewer's share reaches the other viewers through the host's browser.
 - **Invitation by code:** the host sends an invitation code through any messenger, and the viewer
   sends a reply code back.
 - **The host decides:** who is in the session and what is on the stage. A viewer can share too,
@@ -178,7 +179,7 @@ the stack tidy.
 ```
 src/core/          connection, handshake codes, protocol and sessions (no React, no extension APIs)
 src/background/    toolbar icon handling (no React)
-src/entrypoints/   thin WXT entry points: background script, session page
+src/entrypoints/   thin WXT entry points: background script, session page, tab sound script
 src/features/      product UI, one folder per feature (session: app shell, stage, sidebar tabs,
                    start, host and viewer screens, chat)
 src/components/ui/ shadcn/ui components

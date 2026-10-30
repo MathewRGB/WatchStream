@@ -45,7 +45,7 @@ time stamps, relays every chat message to everyone (also the sender, so everyone
 decides who is in the session and what is on the stage.
 
 Why: no viewer learns another viewer's IP address, and nobody needs new codes for each pair.
-The price: the host encodes and uploads one copy of the picture per viewer (section 6).
+The price: the host encodes and uploads one copy of the picture per viewer (section 7).
 
 Not done: connections between viewers (a mesh, or a tree that passes the picture on). See
 [future-work.md](future-work.md#relaying-through-viewers).
@@ -80,8 +80,8 @@ interface leaves room for a media-free one).
 `session.html` is an extension page in a normal tab; it holds the session and all
 `RTCPeerConnection`s. The toolbar icon opens this tab or focuses it if it is open (its id is kept
 in `storage.session`), so a second click never starts a second session. Closing the tab ends the
-session, which is visible and predictable. The page uses no extension APIs, so the same build runs
-as a plain page, which lets the cross-browser tests run Firefox.
+session, which is visible and predictable. Apart from the optional tab sound in Firefox (section 6) the page uses no extension
+APIs, so the same build runs as a plain page, which lets the cross-browser tests run Firefox.
 
 Not done: a popup (it closes while the user copies a code into a messenger) and an offscreen
 document (Chromium only, invisible).
@@ -92,7 +92,7 @@ Sharing adds tracks to the connection that is already open and negotiates over i
 (`media-offer`, `media-answer`); no new codes. The existing transport is reused, so no new ICE
 candidates are needed. Negotiation follows the "perfect negotiation" pattern: the host side is
 impolite and the viewer side polite, so offers that cross resolve themselves; this is what lets a
-viewer share (section 7).
+viewer share (section 8).
 
 Details that cost time to find:
 
