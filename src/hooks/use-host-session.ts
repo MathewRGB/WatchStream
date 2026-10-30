@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { CustomQuality, MediaLimits, QualityChoice } from '@/core/media/quality';
+import type { CustomQuality, QualityChoice } from '@/core/media/quality';
 import type { ReceiveReport } from '@/core/peer/receive-stats';
 import type { CodecId } from '@/core/peer/video-codecs';
 import type { Participant } from '@/core/protocol/messages';
@@ -32,8 +32,6 @@ export interface HostSnapshot {
   quality: QualityChoice;
   /** The values of the custom choice. */
   customQuality: CustomQuality;
-  /** What is sent. */
-  limits: MediaLimits;
   /** The video codec the host chose. */
   codec: CodecId;
   /** What is really sent, and how the viewers fare. */
@@ -57,7 +55,6 @@ export function useHostSession(session: HostSession): HostSnapshot {
     shareRequests: session.shareRequests,
     quality: session.quality,
     customQuality: session.customQuality,
-    limits: session.limits,
     codec: session.codec,
     load: session.load,
     receiveReports: session.receiveReports,
