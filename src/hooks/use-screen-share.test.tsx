@@ -81,6 +81,26 @@ describe('useScreenShare', () => {
     expect(result.current.error).toMatch(/could not be started/);
   });
 
+  it('lets go of what was picked when the session ended while the picker was open', async () => {
+    const { host } = createHost();
+    const source = fakeCapturedStream();
+    let pick!: (stream: MediaStream) => void;
+    const { result } = renderHook(() =>
+      useScreenShare(host, () => new Promise((resolve) => (pick = resolve))),
+    );
+    const started = result.current.start();
+    await vi.waitFor(() => expect(pick).toBeDefined());
+
+    host.close();
+    await act(async () => {
+      pick(source.stream);
+      await started;
+    });
+
+    expect(source.track.stop).toHaveBeenCalled();
+    expect(host.sharedStream).toBeNull();
+  });
+
   it('stops the captured tracks when the page goes away', async () => {
     const { host } = createHost();
     const source = fakeCapturedStream();

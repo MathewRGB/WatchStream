@@ -146,6 +146,17 @@ describe('HostSession', () => {
     expect(host.openSlots).toBe(1);
   });
 
+  it('closes the connection of an invitation that was still being made when the session ended', async () => {
+    const { host, network } = createHost();
+    const made = host.createInvitation();
+
+    host.close();
+
+    await expect(made).rejects.toMatchObject({ reason: 'not-connected' });
+    expect(network.offers[0]!.state).toBe('closed');
+    expect(host.closed).toBe(true);
+  });
+
   describe('slots event', () => {
     it('reports the free places whenever an invitation is created or cancelled', async () => {
       const { host } = createHost();

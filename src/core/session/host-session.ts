@@ -107,6 +107,7 @@ export class HostSession {
   private readonly createId: () => string;
   private readonly now: () => number;
   private readonly log = createLogger('session.host');
+  private ended = false;
   private shared: MediaStream | null = null;
   /** The viewer whose share the host allowed; set from the grant to the end of the share. */
   private sharerId: string | null = null;
@@ -149,6 +150,11 @@ export class HostSession {
     return { id: this.hostId, name: this.options.hostName, role: 'host' };
   }
 
+  /** The session is over: `close` was called. */
+  get closed(): boolean {
+    return this.ended;
+  }
+
   get openSlots(): number {
     return (
       this.maxViewers - this.viewers.size - this.pending.size - this.connecting.size - this.making
@@ -171,6 +177,10 @@ export class HostSession {
     let made: Awaited<ReturnType<PeerConnector['createOffer']>>;
     try {
       made = await this.options.connector.createOffer();
+      if (this.ended) {
+        made.link.close();
+        throw new SessionError('not-connected', 'The session has ended.');
+      }
       this.pending.set(inviteId, made.link);
     } finally {
       this.making -= 1;
@@ -429,6 +439,7 @@ export class HostSession {
   }
 
   close(): void {
+    this.ended = true;
     this.loadControl.stop();
     for (const link of this.pending.values()) link.close();
     for (const link of this.connecting) link.close();

@@ -56,6 +56,11 @@ export function useScreenShare(
         const sound = await autoSound.track().catch(() => null);
         if (sound) stream.addTrack(sound);
       }
+      // The session ended while the picker was open: nobody would ever stop this capture.
+      if (session.closed) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       stop();
       session.startSharing(stream);
       stream.getVideoTracks()[0]?.addEventListener('ended', () => {
