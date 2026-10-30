@@ -1,11 +1,13 @@
 import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
-import { qualityPreset, type QualityId } from '../media/quality';
+import type { MediaLimits, QualityChoice } from '../media/quality';
 import type { LinkStats } from '../peer/link-stats';
 
 /** How well the host carries its viewers. */
 export interface LoadStatus {
-  /** The quality the host chose, which is what is sent. */
-  chosen: QualityId;
+  /** What the host chose in Settings: a step, or its own values. */
+  chosen: QualityChoice;
+  /** What that comes to, which is what is sent. */
+  limits: MediaLimits;
   viewers: number;
   /** The host cannot keep up with its viewers; the picture may reach some of them late. */
   struggling: boolean;
@@ -22,8 +24,10 @@ interface ReadableLink {
 
 export interface LoadControlOptions {
   intervalMs: number;
-  /** The quality the host chose. */
-  chosen: () => QualityId;
+  /** What the host chose. */
+  chosen: () => QualityChoice;
+  /** What that comes to; the monitor judges the links against it. */
+  limits: () => MediaLimits;
   /** The links that send the picture now, by participant id. */
   links: () => ReadonlyMap<string, ReadableLink>;
   /** A reading was judged; what the host is shown may have changed. */
@@ -50,6 +54,7 @@ export class LoadControl {
   status(viewers: number): LoadStatus {
     return {
       chosen: this.options.chosen(),
+      limits: this.options.limits(),
       viewers,
       struggling: this.struggling,
       cause: this.struggling ? this.cause : null,
@@ -99,7 +104,7 @@ export class LoadControl {
       if (this.timer === null || generation !== this.generation) return;
       const decision = this.monitor.update({
         readings,
-        limits: qualityPreset(this.options.chosen()),
+        limits: this.options.limits(),
       });
       this.struggling = decision.struggling;
       if (decision.cause) this.cause = decision.cause;

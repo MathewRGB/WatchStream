@@ -2,11 +2,13 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { TabSoundControls } from '@/hooks/use-tab-sound';
 
-/** Firefox only: the sound of a tab's video, which the browser's own sharing leaves out. */
+/**
+ * Firefox only: the sound of a tab's video, which the browser's own sharing leaves out. The title
+ * is the settings section's.
+ */
 export function TabSoundSection({ sound }: { sound: TabSoundControls }) {
   return (
-    <section className="flex flex-col gap-3" data-testid="tab-sound">
-      <h3 className="text-sm font-medium">Sound from a tab</h3>
+    <div className="flex flex-col gap-3" data-testid="tab-sound">
       <p className="text-sm text-muted-foreground">
         Firefox shares the picture of a tab, but not its sound. WatchStream normally finds the tab
         that is playing when you start sharing. If that did not work, choose the tab with the video
@@ -65,6 +67,6 @@ export function TabSoundSection({ sound }: { sound: TabSoundControls }) {
           {sound.error}
         </p>
       )}
-    </section>
+    </div>
   );
 }

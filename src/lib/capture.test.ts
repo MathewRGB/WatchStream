@@ -26,6 +26,22 @@ describe('captureDisplay', () => {
   });
 });
 
+describe('captureDisplay frame rate', () => {
+  it('asks for the highest rate a host can choose, so the links can ask for less', async () => {
+    const getDisplayMedia = vi.fn(async () => new MediaStream());
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getDisplayMedia },
+    });
+
+    await captureDisplay();
+
+    expect(getDisplayMedia).toHaveBeenCalledWith(
+      expect.objectContaining({ video: { frameRate: { ideal: 60 } } }),
+    );
+  });
+});
+
 describe('isCaptureCancelled', () => {
   it.each(['NotAllowedError', 'AbortError'])('treats %s as the user closing the picker', (name) => {
     expect(isCaptureCancelled(new DOMException('x', name))).toBe(true);

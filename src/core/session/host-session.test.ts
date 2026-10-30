@@ -469,6 +469,111 @@ describe('HostSession', () => {
       ]);
     });
 
+    it('starts custom from the step that was in use, and sends exactly the values set', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+      host.setQuality('sharp');
+
+      host.setQuality('custom');
+      await flush();
+
+      expect(host.quality).toBe('custom');
+      expect(host.customQuality).toEqual({
+        maxHeight: 1080,
+        maxFramerate: 30,
+        maxBitrateBps: null,
+        maxAudioBitrateBps: 192_000,
+      });
+
+      host.setCustomQuality({ maxFramerate: 60, maxBitrateBps: 8_000_000, maxHeight: 720 });
+      await flush();
+
+      expect(network.offers[0]?.limits).toEqual({
+        maxHeight: 720,
+        maxFramerate: 60,
+        maxBitrateBps: 8_000_000,
+        maxAudioBitrateBps: 192_000,
+      });
+      expect(host.limits).toEqual(network.offers[0]?.limits);
+    });
+
+    it('lets the bitrate follow the resolution and frame rate until the host sets one', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+
+      host.setCustomQuality({ maxHeight: 480, maxFramerate: 15 });
+      await flush();
+      const slim = network.offers[0]!.limits!.maxBitrateBps;
+      host.setCustomQuality({ maxHeight: 1080, maxFramerate: 60 });
+      await flush();
+
+      expect(network.offers[0]!.limits!.maxBitrateBps).toBeGreaterThan(slim * 4);
+      host.setCustomQuality({ maxBitrateBps: null });
+      expect(host.customQuality.maxBitrateBps).toBeNull();
+    });
+
+    it('choosing a custom value chooses custom, and keeps the values when a step is chosen between', () => {
+      const { host } = createHost();
+
+      host.setCustomQuality({ maxFramerate: 10 });
+      expect(host.quality).toBe('custom');
+
+      host.setQuality('saver');
+      host.setQuality('custom');
+
+      expect(host.customQuality.maxFramerate).toBe(10);
+      expect(host.customQuality.maxHeight).toBe(720);
+    });
+
+    it('starts custom over from a step only until the host has set a value', () => {
+      const { host } = createHost();
+
+      host.setQuality('saver');
+      host.setQuality('custom');
+      expect(host.customQuality.maxHeight).toBe(480);
+
+      host.setQuality('minimal');
+      host.setQuality('custom');
+      expect(host.customQuality.maxHeight).toBe(360);
+    });
+
+    it('puts values the host could not pick on the nearest one it can', () => {
+      const { host } = createHost();
+
+      host.setCustomQuality({ maxHeight: 1000, maxFramerate: 50, maxAudioBitrateBps: 100_000 });
+
+      expect(host.customQuality).toMatchObject({
+        maxHeight: 1080,
+        maxFramerate: 60,
+        maxAudioBitrateBps: 96_000,
+      });
+    });
+
+    it('sends the custom values to a viewer who joins later', async () => {
+      const { host, network } = createHost();
+      host.setCustomQuality({ maxHeight: 360, maxFramerate: 24, maxBitrateBps: 1_000_000 });
+
+      await joinViewer(host, network, 'late');
+
+      expect(network.offers[0]?.limits).toEqual(
+        expect.objectContaining({ maxHeight: 360, maxFramerate: 24, maxBitrateBps: 1_000_000 }),
+      );
+    });
+
+    it('announces a change of the custom values, and the load line follows them', () => {
+      const { host } = createHost();
+      const seen: string[] = [];
+      const lines: number[] = [];
+      host.events.on('quality', (id) => seen.push(id));
+      host.events.on('load', (status) => lines.push(status.limits.maxFramerate));
+
+      host.setCustomQuality({ maxFramerate: 60 });
+      host.setCustomQuality({ maxFramerate: 15 });
+
+      expect(seen).toEqual(['custom', 'custom']);
+      expect(lines).toEqual([60, 15]);
+    });
+
     it('announces a changed preset', () => {
       const { host } = createHost();
       const seen: string[] = [];

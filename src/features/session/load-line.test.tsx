@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { qualityPreset } from '@/core/media/quality';
 import type { LoadStatus } from '@/core/session/host-session';
 import { LoadLine } from './load-line';
 
 const status = (overrides: Partial<LoadStatus> = {}): LoadStatus => ({
   chosen: 'balanced',
+  limits: qualityPreset('balanced'),
   viewers: 3,
   struggling: false,
   cause: null,
@@ -18,7 +20,7 @@ describe('LoadLine', () => {
     render(<LoadLine load={status()} />);
 
     const line = screen.getByRole('status');
-    expect(line).toHaveTextContent('720p · 3 viewers');
+    expect(line).toHaveTextContent('720p · 30 fps · 3 viewers');
     expect(line).toHaveAttribute('data-tone', 'normal');
     expect(line).toHaveClass('text-muted-foreground');
   });

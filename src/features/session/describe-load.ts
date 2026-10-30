@@ -1,4 +1,3 @@
-import { qualityPreset } from '@/core/media/quality';
 import type { LoadStatus } from '@/core/session/host-session';
 
 export interface LoadLine {
@@ -11,8 +10,8 @@ const viewers = (count: number) => `${count} ${count === 1 ? 'viewer' : 'viewers
 
 /** The one line on the stage that tells the host what is sent, and says so when it cannot keep up. */
 export function describeLoad(load: LoadStatus): LoadLine {
-  const preset = qualityPreset(load.chosen);
-  const sending = `${preset.maxHeight}p · ${viewers(load.viewers)}`;
+  const { maxHeight, maxFramerate } = load.limits;
+  const sending = `${maxHeight}p · ${maxFramerate} fps · ${viewers(load.viewers)}`;
 
   if (load.struggling) {
     const who = load.cause === 'connection' ? 'your connection' : 'your computer';

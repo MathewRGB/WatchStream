@@ -1,6 +1,14 @@
 import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown } from '../log/logger';
-import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
+import {
+  changeCustomQuality,
+  customFromPreset,
+  DEFAULT_QUALITY,
+  resolveLimits,
+  type CustomQuality,
+  type MediaLimits,
+  type QualityChoice,
+} from '../media/quality';
 import { decodeReply, encodeInvitation, newInviteId } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
@@ -41,8 +49,8 @@ export interface HostSessionEvents {
   chat: ChatMessage;
   /** The host started (stream) or stopped (`null`) sharing. */
   sharing: MediaStream | null;
-  /** The picture quality the host chose changed (payload: the new preset). */
-  quality: QualityId;
+  /** What the host chose for the picture and sound changed (payload: the new choice). */
+  quality: QualityChoice;
   /** The video codec the host chose changed (payload: the new choice). */
   codec: CodecId;
   /** The load status changed: whether the host struggles, the cause, how the viewers fare. */
@@ -106,7 +114,10 @@ export class HostSession {
   private forwarded: IncomingShare | null = null;
   /** Viewers who asked to share, oldest first. */
   private readonly requests = new Set<string>();
-  private currentQuality: QualityId = DEFAULT_QUALITY;
+  private currentQuality: QualityChoice = DEFAULT_QUALITY;
+  private currentCustom: CustomQuality = customFromPreset(DEFAULT_QUALITY);
+  /** Whether the host has set a custom value; until then `custom` starts from the step in use. */
+  private customTouched = false;
   private currentCodec: CodecId = DEFAULT_CODEC;
   private readonly loadControl: LoadControl;
   private lastLoadKey = '';
@@ -117,6 +128,7 @@ export class HostSession {
     this.loadControl = new LoadControl({
       intervalMs: options.monitorIntervalMs ?? DEFAULT_MONITOR_INTERVAL_MS,
       chosen: () => this.currentQuality,
+      limits: () => this.limits,
       links: () => this.sendingLinks(),
       onReading: () => this.publishLoad(),
     });
@@ -235,9 +247,19 @@ export class HostSession {
     this.publishChat(this.self, text);
   }
 
-  /** The quality the host chose, which is what is sent. */
-  get quality(): QualityId {
+  /** What the host chose: a step, or `custom`. */
+  get quality(): QualityChoice {
     return this.currentQuality;
+  }
+
+  /** The values of the custom choice; they count only while `quality` is `custom`. */
+  get customQuality(): CustomQuality {
+    return this.currentCustom;
+  }
+
+  /** What is sent: the limits the choice comes to. */
+  get limits(): MediaLimits {
+    return resolveLimits(this.currentQuality, this.currentCustom);
   }
 
   /** How the picture arrives at each viewer, as the viewers say; empty while nothing is shared. */
@@ -251,13 +273,35 @@ export class HostSession {
 
   /**
    * Sets the quality that goes out, at once and for later viewers. A new choice starts the load
-   * monitor over: what it learned was about the old one.
+   * monitor over: what it learned was about the old one. Choosing `custom` for the first time
+   * starts from the step that was in use, so fine-tuning begins where the host was.
    */
-  setQuality(id: QualityId): void {
-    this.currentQuality = id;
+  setQuality(choice: QualityChoice): void {
+    if (choice === 'custom' && !this.customTouched && this.currentQuality !== 'custom') {
+      this.currentCustom = customFromPreset(this.currentQuality);
+    }
+    this.currentQuality = choice;
+    this.applyChosenQuality();
+  }
+
+  /**
+   * Sets values of the custom choice and chooses it. Each value is put on the list it belongs to
+   * (see `changeCustomQuality`).
+   */
+  setCustomQuality(changes: Partial<CustomQuality>): void {
+    if (!this.customTouched && this.currentQuality !== 'custom') {
+      this.currentCustom = customFromPreset(this.currentQuality);
+    }
+    this.customTouched = true;
+    this.currentCustom = changeCustomQuality(this.currentCustom, changes);
+    this.currentQuality = 'custom';
+    this.applyChosenQuality();
+  }
+
+  private applyChosenQuality(): void {
     this.loadControl.reset();
     for (const { link } of this.viewers.values()) this.applyQuality(link);
-    this.emitter.emit('quality', id);
+    this.emitter.emit('quality', this.currentQuality);
     this.publishLoad();
   }
 
@@ -568,7 +612,7 @@ export class HostSession {
 
   private applyQuality(link: MediaLink): void {
     // Limits are cosmetic for the viewer: failing to set them must not drop anyone.
-    void link.setMediaLimits(qualityPreset(this.currentQuality)).catch((error) => {
+    void link.setMediaLimits(this.limits).catch((error) => {
       this.log.warn('could not set the video limits', describeThrown(error));
     });
   }
@@ -609,6 +653,7 @@ export class HostSession {
     const status = this.load;
     const key = [
       status.chosen,
+      JSON.stringify(status.limits),
       status.cause,
       status.struggling,
       status.viewers,

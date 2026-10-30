@@ -180,6 +180,47 @@ describe('sharing over WebRTC', () => {
     expect(audioBitrateLimit(host)).toBe(64_000);
   });
 
+  it('sends the values a host sets itself, and asks the capture for the frame rate that is sent', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const second = await join(host, 'user3');
+    const stream = createTestStreamWithAudio();
+    const asked: unknown[] = [];
+    stream.getVideoTracks()[0]!.applyConstraints = async (constraints) => {
+      asked.push(constraints?.frameRate);
+    };
+    const arrived = Promise.all([nextMedia(viewer), nextMedia(second)]);
+    host.startSharing(stream);
+    await arrived;
+    await waitFor<void>((resolve) => {
+      const check = () => (asked.length > 0 ? resolve() : setTimeout(check, 20));
+      check();
+    });
+
+    host.setCustomQuality({
+      maxHeight: 360,
+      maxFramerate: 15,
+      maxBitrateBps: 1_000_000,
+      maxAudioBitrateBps: 96_000,
+    });
+
+    await waitFor<void>((resolve) => {
+      const check = () =>
+        videoEncodings(host).length === 2 &&
+        videoEncodings(host).every((e) => e.maxBitrate === 1_000_000 && e.maxFramerate === 15)
+          ? resolve()
+          : setTimeout(check, 50);
+      check();
+    });
+    expect(videoEncodings(host)).toHaveLength(2);
+    for (const encoding of videoEncodings(host)) {
+      expect(encoding).toMatchObject({ maxBitrate: 1_000_000, maxFramerate: 15 });
+    }
+    expect(audioBitrateLimit(host)).toBe(96_000);
+    // Once for each frame rate that was chosen, and not once for each viewer.
+    expect(asked).toEqual([{ ideal: 30 }, { ideal: 15 }]);
+  }, 30_000);
+
   it('sends the sound in stereo at a music-grade bitrate', async () => {
     const host = startHost();
     const viewer = await join(host, 'user2');

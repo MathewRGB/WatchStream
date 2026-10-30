@@ -16,7 +16,8 @@ export const UNPROCESSED_AUDIO: MediaTrackConstraints = {
  */
 export function captureDisplay(): Promise<MediaStream> {
   return navigator.mediaDevices.getDisplayMedia({
-    video: { frameRate: 30 },
+    // The highest rate a host can choose; the links ask for less once they know what is sent.
+    video: { frameRate: { ideal: 60 } },
     audio: UNPROCESSED_AUDIO,
   });
 }

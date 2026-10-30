@@ -26,6 +26,9 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.
 const DEFAULT_ICE_GATHERING_TIMEOUT_MS = 3000;
 const CHANNEL_LABEL = 'watchstream';
 
+/** The frame rate last asked of each captured track, so that several links ask once. */
+const askedFrameRate = new WeakMap<MediaStreamTrack, number>();
+
 const NO_CANDIDATES = { local: 0, stun: 0, relay: 0, globalIpv6: 0 };
 const EMPTY_DIAGNOSTICS: LinkDiagnostics = {
   connection: 'new',
@@ -346,6 +349,7 @@ export class PeerLink implements OfferingLink {
           encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);
         }
       }
+      if (track.kind === 'video') this.followFrameRate(track, limits.maxFramerate);
       try {
         await sender.setParameters(parameters);
       } catch (error) {
@@ -356,6 +360,19 @@ export class PeerLink implements OfferingLink {
         });
       }
     }
+  }
+
+  /**
+   * Asks the capture for the frame rate that is sent, up or down: it was started for the highest
+   * one a host can choose, and frames the encoder would drop are not worth capturing. A track that
+   * takes no such request (a canvas) keeps what it has.
+   */
+  private followFrameRate(track: MediaStreamTrack, framerate: number): void {
+    if (askedFrameRate.get(track) === framerate) return;
+    askedFrameRate.set(track, framerate);
+    track.applyConstraints({ frameRate: { ideal: framerate } }).catch((error) => {
+      this.log.debug('could not follow the frame rate', describeThrown(error));
+    });
   }
 
   private receiveTrack(event: RTCTrackEvent): void {

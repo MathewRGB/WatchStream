@@ -43,6 +43,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
     incoming,
     shareRequests,
     quality,
+    customQuality,
     codec,
     load,
     receiveReports,
@@ -111,7 +112,9 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       content: (
         <SettingsTab
           quality={quality}
-          onQualityChange={(id) => session.setQuality(id)}
+          custom={customQuality}
+          onQualityChange={(choice) => session.setQuality(choice)}
+          onCustomChange={(changes) => session.setCustomQuality(changes)}
           codec={codec}
           codecOptions={codecOptions}
           onCodecChange={(id) => session.setCodec(id)}

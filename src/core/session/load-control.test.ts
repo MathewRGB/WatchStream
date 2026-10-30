@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LinkStats } from '../peer/link-stats';
+import { qualityPreset } from '../media/quality';
 import { LoadControl } from './load-control';
 
 beforeEach(() => {
@@ -37,6 +38,7 @@ function control(links: Map<string, ReturnType<typeof link>>) {
   const load = new LoadControl({
     intervalMs: 2000,
     chosen: () => 'balanced',
+    limits: () => qualityPreset('balanced'),
     links: () => links,
     onReading,
   });
@@ -97,6 +99,7 @@ describe('LoadControl', () => {
     const load = new LoadControl({
       intervalMs: 2000,
       chosen: () => 'balanced',
+      limits: () => qualityPreset('balanced'),
       links: () => new Map([['a', slow]]),
       onReading,
     });

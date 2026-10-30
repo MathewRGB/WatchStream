@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_QUALITY, QUALITY_PRESETS, qualityPreset, type QualityId } from './quality';
+import {
+  autoVideoBitrate,
+  changeCustomQuality,
+  customFromPreset,
+  DEFAULT_QUALITY,
+  QUALITY_PRESETS,
+  qualityPreset,
+  resolveLimits,
+  type QualityId,
+} from './quality';
 
 describe('quality steps', () => {
   it('runs from Minimal to Sharp, each step asking for more of everything it can', () => {
@@ -36,5 +45,68 @@ describe('quality steps', () => {
       expect(preset.description).not.toBe('');
     }
     expect(DEFAULT_QUALITY).toBe('balanced');
+  });
+});
+
+describe('custom quality', () => {
+  it('starts from a step and keeps its resolution, frame rate and sound', () => {
+    for (const preset of QUALITY_PRESETS) {
+      expect(customFromPreset(preset.id)).toEqual({
+        maxHeight: preset.maxHeight,
+        maxFramerate: preset.maxFramerate,
+        maxBitrateBps: null,
+        maxAudioBitrateBps: preset.maxAudioBitrateBps,
+      });
+    }
+  });
+
+  it('follows the resolution and the frame rate with the bitrate, close to the steps', () => {
+    for (const preset of QUALITY_PRESETS) {
+      const limits = resolveLimits('custom', customFromPreset(preset.id));
+      expect(limits.maxBitrateBps / preset.maxBitrateBps).toBeGreaterThan(0.9);
+      expect(limits.maxBitrateBps / preset.maxBitrateBps).toBeLessThan(1.1);
+      expect(limits.maxHeight).toBe(preset.maxHeight);
+      expect(limits.maxFramerate).toBe(preset.maxFramerate);
+    }
+  });
+
+  it('grows with the frame rate and the resolution, within a floor and a ceiling', () => {
+    expect(autoVideoBitrate(720, 60)).toBeGreaterThan(autoVideoBitrate(720, 30));
+    expect(autoVideoBitrate(1080, 30)).toBeGreaterThan(autoVideoBitrate(720, 30));
+    expect(autoVideoBitrate(240, 10)).toBe(300_000);
+    expect(autoVideoBitrate(2160, 60)).toBe(20_000_000);
+  });
+
+  it('uses a bitrate the host set, and the steps as they are for a step', () => {
+    const custom = changeCustomQuality(customFromPreset('balanced'), { maxBitrateBps: 8_000_000 });
+
+    expect(resolveLimits('custom', custom).maxBitrateBps).toBe(8_000_000);
+    expect(resolveLimits('sharp', custom)).toBe(qualityPreset('sharp'));
+  });
+
+  it('puts every value on the list it belongs to, whatever it is asked for', () => {
+    const changed = changeCustomQuality(customFromPreset('balanced'), {
+      maxHeight: 1000,
+      maxFramerate: 50,
+      maxBitrateBps: 2_400_000,
+      maxAudioBitrateBps: 1_000_000,
+    });
+
+    expect(changed).toEqual({
+      maxHeight: 1080,
+      maxFramerate: 60,
+      maxBitrateBps: 2_000_000,
+      maxAudioBitrateBps: 320_000,
+    });
+    expect(changeCustomQuality(changed, { maxBitrateBps: null }).maxBitrateBps).toBeNull();
+  });
+
+  it('keeps what a change does not name', () => {
+    const before = customFromPreset('sharp');
+
+    expect(changeCustomQuality(before, { maxFramerate: 15 })).toEqual({
+      ...before,
+      maxFramerate: 15,
+    });
   });
 });

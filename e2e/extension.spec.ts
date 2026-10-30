@@ -123,6 +123,46 @@ test('the host chooses the picture quality in the settings tab', async () => {
   await host.page.close();
 });
 
+test('the host fine-tunes the picture in a custom setting, and the settings open and close in sections', async () => {
+  const host = await openSessionPage();
+  const viewer = await openSessionPage();
+  await host.start('user1', 'host');
+  await connect(host, viewer, 'user2');
+  await host.share();
+  await viewer.expectPlaying();
+
+  await host.openTab('settings');
+  // The picture quality is open and the rest is closed, so the tab does not have to be scrolled.
+  const toggle = host.byTestId('settings-section-quality-toggle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(host.byTestId('custom-quality')).toHaveCount(0);
+
+  await host.byTestId('quality-custom').check();
+  await host.byTestId('custom-height').selectOption('480');
+  await host.byTestId('custom-framerate').selectOption('15');
+  await host.byTestId('custom-bitrate').selectOption('1000000');
+  await expect(host.byTestId('quality-summary')).toContainText('Sends 480p at up to 15 fps');
+  await expect(host.byTestId('load-line')).toHaveText('480p · 15 fps · 1 viewer');
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(host.byTestId('quality-options')).toHaveCount(0);
+  await expect(host.byTestId('settings-section-quality-summary')).toHaveText(
+    'Custom · 480p, 15 fps',
+  );
+
+  // The sections keep their state when another tab is looked at, and the picture goes on.
+  await host.openTab('chat');
+  await host.openTab('settings');
+  await expect(host.byTestId('quality-options')).toHaveCount(0);
+  await toggle.click();
+  await expect(host.byTestId('custom-height')).toHaveValue('480');
+  await viewer.expectPlaying();
+  expect(await host.pageScrolls()).toBe(false);
+  await host.page.close();
+  await viewer.page.close();
+});
+
 test('the viewer sets the volume, it is remembered, and the controls fit a narrow window', async () => {
   const host = await openSessionPage();
   const viewer = await openSessionPage();
