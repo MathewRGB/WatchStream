@@ -61,6 +61,14 @@ export class PeerLink implements OfferingLink {
   private codec: CodecId = DEFAULT_CODEC;
   private makingOffer = false;
   /**
+   * The steps of the negotiation (`receiveSignal`, offers) run one after the other. The browser
+   * answers `InvalidStateError` to a step that starts while another one is half done, and a host
+   * that changes the codec or quality again and again sends offers faster than they are answered.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
+  /** An offer was wanted while the signaling state was not stable; made once it is. */
+  private offerWanted = false;
+  /**
    * Everything the other side sends ends up in this one stream. The streams
    * that come with `track` events are not used: a browser makes new ones for
    * each negotiation and takes the tracks out again, so a stream handed to a
@@ -179,7 +187,18 @@ export class PeerLink implements OfferingLink {
     }
   }
 
-  async receiveSignal(signal: LinkSignal): Promise<void> {
+  receiveSignal(signal: LinkSignal): Promise<void> {
+    return this.enqueue(() => this.applySignal(signal));
+  }
+
+  /** Runs `task` after every earlier one is done, whether it succeeded or not. */
+  private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(task, task);
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async applySignal(signal: LinkSignal): Promise<void> {
     const collision =
       signal.type === 'offer' && (this.makingOffer || this.connection.signalingState !== 'stable');
     // With every candidate inside the descriptions, a crossing offer is the only thing the impolite
@@ -202,6 +221,8 @@ export class PeerLink implements OfferingLink {
       // Encodings only exist once the negotiation is complete.
       await this.applyLimits();
     }
+    // A change that wanted an offer while this one was open can make it now.
+    if (this.offerWanted && this.connection.signalingState === 'stable') await this.makeOffer();
   }
 
   async setMediaLimits(limits: MediaLimits): Promise<void> {
@@ -347,9 +368,20 @@ export class PeerLink implements OfferingLink {
     this.emitter.emit('stream', this.remote);
   }
 
-  private async negotiate(): Promise<void> {
+  private negotiate(): Promise<void> {
+    return this.enqueue(() => this.makeOffer());
+  }
+
+  private async makeOffer(): Promise<void> {
     // Before the channel is open the handshake codes do the negotiating.
     if (this.currentState !== 'open') return;
+    // The other side has not answered the last offer yet: a second one would meet an answer meant
+    // for the first. It is made as soon as the answer is applied.
+    if (this.connection.signalingState !== 'stable') {
+      this.offerWanted = true;
+      return;
+    }
+    this.offerWanted = false;
     try {
       this.makingOffer = true;
       const offer = await this.connection.createOffer();

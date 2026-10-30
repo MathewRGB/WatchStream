@@ -333,4 +333,27 @@ describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over Web
     }, 15_000);
     expect(await plays(media.stream)).toBe(true);
   }, 40_000);
+
+  it('keeps the viewer and the picture when codec and quality are changed again and again', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    const media = (await arrived)!;
+    expect(await plays(media.stream)).toBe(true);
+
+    const codecs = ['vp9', 'vp8', 'h264', 'av1', 'auto'] as const;
+    const qualities = ['minimal', 'sharp', 'saver', 'balanced'] as const;
+    for (let i = 0; i < 20; i++) {
+      host.setCodec(codecs[i % codecs.length]!);
+      host.setQuality(qualities[i % qualities.length]!);
+      // Some changes come in a burst, some a moment apart.
+      if (i % 3 === 0) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    expect(viewer.state).toBe('connected');
+    expect(host.participants).toHaveLength(2);
+    expect(await plays(media.stream)).toBe(true);
+  }, 60_000);
 });
