@@ -11,6 +11,10 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Added
 
+- Short invitation and reply codes: about 150 characters instead of 700 to 900. A code now holds
+  only what two browsers cannot guess (the certificate fingerprint, the connection password and
+  the addresses); the rest of the description is written out again when it is read. A description
+  of any other shape still travels in full. See [docs/protocol.md](docs/protocol.md#handshake-codes).
 - Viewers report how the picture arrives (packets lost, frames a second, wait before showing,
   freezes, round trip). The host sees it under each viewer's name in the People tab, with a hint
   at the cause when the picture does not arrive well.

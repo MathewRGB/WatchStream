@@ -12,6 +12,16 @@ Brave limits WebRTC address handling by default, which can reduce the candidates
 - [ ] If it fails: copy the technical details from both sides and note which candidate counts
       (local, STUN, relay, IPv6) are zero, then decide whether the page needs a hint for Brave.
 
+## Manual tests after the last changes
+
+- [ ] Brave on both sides (Ubuntu): change the codec and the quality again and again while
+      sharing, a dozen times, some quickly one after the other. The viewer stays connected and the
+      picture keeps playing.
+- [ ] Brave host and Firefox viewer, and the other way round, over two networks: the shorter
+      codes connect (they are rebuilt on the other side, and only a real run over the internet
+      shows reflexive candidates).
+- [ ] Paste a code on a phone messenger and back: it is one line and survives wrapping.
+
 ## Name "WatchStream"
 
 A web search on 2026-10-25 found neither an extension of that name nor a trademark, but it was not

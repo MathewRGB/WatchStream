@@ -6,21 +6,49 @@ channel. The reasons behind it are in [architecture.md](architecture.md). The co
 
 ## Handshake codes
 
-Format version 1.
+Format version 2.
 
-| Code       | Text             | JSON inside                                       |
-| ---------- | ---------------- | ------------------------------------------------- |
-| Invitation | `WSI1.<payload>` | `{ kind: "invitation", inviteId, hostName, sdp }` |
-| Reply      | `WSR1.<payload>` | `{ kind: "reply", inviteId, viewerName, sdp }`    |
+| Code       | Text             | Carries                                                    |
+| ---------- | ---------------- | ---------------------------------------------------------- |
+| Invitation | `WSI2.<payload>` | invite id, the host's name, the host's session offer       |
+| Reply      | `WSR2.<payload>` | the same invite id, the viewer's name, the viewer's answer |
 
-- `payload` is `base64url(deflate-raw(JSON))`.
-- `sdp` is a complete session description with all ICE candidates (non-trickle).
+`payload` is `base64url(body)`. The first byte of the body says how the rest is written:
+
+- **0, compact** (every code the browsers make today): the invite id as 6 bytes (it is 8
+  base64url characters), the name as a one-byte length and UTF-8 text, and the packed session
+  description, in this order:
+  - one byte for the DTLS role (`actpass`, `active`, `passive`);
+  - 32 bytes, the SHA-256 fingerprint of the certificate;
+  - the ICE user name and the ICE password, each a one-byte length, then 6 bits for each
+    character (they are made of `A-Za-z0-9+/`);
+  - one byte for the number of candidates (at most 16), then for each one byte (bits 0-1 the type:
+    host, srflx, prflx, relay; bits 2-3 the address: IPv4, IPv6 or an mDNS name), 4 or 16 bytes
+    of address, and 2 bytes of port.
+- **1, full**: `deflate-raw` of a JSON object `{ kind, inviteId, hostName | viewerName, sdp }` with
+  the whole description, as version 1 wrote it. Used when the description cannot be packed (see
+  below) and when the invite id is not 8 characters long.
+
+A packed description is written out again when the code is read, in the shape Chromium makes:
+one `m=application` section for the data channel (`mid` 0, SCTP port 5000, message size 262 144),
+every candidate as UDP component 1 with a priority made from its type and its place in the list
+(hosts first), reflexive and relayed ones with the related address `0.0.0.0:0`, and
+`a=end-of-candidates` (the codes carry every candidate there will be: non-trickle). Only a
+description of exactly that shape is packed. Anything else (another section, an attribute the
+packer does not know, a fingerprint that is not SHA-256, a candidate with a host name, a
+message size below 65 536) is sent in full, so nothing is lost silently. The one thing left out on
+purpose is Firefox's active TCP candidates: they name no port to reach and no browser offers the
+passive half, so they never form a pair.
+
 - Decoding removes all whitespace first (messengers wrap long text), then checks the prefix and
-  the version, caps the decompressed size at 32 kB and checks every field: `inviteId` matches
+  the version, and reads the body: a compact body must be read exactly to its end; a full body is
+  capped at 32 kB once inflated. Every field is checked: `inviteId` matches
   `[A-Za-z0-9_-]{8,64}`, names are 1-40 characters, `sdp` starts with `v=0` and is at most 20 000
   characters. Anything else is "damaged".
 - **Any change to the format increments the version.** A code of another version is refused with
   a message that both sides need the same WatchStream version.
+- A usual code is about 150 characters (the fingerprint alone is 43), where version 1 needed 700
+  to 900.
 
 ## Data channel
 

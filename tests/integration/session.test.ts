@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage, Participant } from '../../src/core/protocol/messages';
 import type { ViewerSession } from '../../src/core/session/viewer-session';
-import { join, startHost, waitFor } from './helpers';
+import { decodeBase64Url } from '../../src/core/handshake/base64url';
+import { decodeInvitation, decodeReply } from '../../src/core/handshake/handshake-code';
+import { ViewerSession as Viewer } from '../../src/core/session/viewer-session';
+import { connector, join, startHost, waitFor } from './helpers';
 
 interface ChatSource {
   events: { on(event: 'chat', listener: (message: ChatMessage) => void): () => void };
@@ -15,6 +18,30 @@ function nextChat(session: ChatSource) {
     });
   });
 }
+
+describe('handshake codes over WebRTC', () => {
+  it('are short, made of what the browser really offers, and still connect', async () => {
+    const host = startHost();
+    const { code } = await host.createInvitation();
+    const { session, replyCode } = await Viewer.join(code, { viewerName: 'user2', connector });
+
+    // The compact kind (first byte 0): the browser's description was of the shape it holds.
+    expect(decodeBase64Url(code.slice(code.indexOf('.') + 1))[0]).toBe(0);
+    expect(decodeBase64Url(replyCode.slice(replyCode.indexOf('.') + 1))[0]).toBe(0);
+    // Before this, one of these was 700 to 900 characters long in the same setup.
+    expect(code.length).toBeLessThan(260);
+    expect(replyCode.length).toBeLessThan(260);
+    expect((await decodeInvitation(code)).sdp).toMatch(/^a=fingerprint:sha-256 /m);
+    expect((await decodeReply(replyCode)).sdp).toMatch(/^a=setup:active$/m);
+
+    await host.acceptReply(replyCode);
+    await waitFor<void>((resolve) => {
+      if (session.state === 'connected') resolve();
+      else session.events.on('state', (state) => state === 'connected' && resolve());
+    });
+    session.leave();
+  });
+});
 
 describe('host and viewer sessions over WebRTC', () => {
   it('connects two viewers and shares one roster', async () => {

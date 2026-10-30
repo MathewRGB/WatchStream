@@ -238,7 +238,7 @@ describe('WatchStream app', () => {
     const viewer = openPage(network);
     await start(viewer, 'user2', 'join');
 
-    await paste(viewer.getByTestId('invitation-input'), 'WSI1.broken');
+    await paste(viewer.getByTestId('invitation-input'), 'WSI2.broken');
     await userEvent.click(viewer.getByTestId('join-session-button'));
 
     expect(await viewer.findByTestId('join-status')).toHaveTextContent('incomplete or damaged');

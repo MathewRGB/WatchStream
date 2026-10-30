@@ -1,7 +1,7 @@
 import { Emitter } from '../events/emitter';
 import { createLogger, describeThrown } from '../log/logger';
 import { DEFAULT_QUALITY, qualityPreset, type QualityId } from '../media/quality';
-import { decodeReply, encodeInvitation } from '../handshake/handshake-code';
+import { decodeReply, encodeInvitation, newInviteId } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
 import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
@@ -152,7 +152,7 @@ export class HostSession {
     if (this.openSlots <= 0) {
       throw new SessionError('session-full', `A session holds at most ${this.maxViewers} viewers.`);
     }
-    const inviteId = this.createId();
+    const inviteId = newInviteId();
     // Making the connection takes a moment. The place is held meanwhile, or several invitations
     // asked for at once would all pass the check above and fill more places than there are.
     this.making += 1;
