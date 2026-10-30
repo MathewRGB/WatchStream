@@ -163,6 +163,23 @@ describe('a viewer shares', () => {
     expect(r.host.shareRequests).toEqual([]);
   });
 
+  it('answers a waiting request busy when the host starts to share', async () => {
+    const r = await room(1);
+    r.viewers[0]!.requestShare(streamOf('v'));
+    await flush();
+    const onRequests = vi.fn();
+    r.host.events.on('shareRequests', onRequests);
+
+    r.host.startSharing(streamOf('host-video'));
+    await flush();
+
+    expect(r.viewers[0]!.share).toBe('idle');
+    expect(r.viewers[0]!.lastShareEnd).toBe('busy');
+    expect(r.viewers[0]!.ownShare).toBeNull();
+    expect(r.host.shareRequests).toEqual([]);
+    expect(onRequests).toHaveBeenLastCalledWith([]);
+  });
+
   it('allows one viewer and answers the other waiting requests busy', async () => {
     const r = await room(3);
     r.viewers[0]!.requestShare(streamOf('a'));

@@ -370,10 +370,12 @@ export class HostSession {
 
   /**
    * Shares a stream with every viewer, now and for viewers who join later. Replaces a running
-   * share. A viewer's share ends: the host decides what is on the stage.
+   * share. A viewer's share ends and a request that waits is answered `busy`: the host decides
+   * what is on the stage, and a viewer should not hold a capture for an answer that is clear.
    */
   startSharing(stream: MediaStream): void {
     this.revokeShare();
+    for (const id of [...this.requests]) this.denyShare(id, 'busy');
     this.shared = stream;
     this.log.info('sharing started', { viewers: this.viewers.size });
     for (const { link } of this.viewers.values()) this.startSharingWith(link);

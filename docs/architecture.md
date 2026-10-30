@@ -275,7 +275,7 @@ A viewer can share too; the star stays (section 2):
    not read. The sharer does not get its picture back.
 4. One picture is on the stage at a time. A request while something is shared is answered `busy`
    at once, and a viewer is not offered the picker then. The host's own share takes the stage back
-   (`share-revoked`).
+   (`share-revoked`) and answers any request that still waits with `busy`.
 5. A share ends when the viewer stops it, the browser's stop button ends the capture, the host
    revokes it or removes the viewer, or the link closes. The others get `media-stopped`. The
    viewer's captured tracks are stopped whenever the share is over, also when the host said no.
