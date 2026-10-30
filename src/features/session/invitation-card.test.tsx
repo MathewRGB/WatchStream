@@ -64,6 +64,20 @@ describe('InvitationCard', () => {
     expect(screen.getByTestId('cancel-invitation')).toHaveTextContent('Cancel');
   });
 
+  it('keeps the invitation when the reply belongs to none that is open, and lets it be pasted again', async () => {
+    renderCard(async () => {
+      throw new SessionError('unknown-invitation', 'x');
+    });
+
+    await connectWithReply();
+
+    expect(await screen.findByTestId('invitation-status')).toHaveTextContent(
+      'does not match an open invitation',
+    );
+    expect(screen.getByTestId('connect-button')).toBeEnabled();
+    expect(screen.getByTestId('cancel-invitation')).toHaveTextContent('Cancel');
+  });
+
   it('shows no technical details for a damaged code', async () => {
     renderCard(async () => {
       throw new SessionError('unknown-invitation', 'x');

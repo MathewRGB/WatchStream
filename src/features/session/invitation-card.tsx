@@ -46,11 +46,12 @@ export function InvitationCard({
     } catch (caught) {
       setError(describeError(caught));
       setDetails(caught instanceof SessionError ? caught.details : undefined);
-      // A damaged code, or one for another invitation, can be pasted again; any other failure used
-      // up the invitation.
+      // A damaged code, or one that is not for this invitation, leaves it open and can be pasted
+      // again; any other failure used up the invitation.
       const retry =
         caught instanceof HandshakeCodeError ||
-        (caught instanceof SessionError && caught.reason === 'wrong-invitation');
+        (caught instanceof SessionError &&
+          (caught.reason === 'wrong-invitation' || caught.reason === 'unknown-invitation'));
       setPhase(retry ? 'idle' : 'used-up');
     }
   };
