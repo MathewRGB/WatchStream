@@ -77,31 +77,35 @@ export function serialize(message: HostMessage | ViewerMessage): string {
 
 export function parseViewerMessage(raw: string): ViewerMessage | null {
   const data = parseObject(raw);
-  if (data?.type === 'chat' && typeof data.text === 'string') {
-    const text = normalizeChatText(data.text);
-    return text === null ? null : { type: 'chat', text };
+  switch (data?.type) {
+    case 'chat': {
+      const text = typeof data.text === 'string' ? normalizeChatText(data.text) : null;
+      return text === null ? null : { type: 'chat', text };
+    }
+    case 'media-answer':
+    case 'media-offer':
+      return parseDescription(data.type, data);
+    case 'share-request':
+      return { type: 'share-request' };
+    case 'share-stop':
+      return { type: 'share-stop' };
+    case 'receive-report': {
+      const report = parseReceiveReport(data.report);
+      return report === null ? null : { type: 'receive-report', report };
+    }
+    default:
+      return null;
   }
-  if (
-    data?.type === 'media-answer' &&
-    isNonEmptyString(data.sourceId) &&
-    isSessionDescription(data.sdp)
-  ) {
-    return { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp };
-  }
-  if (
-    data?.type === 'media-offer' &&
-    isNonEmptyString(data.sourceId) &&
-    isSessionDescription(data.sdp)
-  ) {
-    return { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp };
-  }
-  if (data?.type === 'share-request') return { type: 'share-request' };
-  if (data?.type === 'share-stop') return { type: 'share-stop' };
-  if (data?.type === 'receive-report') {
-    const report = parseReceiveReport(data.report);
-    return report === null ? null : { type: 'receive-report', report };
-  }
-  return null;
+}
+
+/** A `media-offer` or `media-answer`, which read the same in both directions. */
+function parseDescription<T extends 'media-offer' | 'media-answer'>(
+  type: T,
+  data: Record<string, unknown>,
+): { type: T; sourceId: string; sdp: string } | null {
+  return isNonEmptyString(data.sourceId) && isSessionDescription(data.sdp)
+    ? { type, sourceId: data.sourceId, sdp: data.sdp }
+    : null;
 }
 
 /** Largest value any field of a report may hold; a sanity bound, not a measurement limit. */
@@ -163,9 +167,8 @@ export function parseHostMessage(raw: string): HostMessage | null {
         ? { type: 'media-started', sourceId: data.sourceId }
         : null;
     case 'media-offer':
-      return isNonEmptyString(data.sourceId) && isSessionDescription(data.sdp)
-        ? { type: 'media-offer', sourceId: data.sourceId, sdp: data.sdp }
-        : null;
+    case 'media-answer':
+      return parseDescription(data.type, data);
     case 'media-stopped':
       return isNonEmptyString(data.sourceId)
         ? { type: 'media-stopped', sourceId: data.sourceId }
@@ -180,10 +183,6 @@ export function parseHostMessage(raw: string): HostMessage | null {
         : null;
     case 'share-revoked':
       return { type: 'share-revoked' };
-    case 'media-answer':
-      return isNonEmptyString(data.sourceId) && isSessionDescription(data.sdp)
-        ? { type: 'media-answer', sourceId: data.sourceId, sdp: data.sdp }
-        : null;
     default:
       return null;
   }

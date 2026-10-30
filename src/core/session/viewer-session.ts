@@ -3,7 +3,7 @@ import { createLogger, describeThrown } from '../log/logger';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
-import type { MediaLink, PeerConnector } from '../peer/message-link';
+import type { LinkSignal, MediaLink, PeerConnector } from '../peer/message-link';
 import { summarizeReceive, type ReceiveStats } from '../peer/receive-stats';
 import {
   normalizeChatText,
@@ -242,10 +242,7 @@ export class ViewerSession {
         break;
       case 'media-offer':
         this.offeredBy = message.sourceId;
-        void this.link.receiveSignal({ type: 'offer', sdp: message.sdp }).catch((error) => {
-          this.log.error('could not apply the host media offer', describeThrown(error));
-          this.link.close();
-        });
+        this.applySignal({ type: 'offer', sdp: message.sdp });
         break;
       case 'media-stopped':
         if (this.sharer === message.sourceId) this.sharer = null;
@@ -274,10 +271,7 @@ export class ViewerSession {
         break;
       case 'media-answer':
         if (message.sourceId === this.ownId) {
-          void this.link.receiveSignal({ type: 'answer', sdp: message.sdp }).catch((error) => {
-            this.log.error('could not apply the host media answer', describeThrown(error));
-            this.link.close();
-          });
+          this.applySignal({ type: 'answer', sdp: message.sdp });
         }
         break;
       case 'removed':
@@ -289,6 +283,17 @@ export class ViewerSession {
       default:
         this.log.debug('dropped a message from the host', { length: raw.length });
     }
+  }
+
+  /** A description that cannot be applied leaves the link unable to negotiate: it is closed. */
+  private applySignal(signal: LinkSignal): void {
+    void this.link.receiveSignal(signal).catch((error) => {
+      this.log.error('could not apply a media description', {
+        type: signal.type,
+        ...describeThrown(error),
+      });
+      this.link.close();
+    });
   }
 
   /**

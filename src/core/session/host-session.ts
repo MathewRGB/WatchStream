@@ -12,7 +12,7 @@ import {
 import { decodeReply, encodeInvitation, newInviteId } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
-import type { MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
+import type { LinkSignal, MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import type { ReceiveReport } from '../peer/receive-stats';
 import { DEFAULT_CODEC, type CodecId } from '../peer/video-codecs';
 import {
@@ -510,34 +510,50 @@ export class HostSession {
       return;
     }
     const message = parseViewerMessage(raw);
-    if (message?.type === 'chat') {
-      this.publishChat(sender, message.text);
-    } else if (message?.type === 'media-answer' && message.sourceId === this.hostId) {
-      void link.receiveSignal({ type: 'answer', sdp: message.sdp }).catch((error) => {
-        this.log.error('could not apply a media answer', describeThrown(error));
-        link.close();
-      });
-    } else if (message?.type === 'media-offer' && message.sourceId === sender.id) {
-      // Answered for every viewer, also after a share ended: the offer that takes the tracks away
-      // has to be answered, or the link cannot negotiate again. Only the allowed viewer's picture
-      // is passed on (`handleViewerStream`).
-      void link.receiveSignal({ type: 'offer', sdp: message.sdp }).catch((error) => {
-        this.log.error('could not apply a viewer media offer', describeThrown(error));
-        link.close();
-      });
-    } else if (message?.type === 'receive-report') {
-      // Only while a picture goes out: a late report must not outlive the share it was about.
-      if (this.sending) this.setReport(sender.id, message.report);
-    } else if (message?.type === 'share-request') {
-      this.handleShareRequest(sender);
-    } else if (message?.type === 'share-stop') {
-      this.requests.delete(sender.id);
-      if (sender.id === this.sharerId) this.endIncoming();
-      this.publishRequests();
-    } else {
-      // Dropped without a reply, as the protocol says; the length helps tell junk from a bug.
-      this.log.debug('dropped a message from a viewer', { length: raw.length });
+    switch (message?.type) {
+      case 'chat':
+        this.publishChat(sender, message.text);
+        break;
+      case 'media-answer':
+        if (message.sourceId === this.hostId) {
+          this.applySignal(link, { type: 'answer', sdp: message.sdp });
+        }
+        break;
+      case 'media-offer':
+        // Answered for every viewer, also after a share ended: the offer that takes the tracks away
+        // has to be answered, or the link cannot negotiate again. Only the allowed viewer's picture
+        // is passed on (`handleViewerStream`).
+        if (message.sourceId === sender.id) {
+          this.applySignal(link, { type: 'offer', sdp: message.sdp });
+        }
+        break;
+      case 'receive-report':
+        // Only while a picture goes out: a late report must not outlive the share it was about.
+        if (this.sending) this.setReport(sender.id, message.report);
+        break;
+      case 'share-request':
+        this.handleShareRequest(sender);
+        break;
+      case 'share-stop':
+        this.requests.delete(sender.id);
+        if (sender.id === this.sharerId) this.endIncoming();
+        this.publishRequests();
+        break;
+      default:
+        // Dropped without a reply, as the protocol says; the length helps tell junk from a bug.
+        this.log.debug('dropped a message from a viewer', { length: raw.length });
     }
+  }
+
+  /** A description that cannot be applied leaves the link unable to negotiate: it is closed. */
+  private applySignal(link: MediaLink, signal: LinkSignal): void {
+    void link.receiveSignal(signal).catch((error) => {
+      this.log.error('could not apply a media description', {
+        type: signal.type,
+        ...describeThrown(error),
+      });
+      link.close();
+    });
   }
 
   /** The announcement goes first, so the viewer knows the offer that follows is a share. */
