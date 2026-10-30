@@ -136,8 +136,10 @@ export async function startTabSound(
     port.onMessage.addListener((raw) => {
       const message = parsePcmMessage(raw);
       if (!message) return;
-      if (adopted && adopted !== port) {
-        port.disconnect(); // A second frame with a video: the first one stays.
+      // A second frame with a video: the first one stays. Or the sound came after `stop` gave up on
+      // it; the tab would go on capturing for nobody.
+      if (stopped || (adopted && adopted !== port)) {
+        port.disconnect();
         return;
       }
       if (!adopted) {
