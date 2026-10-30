@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LinkStats } from '../../src/core/peer/link-stats';
 import type { MediaLink } from '../../src/core/peer/message-link';
 import type { ReceiveReport } from '../../src/core/peer/receive-stats';
+import { MAX_SDP_LENGTH } from '../../src/core/peer/session-description';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
 import {
   createNoisyStreamWithAudio,
@@ -196,6 +197,48 @@ describe('sharing over WebRTC', () => {
     expect(media!.stream.getVideoTracks()).toHaveLength(1);
     expect(media!.stream.getAudioTracks()).toHaveLength(1);
   }, 60_000);
+
+  it('passes the stage between the host and a viewer again and again over one link', async () => {
+    const host = startHost();
+    const sharer = await join(host, 'sharer');
+    const watcher = await join(host, 'watcher');
+
+    for (let round = 0; round < 3; round += 1) {
+      // The viewer asks and shares; the other viewer gets the picture through the host.
+      const forwarded = nextMedia(watcher);
+      sharer.requestShare(createTestStreamWithAudio());
+      await waitFor<void>((resolve) => {
+        const poll = () => (host.shareRequests.length > 0 ? resolve() : setTimeout(poll, 20));
+        poll();
+      });
+      host.allowShare(sharer.participantId!);
+      const viaHost = (await forwarded)!;
+      expect(viaHost.sourceId).toBe(sharer.participantId);
+
+      // The host's own share takes the stage back, and the two offers cross on the sharer's link.
+      const ended = nextMedia(watcher);
+      const own = waitFor<SharedMedia | null>((resolve) => {
+        const off = sharer.events.on('media', (media) => {
+          off();
+          resolve(media);
+        });
+      }, 10_000);
+      host.startSharing(createTestStreamWithAudio());
+      expect(await ended).toBeNull();
+      expect((await own)?.sourceId).toBe(host.hostId);
+      expect(await plays((await own)!.stream)).toBe(true);
+
+      const stopped = nextMedia(sharer);
+      host.stopSharing();
+      await stopped;
+      for (const link of hostLinks(host)) await waitForStable(link.connection);
+    }
+
+    expect(host.participants).toHaveLength(3);
+    for (const link of hostLinks(host)) {
+      expect(link.connection.localDescription!.sdp.length).toBeLessThan(MAX_SDP_LENGTH);
+    }
+  }, 90_000);
 
   it('asks for music-grade sound in every share, not only the first', async () => {
     const host = startHost();
