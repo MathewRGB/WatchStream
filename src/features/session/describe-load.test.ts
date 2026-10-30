@@ -6,6 +6,7 @@ import { describeLoad } from './describe-load';
 const status = (overrides: Partial<LoadStatus> = {}): LoadStatus => ({
   chosen: 'balanced',
   limits: qualityPreset('balanced'),
+  sendingBps: null,
   viewers: 8,
   struggling: false,
   cause: null,
@@ -15,19 +16,39 @@ const status = (overrides: Partial<LoadStatus> = {}): LoadStatus => ({
 
 describe('describeLoad', () => {
   it('says what is sent and to how many while all is well', () => {
-    expect(describeLoad(status())).toEqual({ tone: 'normal', text: '720p · 30 fps · 8 viewers' });
+    expect(describeLoad(status())).toEqual({
+      tone: 'normal',
+      text: '720p · 30 fps · up to 3.5 Mbit/s · 8 viewers',
+    });
+  });
+
+  it('says what each viewer really gets of the most the limit allows, once it is known', () => {
+    expect(describeLoad(status({ sendingBps: 1_840_000 })).text).toBe(
+      '720p · 30 fps · 1.8 of 3.5 Mbit/s · 8 viewers',
+    );
+  });
+
+  it('uses the unit of the limit, so that a small picture and a small limit read in kbit/s', () => {
+    const minimal = status({ chosen: 'minimal', limits: qualityPreset('minimal') });
+
+    expect(describeLoad({ ...minimal, sendingBps: 420_400 }).text).toBe(
+      '360p · 15 fps · 420 of 600 kbit/s · 8 viewers',
+    );
+    expect(describeLoad(status({ sendingBps: 420_400 })).text).toContain('0.4 of 3.5 Mbit/s');
   });
 
   it('says "viewer" for one', () => {
     expect(
       describeLoad(status({ viewers: 1, chosen: 'sharp', limits: qualityPreset('sharp') })).text,
-    ).toBe('1080p · 30 fps · 1 viewer');
+    ).toBe('1080p · 30 fps · up to 6 Mbit/s · 1 viewer');
   });
 
   it('says the computer cannot keep up, and that some viewers may get the picture late', () => {
-    expect(describeLoad(status({ struggling: true, cause: 'computer' }))).toEqual({
+    expect(
+      describeLoad(status({ struggling: true, cause: 'computer', sendingBps: 2_000_000 })),
+    ).toEqual({
       tone: 'struggling',
-      text: '720p · 30 fps · 8 viewers: your computer cannot keep up. Some viewers may get the picture late.',
+      text: '720p · 30 fps · 2 of 3.5 Mbit/s · 8 viewers: your computer cannot keep up. Some viewers may get the picture late.',
     });
   });
 
@@ -48,16 +69,18 @@ describe('describeLoad', () => {
         }),
       ).text,
     ).toBe(
-      '480p · 24 fps · 8 viewers: your computer cannot keep up. Some viewers may get the picture late.',
+      '480p · 24 fps · up to 1.5 Mbit/s · 8 viewers: your computer cannot keep up. Some viewers may get the picture late.',
     );
   });
 
   it('shows the values of a custom choice, also a frame rate above 30', () => {
     const custom = {
       chosen: 'custom',
-      limits: { ...qualityPreset('sharp'), maxFramerate: 60 },
+      limits: { ...qualityPreset('sharp'), maxFramerate: 60, maxBitrateBps: 8_000_000 },
     } as const;
 
-    expect(describeLoad(status({ ...custom, viewers: 2 })).text).toBe('1080p · 60 fps · 2 viewers');
+    expect(describeLoad(status({ ...custom, viewers: 2, sendingBps: 7_950_000 })).text).toBe(
+      '1080p · 60 fps · 8 of 8 Mbit/s · 2 viewers',
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
+import { SendRate } from '../media/send-rate';
 import type { MediaLimits, QualityChoice } from '../media/quality';
 import type { LinkStats } from '../peer/link-stats';
 
@@ -8,6 +9,11 @@ export interface LoadStatus {
   chosen: QualityChoice;
   /** What that comes to, which is what is sent. */
   limits: MediaLimits;
+  /**
+   * What each viewer really gets of the picture, in bit/s: the mean over the links. The limit is a
+   * ceiling and a quiet picture uses less of it. `null` while it is not known yet.
+   */
+  sendingBps: number | null;
   viewers: number;
   /** The host cannot keep up with its viewers; the picture may reach some of them late. */
   struggling: boolean;
@@ -41,6 +47,7 @@ export interface LoadControlOptions {
  */
 export class LoadControl {
   private readonly monitor = new LoadMonitor();
+  private readonly rate = new SendRate();
   private timer: ReturnType<typeof setInterval> | null = null;
   private reading = false;
   /** Counts the resets, so that a reading that was under way during one is dropped. */
@@ -55,6 +62,7 @@ export class LoadControl {
     return {
       chosen: this.options.chosen(),
       limits: this.options.limits(),
+      sendingBps: this.rate.bps,
       viewers,
       struggling: this.struggling,
       cause: this.struggling ? this.cause : null,
@@ -76,6 +84,7 @@ export class LoadControl {
   reset(): void {
     this.generation += 1;
     this.monitor.reset();
+    this.rate.reset();
     this.struggling = false;
     this.cause = null;
     this.health = new Map();
@@ -84,6 +93,7 @@ export class LoadControl {
   /** A viewer has gone; what was known about its link goes too. */
   forget(id: string): void {
     this.monitor.forget(id);
+    this.rate.forget(id);
     this.health.delete(id);
   }
 
@@ -106,6 +116,7 @@ export class LoadControl {
         readings,
         limits: this.options.limits(),
       });
+      this.rate.update(readings);
       this.struggling = decision.struggling;
       if (decision.cause) this.cause = decision.cause;
       this.health = new Map(decision.links);

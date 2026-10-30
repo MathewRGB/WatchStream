@@ -50,7 +50,7 @@ sound or judge how the delay feels. This guide covers those. Read [architecture.
 
 1. While A shares, invite a new viewer. Expect: the picture is there as soon as they are connected.
 2. With six or more viewers, watch the host's line next to the buttons. Expect: the same text as
-   for the host's own share ("720p · N viewers"), and the picture gets lighter when the host's
+   for the host's own share ("720p · 30 fps · X of 3.5 Mbit/s · N viewers"), and the picture gets lighter when the host's
    computer cannot keep up. The sharing viewer is not counted as slow.
 3. Change the picture quality in **Settings** during A's share. Expect: it applies to the others at
    once.

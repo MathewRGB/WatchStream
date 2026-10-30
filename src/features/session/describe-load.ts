@@ -1,4 +1,5 @@
 import type { LoadStatus } from '@/core/session/host-session';
+import { describeSending } from './describe-quality';
 
 export interface LoadLine {
   text: string;
@@ -10,8 +11,9 @@ const viewers = (count: number) => `${count} ${count === 1 ? 'viewer' : 'viewers
 
 /** The one line on the stage that tells the host what is sent, and says so when it cannot keep up. */
 export function describeLoad(load: LoadStatus): LoadLine {
-  const { maxHeight, maxFramerate } = load.limits;
-  const sending = `${maxHeight}p · ${maxFramerate} fps · ${viewers(load.viewers)}`;
+  const { maxHeight, maxFramerate, maxBitrateBps } = load.limits;
+  const bitrate = describeSending(load.sendingBps, maxBitrateBps);
+  const sending = `${maxHeight}p · ${maxFramerate} fps · ${bitrate} · ${viewers(load.viewers)}`;
 
   if (load.struggling) {
     const who = load.cause === 'connection' ? 'your connection' : 'your computer';

@@ -14,6 +14,7 @@ export function LoadLine({ load }: { load: LoadStatus }) {
         tone === 'struggling' && 'text-destructive',
       )}
       data-tone={tone}
+      title="What is sent: the picture's size and frame rate, the bitrate each viewer really gets of the most it may use, and how many viewers."
       data-testid="load-line"
     >
       {text}

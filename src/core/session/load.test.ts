@@ -122,6 +122,25 @@ describe('HostSession and the load monitor', () => {
     for (const link of links()) expect(link.limits).toEqual(qualityPreset('balanced'));
   });
 
+  it('tells the host what each viewer really gets, and starts over when the quality changes', async () => {
+    const { host, links } = await hostWithViewers(2);
+    const counters = new Counters();
+    const seen: (number | null)[] = [];
+    host.events.on('load', (status) => seen.push(status.sendingBps));
+    shareNow(host);
+    expect(host.load.sendingBps).toBeNull();
+
+    await rounds(8, counters, links());
+
+    // Every link sends 3 Mbit/s in the test counters.
+    expect(host.load.sendingBps).toBe(3_000_000);
+    expect(seen.at(-1)).toBe(3_000_000);
+
+    host.setQuality('saver');
+    expect(host.load.sendingBps).toBeNull();
+    expect(host.load.limits).toEqual(qualityPreset('saver'));
+  });
+
   it('sends the chosen quality to a viewer who joins later', async () => {
     const { host, network, links } = await hostWithViewers(4);
     const counters = new Counters();

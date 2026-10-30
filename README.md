@@ -47,7 +47,7 @@ own player for such services is future work, see
    Minimal to Sharp cover most cases; **Custom** sets the resolution (240p to 2160p), the frame
    rate (10 to 60 fps), the picture bitrate and the sound bitrate one by one. Each group of
    settings opens and closes on its own. A
-   line on the stage says what is sent and to how many viewers ("720p · 30 fps · 8 viewers"). With many
+   line on the stage says what is sent and to how many viewers ("720p · 30 fps · 1.8 of 3.5 Mbit/s · 8 viewers": the bitrate each viewer really gets of the most the quality allows). With many
    viewers, if your computer or connection cannot keep up, the line says so; the quality stays as
    you chose it, so you can lower it yourself. The **People** tab marks a viewer who is not
    keeping up; viewers see none of this. The host can remove a viewer there, after one question;

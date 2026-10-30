@@ -5,6 +5,9 @@ import { connect, SessionPage } from './support/session-page';
 
 const EXTENSION_PATH = resolve('.output/chrome-mv3');
 const VIEWERS = 5;
+/** What the host is told it sends: the real bitrate of the browser's encoder, so no fixed number. */
+const LOAD_LINE = /^720p · 30 fps · (up to|[\d.]+ of) 3\.5 Mbit\/s · 5 viewers$/;
+const LOAD_LINE_MEASURED = /^720p · 30 fps · [\d.]+ of 3\.5 Mbit\/s · 5 viewers$/;
 
 let context: BrowserContext;
 let extensionId: string;
@@ -57,11 +60,11 @@ test('a host with five viewers: one roster, one chat and one picture for everyon
   for (const viewer of viewers) await viewer.expectPlaying();
 
   // The host is told what it sends and to how many.
-  await expect(host.byTestId('load-line')).toHaveText('720p · 30 fps · 5 viewers');
+  await expect(host.byTestId('load-line')).toHaveText(LOAD_LINE);
   // And the load monitor, reading the real statistics of five real links for longer than its
   // grace period and three readings, finds nothing to report and nobody slow.
   await host.page.waitForTimeout(15_000);
-  await expect(host.byTestId('load-line')).toHaveText('720p · 30 fps · 5 viewers');
+  await expect(host.byTestId('load-line')).toHaveText(LOAD_LINE_MEASURED);
   await expect(host.byTestId('load-line')).toHaveAttribute('data-tone', 'normal');
   await host.openTab('people');
   await expect(host.byTestId('participant-slow')).toHaveCount(0);
@@ -90,7 +93,7 @@ test('a viewer shares in the real extension: the host decides, four others watch
   await host.openTab('people');
   await expect(host.byTestId('participant-sharing')).toHaveCount(1);
   // The host sends the same load line for a forwarded picture as for its own.
-  await expect(host.byTestId('load-line')).toHaveText('720p · 30 fps · 5 viewers');
+  await expect(host.byTestId('load-line')).toHaveText(LOAD_LINE);
 
   // While the stage is taken, the others are not offered the picker.
   await expect(watchers[0]!.byTestId('share-button')).toBeDisabled();

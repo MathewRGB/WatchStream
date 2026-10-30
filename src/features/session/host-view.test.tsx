@@ -51,7 +51,9 @@ describe('HostView and the load', () => {
 
     act(() => host.startSharing(fakeCapturedStream().stream));
 
-    expect(screen.getByTestId('load-line')).toHaveTextContent('720p · 30 fps · 3 viewers');
+    expect(screen.getByTestId('load-line')).toHaveTextContent(
+      '720p · 30 fps · up to 3.5 Mbit/s · 3 viewers',
+    );
     expect(screen.getByTestId('load-line')).toHaveAttribute('data-tone', 'normal');
   });
 
@@ -71,7 +73,9 @@ describe('HostView and the load', () => {
 
     const line = screen.getByTestId('load-line');
     expect(line).toHaveAttribute('data-tone', 'struggling');
-    expect(line).toHaveTextContent('720p · 30 fps · 4 viewers: your computer cannot keep up.');
+    expect(line).toHaveTextContent(
+      '720p · 30 fps · 3 of 3.5 Mbit/s · 4 viewers: your computer cannot keep up.',
+    );
     // Everyone fell behind, so all four are marked; the People tab shows them.
     expect(
       within(screen.getByTestId('tab-panel-people')).getAllByTestId('participant-slow'),
@@ -93,7 +97,9 @@ describe('HostView and the load', () => {
 
     act(() => host.setQuality('sharp'));
 
-    expect(screen.getByTestId('load-line')).toHaveTextContent('1080p · 30 fps · 4 viewers');
+    expect(screen.getByTestId('load-line')).toHaveTextContent(
+      '1080p · 30 fps · up to 6 Mbit/s · 4 viewers',
+    );
     expect(screen.getByTestId('load-line')).toHaveAttribute('data-tone', 'normal');
   });
 });

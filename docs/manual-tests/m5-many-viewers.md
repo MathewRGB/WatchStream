@@ -30,7 +30,7 @@ clear. This guide covers those. Read [architecture.md, section 7](../architectur
 
 1. Host: choose **Share** and pick a tab with fast movement. Keep the quality on Balanced.
 2. Expect: every viewer sees the picture within a few seconds, and a line next to **Stop sharing**
-   says "720p · N viewers".
+   says "720p · 30 fps · X of 3.5 Mbit/s · N viewers" (X is what each viewer really gets).
 3. Add viewers up to eight or more while sharing. Expect: each new viewer sees the picture when
    they are connected; the number in the line follows.
 4. On a viewer, note how smooth it is. On the host, look at the line.

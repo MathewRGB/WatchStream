@@ -654,6 +654,8 @@ export class HostSession {
     const key = [
       status.chosen,
       JSON.stringify(status.limits),
+      // Tenths of a Mbit/s: the line on the stage does not need to hear about every wobble.
+      status.sendingBps === null ? 'none' : Math.round(status.sendingBps / 100_000),
       status.cause,
       status.struggling,
       status.viewers,

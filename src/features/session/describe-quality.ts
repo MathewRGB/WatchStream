@@ -20,3 +20,15 @@ export function describeQuality(choice: QualityChoice, limits: MediaLimits): str
 export function uploadPerViewer(limits: MediaLimits): number {
   return limits.maxBitrateBps + limits.maxAudioBitrateBps;
 }
+
+/**
+ * What is really sent against the limit, in the unit of the limit: `1.8 of 3.5 Mbit/s`,
+ * `420 of 600 kbit/s`; without a reading, `up to 3.5 Mbit/s`.
+ */
+export function describeSending(sendingBps: number | null, limitBps: number): string {
+  if (sendingBps === null) return `up to ${formatBitrate(limitBps)}`;
+  if (limitBps >= 1_000_000) {
+    return `${Number((sendingBps / 1_000_000).toFixed(1))} of ${formatBitrate(limitBps)}`;
+  }
+  return `${Math.round(sendingBps / 1000)} of ${formatBitrate(limitBps)}`;
+}

@@ -142,7 +142,9 @@ test('the host fine-tunes the picture in a custom setting, and the settings open
   await host.byTestId('custom-framerate').selectOption('15');
   await host.byTestId('custom-bitrate').selectOption('1000000');
   await expect(host.byTestId('quality-summary')).toContainText('Sends 480p at up to 15 fps');
-  await expect(host.byTestId('load-line')).toHaveText('480p · 15 fps · 1 viewer');
+  await expect(host.byTestId('load-line')).toHaveText(
+    /^480p · 15 fps · (up to|[\d.]+ of) 1 Mbit\/s · 1 viewer$/,
+  );
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');

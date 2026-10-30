@@ -223,7 +223,14 @@ quality itself: the host does that in Settings. Every 2 seconds it reads each li
   "your computer" when most affected links are behind, "your connection" otherwise.
 - One viewer alone on a poor connection does not affect the rest; that viewer is marked slow.
 
-The host always sees what is sent ("720p · 8 viewers"), and when it struggles, why. The thresholds are
+The host always sees what is sent ("720p · 30 fps · 1.8 of 3.5 Mbit/s · 8 viewers"), and when it
+struggles, why. The bitrate is a ceiling, and a quiet picture uses far less of it, so the line says
+what each viewer really gets next to the limit: `SendRate` (`src/core/media/send-rate.ts`) takes it
+from the `bytesSent` counters the load monitor reads anyway, as the mean over the links, smoothed
+by half a reading, and `LoadControl` hands it on as `sendingBps`. Until two readings are in, the
+line says "up to 3.5 Mbit/s". It counts the picture only; the sound has no counter there (a few
+dozen kbit/s). Without this line a host could change the bitrate and see nothing happen, which is
+what it looks like for any picture that needs less than the limit. The thresholds are
 first guesses in one place (`LOAD_RULES`). The monitor is pure, readings in and a decision out,
 and takes its time from the readings, so it is tested with sequences and no timers.
 

@@ -136,4 +136,42 @@ describe('LoadControl', () => {
     expect(load.status(0).health.has('a')).toBe(false);
     load.stop();
   });
+
+  it('reports what each link really sends, once it has two readings, and starts over on reset', async () => {
+    const a = link();
+    const b = link();
+    const { load } = control(
+      new Map([
+        ['a', a],
+        ['b', b],
+      ]),
+    );
+    expect(load.status(2).sendingBps).toBeNull();
+
+    load.start();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(load.status(2).sendingBps).toBeNull();
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // The test link sends 750 000 bytes every 2 seconds: 3 Mbit/s.
+    expect(load.status(2).sendingBps).toBe(3_000_000);
+
+    load.reset();
+    expect(load.status(2).sendingBps).toBeNull();
+    load.stop();
+  });
+
+  it('keeps the rate while a link that was forgotten is read for a first time again', async () => {
+    const a = link();
+    const { load } = control(new Map([['a', a]]));
+    load.start();
+    await vi.advanceTimersByTimeAsync(4000);
+
+    load.forget('a');
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // The next reading of `a` is a first one again: nothing to compare it with.
+    expect(load.status(1).sendingBps).toBe(3_000_000);
+    load.stop();
+  });
 });

@@ -15,7 +15,7 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   can choose **Custom** and set the resolution (240p to 2160p), the frame rate (10 to 60 fps), the
   picture bitrate (automatic, or 0.3 to 20 Mbit/s) and the sound bitrate (32 to 320 kbit/s). The
   settings say what one viewer costs in upload, and the line on the stage shows the frame rate as
-  well ("720p · 30 fps · 8 viewers"). The screen capture follows the frame rate that is sent, so 60
+  well ("720p · 30 fps · 1.8 of 3.5 Mbit/s · 8 viewers": the bitrate each viewer really gets of the most the quality allows, which shows a bitrate limit at work). The screen capture follows the frame rate that is sent, so 60
   fps is reachable and a low rate does not capture frames that would be dropped.
 - The settings tab is made of sections that open and close on their own (picture quality, video
   codec, sound from a tab). Only the picture quality is open at first; a closed section names what

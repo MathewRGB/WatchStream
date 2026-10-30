@@ -50,11 +50,16 @@ sound. Sharing a whole screen or window works the same way.
 3. Host: choose **Custom**. Expect: it starts with the values of the step you left, and four
    fields appear (resolution, frame rate, picture bitrate, sound bitrate). The line above the
    steps says what is sent and what one viewer costs in upload.
-4. Host: set 1080p, 60 fps and a moving picture that runs at 60 (a game or a smooth video).
+4. Host: share a picture with a lot of motion, choose **Custom** and set the picture bitrate to
+   0.5 Mbit/s, then to 4 Mbit/s. Expect: the number before "of" on the stage line follows (it
+   stays at or below the limit and climbs within seconds in Brave, more slowly in Firefox), and
+   the picture is visibly blurrier at 0.5. A still picture stays far below any limit; that is not
+   an error.
+5. Host: set 1080p, 60 fps and a moving picture that runs at 60 (a game or a smooth video).
    Expect: the line on the stage reads "1080p · 60 fps · 1 viewer" and the viewer sees smoother
    motion than at 30 fps. Then set 480p and 10 fps: the picture is visibly softer and choppier,
    and the host's computer works less.
-5. Host: close **Picture quality** and open **Video codec** (or **Sound from a tab** in Firefox).
+6. Host: close **Picture quality** and open **Video codec** (or **Sound from a tab** in Firefox).
    Expect: each section opens and closes on its own, a closed one names what is set in it, and the
    state is kept when you switch to the Chat tab and back.
 
