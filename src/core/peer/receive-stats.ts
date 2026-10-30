@@ -1,3 +1,5 @@
+import { isSelectedPair, statNumber as number, type StatsEntry } from './stats-report';
+
 /**
  * What a viewer can tell about the picture it receives. The host cannot see this side: its own
  * counters say what it sent, not what arrived, how long the viewer waits to show it or how often
@@ -46,21 +48,14 @@ export interface ReceiveReport {
   rttMs: number | null;
 }
 
-type Report = { type?: unknown; kind?: unknown; [field: string]: unknown };
-
-const number = (value: unknown): number | null =>
-  typeof value === 'number' && Number.isFinite(value) ? value : null;
-
 /** Picks the numbers out of the reports of a connection that receives one picture; else `null`. */
 export function readReceiveStats(reports: Iterable<object>, at: number): ReceiveStats | null {
-  let inbound: Report | undefined;
-  let pair: Report | undefined;
+  let inbound: StatsEntry | undefined;
+  let pair: StatsEntry | undefined;
   for (const item of reports) {
-    const report = item as Report;
+    const report = item as StatsEntry;
     if (report.type === 'inbound-rtp' && report.kind === 'video') inbound ??= report;
-    else if (report.type === 'candidate-pair' && (report.nominated === true || report.selected)) {
-      pair ??= report;
-    }
+    else if (isSelectedPair(report)) pair ??= report;
   }
   if (!inbound) return null;
 
