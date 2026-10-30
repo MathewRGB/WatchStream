@@ -80,6 +80,8 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Security
 
+- The log and the technical details carry no addresses from a browser's error text, which can quote
+  a line of a session description.
 - Chat text and names from other people are never rendered as HTML; ESLint forbids `innerHTML`,
   `outerHTML` and `dangerouslySetInnerHTML` in the source.
 

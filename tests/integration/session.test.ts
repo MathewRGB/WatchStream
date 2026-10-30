@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { ChatMessage, Participant } from '../../src/core/protocol/messages';
 import type { ViewerSession } from '../../src/core/session/viewer-session';
 import { decodeBase64Url } from '../../src/core/handshake/base64url';
-import { decodeInvitation, decodeReply } from '../../src/core/handshake/handshake-code';
+import {
+  decodeInvitation,
+  decodeReply,
+  encodeReply,
+} from '../../src/core/handshake/handshake-code';
+import { clearLogHistory, logHistory, setLogSink } from '../../src/core/log/logger';
 import { ViewerSession as Viewer } from '../../src/core/session/viewer-session';
 import { connector, join, startHost, waitFor } from './helpers';
 
@@ -40,6 +45,38 @@ describe('handshake codes over WebRTC', () => {
       else session.events.on('state', (state) => state === 'connected' && resolve());
     });
     session.leave();
+  });
+
+  it('keep the addresses of a damaged code out of the log, whatever the browser says about it', async () => {
+    const host = startHost();
+    const { code } = await host.createInvitation();
+    const { inviteId } = await decodeInvitation(code);
+    const replyCode = await encodeReply({
+      inviteId,
+      viewerName: 'user2',
+      sdp: [
+        'v=0',
+        'o=- 1 2 IN IP4 203.0.113.7',
+        's=-',
+        't=0 0',
+        'm=application 9 UDP/DTLS/SCTP webrtc-datachannel',
+        'c=IN IP4 203.0.113.7',
+        'a=candidate:1 1 udp 1 203.0.113.7 99999 typ nonsense',
+        '',
+      ].join('\r\n'),
+    });
+    clearLogHistory();
+    setLogSink(() => {});
+    try {
+      await expect(host.acceptReply(replyCode)).rejects.toMatchObject({
+        reason: 'connection-failed',
+      });
+      // Positive control: the failure was logged, or a clean log would say nothing.
+      expect(logHistory().map((entry) => entry.message)).toContain('viewer did not connect');
+      expect(JSON.stringify(logHistory())).not.toMatch(/203\.0\.113\.7|candidate:/);
+    } finally {
+      setLogSink(null);
+    }
   });
 });
 

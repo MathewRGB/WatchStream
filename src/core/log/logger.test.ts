@@ -5,6 +5,7 @@ import {
   describeThrown,
   formatLogHistory,
   logHistory,
+  scrubMessage,
   setLogSink,
   type LogEntry,
 } from './logger';
@@ -63,5 +64,28 @@ describe('logger', () => {
       message: 'x'.repeat(200),
     });
     expect(describeThrown('text')).toEqual({ error: 'string' });
+  });
+});
+
+describe('scrubMessage', () => {
+  it('cuts what a browser quotes from a session description', () => {
+    expect(
+      scrubMessage(
+        'Failed to parse SessionDescription. a=candidate:1 1 udp 1 203.0.113.7 9 typ x Invalid value',
+      ),
+    ).toBe('Failed to parse SessionDescription.');
+  });
+
+  it('takes out addresses that are named on their own', () => {
+    expect(scrubMessage('No route to 203.0.113.7 or 2001:db8::1 now')).toBe(
+      'No route to <address> or <address> now',
+    );
+  });
+
+  it('leaves an ordinary error text alone, and keeps it short', () => {
+    expect(scrubMessage('Cannot set remote answer in state stable')).toBe(
+      'Cannot set remote answer in state stable',
+    );
+    expect(scrubMessage('x'.repeat(500))).toHaveLength(200);
   });
 });

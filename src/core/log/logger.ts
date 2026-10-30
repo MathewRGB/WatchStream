@@ -71,8 +71,25 @@ export function createLogger(scope: string): Logger {
   return { debug: write('debug'), info: write('info'), warn: write('warn'), error: write('error') };
 }
 
+const QUOTED_DESCRIPTION = /\b[a-z]=\S.*$/is;
+const IPV4 = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;
+const IPV6 = /\b[0-9a-f]{0,4}(?::[0-9a-f]{0,4}){2,}(?![0-9a-z])/gi;
+
+/**
+ * An error text as a log line may carry it. A browser quotes the line of a session description it
+ * could not read, so what comes from it is cut there, and any address left is taken out.
+ */
+export function scrubMessage(message: string): string {
+  return message
+    .replace(QUOTED_DESCRIPTION, '')
+    .replace(IPV4, '<address>')
+    .replace(IPV6, '<address>')
+    .trim()
+    .slice(0, 200);
+}
+
 /** The name and message of anything thrown, for a log line. */
 export function describeThrown(error: unknown): LogData {
-  if (error instanceof Error) return { error: error.name, message: error.message.slice(0, 200) };
+  if (error instanceof Error) return { error: error.name, message: scrubMessage(error.message) };
   return { error: typeof error };
 }
