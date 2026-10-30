@@ -70,6 +70,13 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 - From the second share on, the stage line and the People tab read the counters of the current
   picture, not those of the share before it.
 - The host's connection to a viewer who left is closed at once.
+- A reply code that belongs to no open invitation no longer uses up the card it was pasted into.
+- A viewer who waits for an answer is told at once when the host starts to share, and lets go of
+  the capture.
+- Ending a session while the share picker is open, or while an invitation is being made, leaves no
+  capture and no connection running.
+- Firefox: a tab whose sound started only after WatchStream gave up on it stops capturing.
+- A chat time stamp no date can hold is dropped instead of taking the viewer's page down.
 
 ### Security
 

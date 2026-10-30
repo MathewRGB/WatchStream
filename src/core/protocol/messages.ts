@@ -204,6 +204,9 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value !== '';
 }
 
+/** The largest time a `Date` can hold; formatting anything beyond it throws. */
+const MAX_DATE_MS = 8.64e15;
+
 function isParticipant(value: unknown): value is Participant {
   if (typeof value !== 'object' || value === null) return false;
   const p = value as Record<string, unknown>;
@@ -222,6 +225,6 @@ function isChatMessage(value: unknown): value is ChatMessage {
     typeof m.text === 'string' &&
     normalizeChatText(m.text) === m.text &&
     typeof m.sentAt === 'number' &&
-    Number.isFinite(m.sentAt)
+    Math.abs(m.sentAt) <= MAX_DATE_MS
   );
 }

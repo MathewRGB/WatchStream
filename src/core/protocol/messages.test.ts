@@ -86,6 +86,25 @@ describe('parseHostMessage', () => {
   });
 });
 
+describe('chat time stamps', () => {
+  const chat = (sentAt: number) =>
+    JSON.stringify({
+      type: 'chat',
+      message: { id: 'm', senderId: 's', senderName: 'n', text: 't', sentAt },
+    });
+
+  it('drops a time no date can hold, which would break the rendering of the chat', () => {
+    expect(parseHostMessage(chat(8.64e15 + 1))).toBeNull();
+    expect(parseHostMessage(chat(-8.64e15 - 1))).toBeNull();
+    expect(parseHostMessage(chat(1e300))).toBeNull();
+  });
+
+  it('takes any time a date can hold', () => {
+    expect(parseHostMessage(chat(8.64e15))).not.toBeNull();
+    expect(parseHostMessage(chat(0))).not.toBeNull();
+  });
+});
+
 describe('removed message', () => {
   it('round-trips from the host', () => {
     const removed: HostMessage = { type: 'removed' };
