@@ -63,6 +63,14 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   checks the Firefox package. Manual test guides for stream mode, full screen, many viewers and
   viewer shares are in `docs/manual-tests/`.
 
+### Fixed
+
+- Sharing again and again on one connection works: from the fourth share in Chrome and Brave (sixth
+  in Firefox) the picture no longer reached a viewer who had stayed in the session.
+- From the second share on, the stage line and the People tab read the counters of the current
+  picture, not those of the share before it.
+- The host's connection to a viewer who left is closed at once.
+
 ### Security
 
 - Chat text and names from other people are never rendered as HTML; ESLint forbids `innerHTML`,

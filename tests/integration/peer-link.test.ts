@@ -144,6 +144,28 @@ describe('PeerLink', () => {
     expect(offer.link.state).toBe('closed');
   });
 
+  describe('when the other side goes', () => {
+    it('gives up its own connection too, so that nothing keeps running for nobody', async () => {
+      const { host, viewer } = await connectPair();
+      const gone = closed(host);
+
+      viewer.close();
+      await gone;
+
+      expect(host['connection'].signalingState).toBe('closed');
+    });
+
+    it('gives up its own connection when it failed, and still says it failed', async () => {
+      const { host } = await connectPair();
+
+      reportConnectionState(host, 'failed');
+
+      expect(host.state).toBe('closed');
+      expect(host['connection'].signalingState).toBe('closed');
+      expect(host.diagnostics().connection).toBe('failed');
+    });
+  });
+
   describe('logging and diagnostics', () => {
     it('logs how the link came up, without any address', async () => {
       clearLogHistory();

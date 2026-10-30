@@ -104,6 +104,15 @@ Details that cost time to find:
 - A link can gain tracks one at a time (video, then sound). `setOutgoing` syncs a link with the
   stream's tracks as they are, also for the same stream object, so a forwarded picture gets its
   sound.
+- Each outgoing track has a `sendonly` transceiver of its own, which is stopped when the track goes.
+  A stopped section is used again by the next offer, so a description stays the same size however
+  often someone shares. `addTrack` and `removeTrack` left a section behind for every share: a
+  description grew by about 5 kB each time, and the fourth share in Chromium (sixth in Firefox) went
+  over the 20 000 characters a message may carry. The message was dropped and the link never
+  negotiated again. They also left the old sender's counters in the statistics, which were read
+  instead of the new ones.
+- A link closes its `RTCPeerConnection` however it ended, also when the other side left. Until
+  then the host's connection stayed `connected` with nobody to send to.
 
 The session classes never touch `RTCPeerConnection`: they talk to a `MediaLink`
 (`src/core/peer/message-link.ts`), which `PeerLink` implements with WebRTC and `FakeLink` in memory

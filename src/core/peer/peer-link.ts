@@ -62,7 +62,6 @@ export class PeerLink implements OfferingLink {
   private outgoing: MediaStream | null = null;
   private limits: MediaLimits | null = null;
   private codec: CodecId = DEFAULT_CODEC;
-  private makingOffer = false;
   /**
    * The steps of the negotiation (`receiveSignal`, offers) run one after the other. The browser
    * answers `InvalidStateError` to a step that starts while another one is half done, and a host
@@ -78,7 +77,6 @@ export class PeerLink implements OfferingLink {
    * `<video>` element would go empty after the next stop and start.
    */
   private readonly remote = new MediaStream();
-  private readonly watched = new Set<MediaStream>();
   private readonly log: Logger;
   /** Kinds of the connected candidate pair, e.g. `srflx/srflx`; empty until connected. */
   private path = '';
@@ -171,23 +169,31 @@ export class PeerLink implements OfferingLink {
     }
     // Another stream replaces everything. The same stream is synced with its tracks as they are
     // now: a stream that is forwarded from a viewer gains its video and its sound one at a time.
-    if (stream !== this.outgoing) {
-      for (const sender of this.senders.splice(0)) this.connection.removeTrack(sender);
-    }
-    this.outgoing = stream;
     const wanted = stream?.getTracks() ?? [];
+    const kept = stream === this.outgoing ? wanted : [];
+    this.outgoing = stream;
     for (const sender of [...this.senders]) {
-      if (sender.track && wanted.includes(sender.track)) continue;
-      this.connection.removeTrack(sender);
+      if (sender.track && kept.includes(sender.track)) continue;
+      this.transceiverOf(sender)?.stop();
       this.senders.splice(this.senders.indexOf(sender), 1);
     }
     for (const track of wanted) {
-      if (!this.senders.some((sender) => sender.track === track)) {
-        const sender = this.connection.addTrack(track, stream!);
-        this.senders.push(sender);
-        if (track.kind === 'video') this.preferCodecs(sender);
-      }
+      if (this.senders.some((sender) => sender.track === track)) continue;
+      // A transceiver of its own for each track, stopped when the track goes, and never `addTrack`
+      // and `removeTrack`. Those leave a section in the description for every share, until it is
+      // longer than a message may be and the link can never negotiate again. They also leave the
+      // counters of the old sender behind, and a stopped section is used again by the next offer.
+      const { sender } = this.connection.addTransceiver(track, {
+        direction: 'sendonly',
+        streams: [stream!],
+      });
+      this.senders.push(sender);
+      if (track.kind === 'video') this.preferCodecs(sender);
     }
+  }
+
+  private transceiverOf(sender: RTCRtpSender): RTCRtpTransceiver | undefined {
+    return this.connection.getTransceivers().find((transceiver) => transceiver.sender === sender);
   }
 
   receiveSignal(signal: LinkSignal): Promise<void> {
@@ -202,8 +208,8 @@ export class PeerLink implements OfferingLink {
   }
 
   private async applySignal(signal: LinkSignal): Promise<void> {
-    const collision =
-      signal.type === 'offer' && (this.makingOffer || this.connection.signalingState !== 'stable');
+    // The queue runs one step at a time, so an offer of ours that is under way shows in the state.
+    const collision = signal.type === 'offer' && this.connection.signalingState !== 'stable';
     // With every candidate inside the descriptions, a crossing offer is the only thing the impolite
     // side ever drops, so the decision is not kept.
     if (!this.polite && collision) {
@@ -259,19 +265,26 @@ export class PeerLink implements OfferingLink {
   }
 
   diagnostics(): LinkDiagnostics {
+    if (this.currentState === 'closed') return this.closedDiagnostics();
     try {
       this.lastDiagnostics = this.readDiagnostics();
       return this.lastDiagnostics;
     } catch {
-      // Firefox refuses to read a closed connection. The last state we saw is the useful one.
-      return { ...this.lastDiagnostics, connection: 'closed', ice: 'closed' };
+      return this.closedDiagnostics();
     }
   }
 
+  /** A closed connection says nothing more (Firefox refuses to read it): what was last seen. */
+  private closedDiagnostics(): LinkDiagnostics {
+    const last = this.lastDiagnostics;
+    return {
+      ...last,
+      connection: last.connection === 'failed' ? 'failed' : 'closed',
+      ice: last.ice === 'failed' ? 'failed' : 'closed',
+    };
+  }
+
   close(): void {
-    this.diagnostics();
-    this.channel?.close();
-    this.connection.close();
     this.markClosed('closed locally');
   }
 
@@ -304,7 +317,7 @@ export class PeerLink implements OfferingLink {
     // Firefox gets its H.264 from a plugin it downloads on demand; without it a preference for
     // H.264 leaves the picture out. Its own order (VP8 first) stays.
     if (typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent)) return false;
-    const transceiver = this.connection.getTransceivers().find((t) => t.sender === sender);
+    const transceiver = this.transceiverOf(sender);
     const codecs = RTCRtpSender.getCapabilities?.('video')?.codecs;
     if (!transceiver || !codecs || !transceiver.setCodecPreferences) return false;
     try {
@@ -376,12 +389,15 @@ export class PeerLink implements OfferingLink {
   }
 
   private receiveTrack(event: RTCTrackEvent): void {
-    if (!this.remote.getTracks().includes(event.track)) this.remote.addTrack(event.track);
-    for (const source of event.streams) {
-      if (this.watched.has(source)) continue;
-      this.watched.add(source);
-      source.addEventListener('removetrack', (removed) => this.remote.removeTrack(removed.track));
+    const { track } = event;
+    // One picture and one sound at a time. A negotiation that ends one share and starts the next
+    // reports the new track before the old one has ended, and Firefox would stay on the old one.
+    for (const old of this.remote.getTracks()) {
+      if (old.kind === track.kind && old !== track) this.remote.removeTrack(old);
     }
+    if (!this.remote.getTracks().includes(track)) this.remote.addTrack(track);
+    // The other side stopped sending it; every track comes with a transceiver of its own.
+    track.addEventListener('ended', () => this.remote.removeTrack(track));
     this.emitter.emit('stream', this.remote);
   }
 
@@ -400,14 +416,11 @@ export class PeerLink implements OfferingLink {
     }
     this.offerWanted = false;
     try {
-      this.makingOffer = true;
       const offer = await this.connection.createOffer();
       await this.connection.setLocalDescription({ type: 'offer', sdp: tuneOpus(offer.sdp ?? '') });
       this.emitLocalDescription('offer');
     } catch (error) {
       this.log.error('media negotiation failed', describeThrown(error));
-    } finally {
-      this.makingOffer = false;
     }
   }
 
@@ -469,8 +482,13 @@ export class PeerLink implements OfferingLink {
 
   private markClosed(reason: string): void {
     if (this.currentState === 'closed') return;
+    // Read first: afterwards the connection only says "closed".
+    this.diagnostics();
     this.log.info('link closed', { reason, wasOpen: this.currentState === 'open' });
     this.currentState = 'closed';
+    // Also when the other side ended it: a connection nobody uses still holds its encoders.
+    this.channel?.close();
+    this.connection.close();
     this.emitter.emit('close', undefined);
     this.emitter.clear();
   }

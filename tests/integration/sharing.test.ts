@@ -62,6 +62,16 @@ function nextMedia(session: ViewerSession) {
   });
 }
 
+/** Resolves once no negotiation is under way any more. */
+function waitForStable(connection: RTCPeerConnection) {
+  return waitFor<void>((resolve) => {
+    const check = () =>
+      connection.signalingState === 'stable' ? resolve() : setTimeout(check, 50);
+    // The offer for a change comes a moment after the change.
+    setTimeout(check, 200);
+  }, 8000);
+}
+
 /** True once the picture really plays: it has a size and its clock advances. */
 async function plays(stream: MediaStream): Promise<boolean> {
   const video = document.createElement('video');
@@ -160,6 +170,83 @@ describe('sharing over WebRTC', () => {
 
     expect(await plays((await second)!.stream)).toBe(true);
   });
+
+  it('shares again and again over one link: the description does not grow', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const sizes: number[] = [];
+    let media: SharedMedia | null = null;
+
+    for (let round = 0; round < 6; round += 1) {
+      const arrived = nextMedia(viewer);
+      host.startSharing(createTestStreamWithAudio());
+      media = await arrived;
+      await waitForStable(hostLinks(host)[0]!.connection);
+      sizes.push(hostLinks(host)[0]!.connection.localDescription!.sdp.length);
+      if (round === 5) break;
+      const stopped = nextMedia(viewer);
+      host.stopSharing();
+      await stopped;
+      await waitForStable(hostLinks(host)[0]!.connection);
+    }
+
+    // A message over `MAX_SDP_LENGTH` is dropped, and the link then never negotiates again.
+    expect(Math.max(...sizes)).toBeLessThan(sizes[0]! * 1.5);
+    expect(await plays(media!.stream)).toBe(true);
+    expect(media!.stream.getVideoTracks()).toHaveLength(1);
+    expect(media!.stream.getAudioTracks()).toHaveLength(1);
+  }, 60_000);
+
+  it('asks for music-grade sound in every share, not only the first', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const first = nextMedia(viewer);
+    host.startSharing(createTestStreamWithAudio());
+    await first;
+    const stopped = nextMedia(viewer);
+    host.stopSharing();
+    await stopped;
+    const second = nextMedia(viewer);
+
+    host.startSharing(createTestStreamWithAudio());
+    await second;
+    await waitForStable(hostLinks(host)[0]!.connection);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    expect(await audioBitrate(host, 3000)).toBeGreaterThan(90_000);
+  }, 40_000);
+
+  it('reads the counters of the picture that runs now, not of an earlier share', async () => {
+    const host = startHost({ monitorIntervalMs: 500 });
+    const viewer = await join(host, 'user2');
+    const first = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    await first;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const stopped = nextMedia(viewer);
+    host.stopSharing();
+    await stopped;
+    await waitForStable(hostLinks(host)[0]!.connection);
+    const second = nextMedia(viewer);
+
+    host.startSharing(createTestStream());
+    const media = (await second)!;
+    expect(await plays(media.stream)).toBe(true);
+
+    await waitFor<void>((resolve) => {
+      const poll = () => ((host.load.sendingBps ?? 0) > 0 ? resolve() : setTimeout(poll, 100));
+      poll();
+    }, 10_000);
+    const report = await waitFor<ReceiveReport>((resolve) => {
+      const poll = () => {
+        const current = host.receiveReports.get(viewer.participantId!);
+        if (current?.fps) resolve(current);
+        else setTimeout(poll, 100);
+      };
+      poll();
+    }, 10_000);
+    expect(report.fps).toBeGreaterThan(0);
+  }, 40_000);
 
   it('limits what the browser sends, now and when the preset changes', async () => {
     const host = startHost();
