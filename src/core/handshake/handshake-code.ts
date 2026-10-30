@@ -1,6 +1,7 @@
 import { decodeBase64Url, encodeBase64Url } from './base64url';
 import { isSessionDescription } from '../peer/session-description';
 import { compress, decompress } from './compression';
+import { createLogger } from '../log/logger';
 import { ByteReader, ByteWriter } from './bytes';
 import { packSdp, unpackSdp } from './compact-sdp';
 
@@ -50,6 +51,8 @@ const INVITE_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const SHORT_INVITE_ID_PATTERN = /^[A-Za-z0-9_-]{8}$/;
 const FORMAT_VERSION = 2;
 
+const log = createLogger('handshake');
+
 const COMPACT = 0;
 const FULL = 1;
 
@@ -87,7 +90,12 @@ async function encode(
   name: string,
   sdp: string,
 ): Promise<string> {
-  const body = encodeCompact(inviteId, name, sdp) ?? (await encodeFull(kind, inviteId, name, sdp));
+  let body = encodeCompact(inviteId, name, sdp);
+  if (!body) {
+    // A code of this kind is several times longer; the length says it, the content stays out.
+    log.info('code written in full', { kind, sdpLength: sdp.length });
+    body = await encodeFull(kind, inviteId, name, sdp);
+  }
   return `${PREFIX[kind]}${FORMAT_VERSION}.${encodeBase64Url(body)}`;
 }
 

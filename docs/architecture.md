@@ -55,7 +55,7 @@ Not done: connections between viewers (a mesh, or a tree that passes the picture
 The host creates an invitation code, the viewer pastes it and gets a reply code, the host pastes
 that. One pair per viewer; an invitation is single use. The codes carry the session description
 with all ICE candidates already gathered (non-trickle, at most 3 s of gathering). They are about
-150 characters. A first version sent the whole description deflated, 700-900 characters, most of
+200 characters. A first version sent the whole description deflated, 700-900 characters, most of
 it text both browsers write the same way; now only the fingerprint, the connection password and
 user name, the DTLS role and the addresses are sent, and the rest is written out again on the other
 side. A description that is not of that one shape travels in full, so a browser that offers

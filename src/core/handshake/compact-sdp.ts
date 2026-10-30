@@ -40,7 +40,7 @@ const ICE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345678
 
 /** Lines that say nothing the packed form does not say again, or nothing at all. */
 const IGNORED_LINE =
-  /^(?:v=0|o=.*|s=.*|t=0 0|c=IN IP4 0\.0\.0\.0|a=group:BUNDLE 0|a=extmap-allow-mixed|a=msid-semantic:.*|a=ice-options:trickle|a=sendrecv|a=end-of-candidates)$/;
+  /^(?:v=0|o=.*|s=.*|t=0 0|c=IN IP[46] \S+|a=group:BUNDLE 0|a=extmap-allow-mixed|a=msid-semantic:.*|a=ice-options:trickle|a=sendrecv|a=end-of-candidates)$/;
 const MEDIA_LINE = /^m=application \d+ UDP\/DTLS\/SCTP webrtc-datachannel$/;
 const CANDIDATE_LINE =
   /^a=candidate:\S+ (\d+) (\S+) \d+ (\S+) (\d+) typ (host|srflx|prflx|relay)(?: .*)?$/;

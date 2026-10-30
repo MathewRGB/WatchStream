@@ -261,3 +261,88 @@ describe('unpackSdp', () => {
     expect(() => unpackSdp(new ByteReader(packed))).toThrow(RangeError);
   });
 });
+
+/**
+ * What the browsers offer once a STUN server answered (copied from real runs). The public address
+ * now also stands in the `c=` line and in the `m=` port, which the first version of the packer did
+ * not accept: every real code fell back to the whole text, 830 to 880 characters.
+ */
+const CHROMIUM_STUN = [
+  'v=0',
+  'o=- 7393366348972975761 2 IN IP4 127.0.0.1',
+  's=-',
+  't=0 0',
+  'a=group:BUNDLE 0',
+  'a=extmap-allow-mixed',
+  'a=msid-semantic: WMS',
+  'm=application 58645 UDP/DTLS/SCTP webrtc-datachannel',
+  'c=IN IP4 89.12.190.88',
+  'a=candidate:1481698545 1 udp 2113937151 8db44035-5b52-462f-9903-1c97a34bb12c.local 58645 typ host generation 0 network-cost 999',
+  'a=candidate:3718981063 1 udp 2113939711 ee779c65-a1a3-4454-852a-c82be96d3458.local 35377 typ host generation 0 network-cost 999',
+  'a=candidate:2873160213 1 udp 1677729535 89.12.190.88 58645 typ srflx raddr 0.0.0.0 rport 0 generation 0 network-cost 999',
+  'a=candidate:3646033638 1 udp 1677732095 2a02:3100:2416:a800:782f:6fc7:c6cc:23e1 35377 typ srflx raddr :: rport 0 generation 0 network-cost 999',
+  'a=ice-ufrag:bSDz',
+  'a=ice-pwd:mPfaraARk+bDrhVH/Xh0uX0y',
+  'a=ice-options:trickle',
+  'a=fingerprint:sha-256 2E:2F:9E:DD:3B:79:8E:1E:85:7E:61:95:DE:AF:29:CB:3F:52:6D:E4:60:7A:FF:B1:70:F1:80:FA:3E:0F:EA:59',
+  'a=setup:actpass',
+  'a=mid:0',
+  'a=sctp-port:5000',
+  'a=max-message-size:262144',
+  '',
+].join('\r\n');
+
+const FIREFOX_STUN = [
+  'v=0',
+  'o=mozilla...THIS_IS_SDPARTA-99.0 5558470038061490425 0 IN IP4 0.0.0.0',
+  's=-',
+  't=0 0',
+  'a=sendrecv',
+  'a=fingerprint:sha-256 DB:ED:FB:7B:77:73:F6:A7:5A:55:CC:64:26:7F:A3:71:22:FD:B5:FC:A2:D3:7D:11:67:B4:08:76:85:07:84:78',
+  'a=group:BUNDLE 0',
+  'a=ice-options:trickle',
+  'a=msid-semantic:WMS *',
+  'm=application 39682 UDP/DTLS/SCTP webrtc-datachannel',
+  'c=IN IP4 89.12.190.88',
+  'a=candidate:0 1 UDP 2122187007 d1d03328-805d-49af-bc26-06532fd5ec19.local 39682 typ host',
+  'a=candidate:2 1 UDP 2122252543 62ae3072-c788-413c-a191-c599d120227a.local 55296 typ host',
+  'a=candidate:4 1 TCP 2105458943 d1d03328-805d-49af-bc26-06532fd5ec19.local 9 typ host tcptype active',
+  'a=candidate:5 1 TCP 2105524479 62ae3072-c788-413c-a191-c599d120227a.local 9 typ host tcptype active',
+  'a=candidate:1 1 UDP 1685987327 89.12.190.88 39682 typ srflx raddr 0.0.0.0 rport 0',
+  'a=candidate:3 1 UDP 1686052607 2a02:3100:2416:a800:782f:6fc7:c6cc:23e1 55296 typ srflx raddr 0.0.0.0 rport 0',
+  'a=sendrecv',
+  'a=end-of-candidates',
+  'a=ice-pwd:b16275b6fdee5befb62a45640b9ca2b7',
+  'a=ice-ufrag:a0636a6b',
+  'a=mid:0',
+  'a=setup:actpass',
+  'a=sctp-port:5000',
+  'a=max-message-size:1073741823',
+  '',
+].join('\r\n');
+
+describe('packSdp with the public addresses a STUN server found', () => {
+  it.each([
+    ['Chromium', CHROMIUM_STUN],
+    ['Firefox', FIREFOX_STUN],
+  ])('packs what %s offers, in a seventh of the text', (_browser, sdp) => {
+    const packed = packSdp(sdp);
+
+    expect(packed).not.toBeNull();
+    expect(packed!.length).toBeLessThan(140);
+    expect(packed!.length).toBeLessThan(sdp.length / 7);
+    const restored = roundTrip(sdp);
+    expect(facts(restored)).toEqual(facts(sdp));
+    // The active TCP candidates are left out on purpose; everything else counts as before.
+    const withoutTcp = sdp
+      .split('\r\n')
+      .filter((line) => !/^a=candidate:\S+ 1 TCP /.test(line))
+      .join('\r\n');
+    expect(summarizeCandidates(restored)).toEqual(summarizeCandidates(withoutTcp));
+    expect(summarizeCandidates(restored).stun).toBe(2);
+  });
+
+  it('packs a description whose connection address is IPv6', () => {
+    expect(packSdp(CHROMIUM_STUN.replace('c=IN IP4 89.12.190.88', 'c=IN IP6 ::'))).not.toBeNull();
+  });
+});
