@@ -152,10 +152,26 @@ The host's own preview is built from the video track only. With the sound in it 
 rely on being muted, and the host could hear the shared tab twice.
 
 The host picks one of four qualities (`src/core/media/quality.ts`): Minimal (360p, 15 fps),
-Saver (480p, 24 fps), Balanced (720p, 30 fps, the default) and Sharp (1080p, 30 fps). They are
-applied per viewer link with `RTCRtpSender.setParameters`, at once and while sharing; a link keeps
-its limits and applies them again after every negotiation, because the browser only accepts them
-once one is complete.
+Saver (480p, 24 fps), Balanced (720p, 30 fps, the default) and Sharp (1080p, 30 fps), or
+**Custom**. The steps are for those who do not want to think about it; Custom is for those who do.
+Its values (`CustomQuality`) are each picked from a short list, so nothing outside what the encoder
+and a screen can do is offered (`changeCustomQuality` snaps anything else to the nearest entry):
+resolution 240p to 2160p, frame rate 10, 15, 24, 30 or 60, a picture bitrate of 0.3 to 20 Mbit/s,
+and a sound bitrate of 32 to 320 kbit/s. The picture bitrate may be left on automatic, which
+follows the resolution and the frame rate with bits per pixel that fall as the picture grows
+(`autoVideoBitrate`; it reproduces the four steps within 10 %, 1080p at 30 fps comes to 5.7
+against the step's 6 Mbit/s). Choosing Custom for the first time starts from the step that was in
+use, so fine-tuning begins where the host was; after that its values are kept. What is sent for a
+choice is `resolveLimits`, one `MediaLimits` that the links, the load monitor and the line on the
+stage all read.
+
+The limits are applied per viewer link with `RTCRtpSender.setParameters`, at once and while
+sharing; a link keeps its limits and applies them again after every negotiation, because the
+browser only accepts them once one is complete. The capture is asked for 60 frames a second when
+the picture is picked, and each link then asks the captured track for the frame rate that is sent
+(`applyConstraints`, once for each rate, not once for each viewer): a limit of 60 is only reachable
+if the capture produces 60, and capturing 60 to send 15 would be work for nothing. A track that
+cannot be asked (a canvas, in the tests) keeps what it has.
 
 **Codec and encoder hints.** The host asks for H.264 first and keeps VP8 as the fallback
 (`preferVideoCodecs`, applied with `setCodecPreferences` when a video track is added; only the

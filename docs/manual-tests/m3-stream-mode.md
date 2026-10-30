@@ -47,6 +47,16 @@ sound. Sharing a whole screen or window works the same way.
    moving picture.
 2. Expect: the change applies at once; Saver is visibly softer than Sharp. Note the upload of the
    host if you can see it (about 6 Mbit/s per viewer at Sharp).
+3. Host: choose **Custom**. Expect: it starts with the values of the step you left, and four
+   fields appear (resolution, frame rate, picture bitrate, sound bitrate). The line above the
+   steps says what is sent and what one viewer costs in upload.
+4. Host: set 1080p, 60 fps and a moving picture that runs at 60 (a game or a smooth video).
+   Expect: the line on the stage reads "1080p · 60 fps · 1 viewer" and the viewer sees smoother
+   motion than at 30 fps. Then set 480p and 10 fps: the picture is visibly softer and choppier,
+   and the host's computer works less.
+5. Host: close **Picture quality** and open **Video codec** (or **Sound from a tab** in Firefox).
+   Expect: each section opens and closes on its own, a closed one names what is set in it, and the
+   state is kept when you switch to the Chat tab and back.
 
 ## 4. Late joiner and several viewers
 

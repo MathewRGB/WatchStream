@@ -43,8 +43,11 @@ own player for such services is future work, see
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
    it on their stage, with a mute button and a volume slider; **Stop sharing** (or the browser's own stop button) ends it. The host can
-   choose the picture quality in the **Settings** tab; that is what is sent. A
-   line on the stage says what is sent and to how many viewers ("720p · 8 viewers"). With many
+   choose the picture quality in the **Settings** tab; that is what is sent. Four steps from
+   Minimal to Sharp cover most cases; **Custom** sets the resolution (240p to 2160p), the frame
+   rate (10 to 60 fps), the picture bitrate and the sound bitrate one by one. Each group of
+   settings opens and closes on its own. A
+   line on the stage says what is sent and to how many viewers ("720p · 30 fps · 8 viewers"). With many
    viewers, if your computer or connection cannot keep up, the line says so; the quality stays as
    you chose it, so you can lower it yourself. The **People** tab marks a viewer who is not
    keeping up; viewers see none of this. The host can remove a viewer there, after one question;
@@ -81,7 +84,7 @@ open: closing it ends the session.
 - In stream mode the host sends a separate copy to each viewer, so its computer and upload limit
   the quality: Sharp needs about 6 Mbit/s of upload and one encode per viewer. A session holds up
   to twelve viewers; with many of them some may get the picture late. The
-  sound adds 64 to 192 kbit/s, depending on the quality.
+  sound adds 32 to 320 kbit/s, depending on the quality.
 - Firefox cannot share the sound of a tab itself. WatchStream takes it from the video in the tab
   instead: when you choose **Share**, it asks once for the tab list and access to your sites, then
   looks for the tab that is playing sound and adds that sound to your share. If it cannot tell

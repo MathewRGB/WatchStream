@@ -11,6 +11,15 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Added
 
+- Fine-tuning for the picture: next to the four steps (Minimal, Saver, Balanced, Sharp) the host
+  can choose **Custom** and set the resolution (240p to 2160p), the frame rate (10 to 60 fps), the
+  picture bitrate (automatic, or 0.3 to 20 Mbit/s) and the sound bitrate (32 to 320 kbit/s). The
+  settings say what one viewer costs in upload, and the line on the stage shows the frame rate as
+  well ("720p · 30 fps · 8 viewers"). The screen capture follows the frame rate that is sent, so 60
+  fps is reachable and a low rate does not capture frames that would be dropped.
+- The settings tab is made of sections that open and close on their own (picture quality, video
+  codec, sound from a tab). Only the picture quality is open at first; a closed section names what
+  is set in it.
 - Short invitation and reply codes: about 200 characters instead of 800 to 900. A code now holds
   only what two browsers cannot guess (the certificate fingerprint, the connection password and
   the addresses); the rest of the description is written out again when it is read. A description
