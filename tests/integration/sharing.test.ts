@@ -3,7 +3,14 @@ import type { LinkStats } from '../../src/core/peer/link-stats';
 import type { MediaLink } from '../../src/core/peer/message-link';
 import type { ReceiveReport } from '../../src/core/peer/receive-stats';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
-import { createTestStream, createTestStreamWithAudio, join, startHost, waitFor } from './helpers';
+import {
+  createNoisyStreamWithAudio,
+  createTestStream,
+  createTestStreamWithAudio,
+  join,
+  startHost,
+  waitFor,
+} from './helpers';
 
 /** The encoder settings the browser really holds, read from the host's RTCRtpSenders. */
 function videoEncodings(host: ReturnType<typeof startHost>) {
@@ -220,6 +227,51 @@ describe('sharing over WebRTC', () => {
     // Once for each frame rate that was chosen, and not once for each viewer.
     expect(asked).toEqual([{ ideal: 30 }, { ideal: 15 }]);
   }, 30_000);
+
+  it('really sends no more than the bitrates the host set, and more once they are raised', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createNoisyStreamWithAudio());
+    await arrived;
+    const sender = (kind: string) =>
+      hostLinks(host)[0]!.senders.find((s) => s.track?.kind === kind)!;
+    const rate = async (kind: string, ms: number) => {
+      const bytes = async () => {
+        let sent = 0;
+        (await sender(kind).getStats()).forEach((report) => {
+          if (report.type === 'outbound-rtp') sent = report.bytesSent;
+        });
+        return sent;
+      };
+      const before = await bytes();
+      await new Promise((resolve) => setTimeout(resolve, ms));
+      return (((await bytes()) - before) * 8) / (ms / 1000);
+    };
+
+    host.setCustomQuality({
+      maxHeight: 360,
+      maxFramerate: 30,
+      maxBitrateBps: 500_000,
+      maxAudioBitrateBps: 32_000,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    const lowVideo = await rate('video', 3000);
+    const lowAudio = await rate('audio', 3000);
+    expect(lowVideo).toBeLessThan(500_000 * 1.25);
+    expect(lowAudio).toBeLessThan(32_000 * 1.25);
+
+    host.setCustomQuality({ maxBitrateBps: 3_000_000, maxAudioBitrateBps: 256_000 });
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    // The sound follows its limit at once, in both browsers (up to the highest one on offer).
+    expect(await rate('audio', 3000)).toBeGreaterThan(200_000);
+    // Chromium also takes the new picture limit within seconds; Firefox's estimate of the
+    // connection climbs slowly after a fall, so its picture is not asked here.
+    if (!/firefox/i.test(navigator.userAgent)) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      expect(await rate('video', 3000)).toBeGreaterThan(lowVideo * 2.5);
+    }
+  }, 60_000);
 
   it('sends the sound in stereo at a music-grade bitrate', async () => {
     const host = startHost();

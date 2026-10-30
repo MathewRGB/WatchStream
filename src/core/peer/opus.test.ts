@@ -13,14 +13,14 @@ describe('tuneOpus', () => {
     expect(tuned).toContain('a=fmtp:111 minptime=10;useinbandfec=1;usedtx=1;');
     expect(tuned).toContain('stereo=1');
     expect(tuned).toContain('sprop-stereo=1');
-    expect(tuned).toContain('maxaveragebitrate=192000');
+    expect(tuned).toContain('maxaveragebitrate=320000');
   });
 
   it('creates the format line when there is none', () => {
     const tuned = tuneOpus(sdp('a=rtpmap:111 opus/48000/2'));
 
     expect(tuned.split('\r\n')).toContain(
-      'a=fmtp:111 stereo=1;sprop-stereo=1;maxaveragebitrate=192000;useinbandfec=1',
+      'a=fmtp:111 stereo=1;sprop-stereo=1;maxaveragebitrate=320000;useinbandfec=1',
     );
   });
 

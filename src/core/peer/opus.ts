@@ -1,10 +1,14 @@
+import { CUSTOM_AUDIO_BITRATES_BPS } from '../media/quality';
+
 /**
  * Browsers set Opus up for voice calls: mono and about 32 kbit/s. What the host
  * shares is mostly music and film sound, so the description asks for stereo and
  * a higher rate. `stereo=1` and `maxaveragebitrate` in the receiver's line tell
- * the sender what it may send; the sender's own limit is set separately.
+ * the sender what it may send; the sender's own limit is set separately (the host's
+ * choice). The receiver takes the highest rate the host can choose, so that its line
+ * never says less than what the host may send.
  */
-export const OPUS_MAX_AVERAGE_BITRATE_BPS = 192_000;
+export const OPUS_MAX_AVERAGE_BITRATE_BPS = Math.max(...CUSTOM_AUDIO_BITRATES_BPS);
 
 const OPUS_PARAMETERS: Record<string, string> = {
   stereo: '1',

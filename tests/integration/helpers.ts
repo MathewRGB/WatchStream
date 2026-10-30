@@ -121,3 +121,30 @@ export function closed(link: MessageLink): Promise<void> {
   if (link.state === 'closed') return Promise.resolve();
   return waitFor((resolve) => link.events.on('close', resolve));
 }
+
+/**
+ * A picture that cannot be compressed (new noise in every frame) with stereo noise as the sound:
+ * an encoder that is given a limit uses all of it, so what is really sent shows the limit.
+ */
+export function createNoisyStreamWithAudio(): MediaStream {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 360;
+  const context = canvas.getContext('2d')!;
+  const image = context.createImageData(canvas.width, canvas.height);
+  const timer = setInterval(() => {
+    // `getRandomValues` fills at most 65 536 bytes at a time.
+    for (let from = 0; from < image.data.length; from += 65_536) {
+      crypto.getRandomValues(image.data.subarray(from, from + 65_536));
+    }
+    context.putImageData(image, 0, 0);
+  }, 33);
+  const stream = canvas.captureStream(30);
+  const withAudio = createTestStreamWithAudio();
+  for (const track of withAudio.getAudioTracks()) stream.addTrack(track);
+  cleanupAfterTest(() => {
+    clearInterval(timer);
+    stream.getTracks().forEach((track) => track.stop());
+  });
+  return stream;
+}
