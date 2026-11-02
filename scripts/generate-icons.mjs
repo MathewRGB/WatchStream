@@ -1,5 +1,5 @@
 // Generates the extension icons (public/icon/<size>.png) without extra
-// dependencies: a rounded square with a play triangle, anti-aliased by
+// dependencies: a rounded square with a screen showing a host and its viewers, anti-aliased by
 // supersampling. Run with `node scripts/generate-icons.mjs`.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
@@ -16,16 +16,49 @@ function insideRoundedSquare(x, y) {
   return (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2;
 }
 
-function insidePlayTriangle(x, y) {
-  const [ax, ay, bx, by, cx, cy] = [0.38, 0.27, 0.38, 0.73, 0.76, 0.5];
-  const sign = (px, py, qx, qy, rx, ry) => (px - rx) * (qy - ry) - (qx - rx) * (py - ry);
-  const d1 = sign(x, y, ax, ay, bx, by);
-  const d2 = sign(x, y, bx, by, cx, cy);
-  const d3 = sign(x, y, cx, cy, ax, ay);
-  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+function insideDisc(x, y, cx, cy, r) {
+  return (x - cx) ** 2 + (y - cy) ** 2 <= r ** 2;
+}
+
+function insideSegment(x, y, [ax, ay], [bx, by], width) {
+  const [dx, dy] = [bx - ax, by - ay];
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+  return insideDisc(x, y, ax + t * dx, ay + t * dy, width / 2);
+}
+
+function insideRoundedBox(x, y, [x0, y0, x1, y1], radius) {
+  const cx = Math.min(Math.max(x, x0 + radius), x1 - radius);
+  const cy = Math.min(Math.max(y, y0 + radius), y1 - radius);
+  return (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2;
+}
+
+// A screen on a stand with a host and its viewers on the stage. Small sizes get a thicker frame
+// and a single dot: three tiny nodes would only blur at 16 or 32 px.
+function insideScreen(x, y, detailed) {
+  const stroke = detailed ? 0.06 : 0.085;
+  const outer = [0.13, 0.2, 0.87, 0.68];
+  const inner = [outer[0] + stroke, outer[1] + stroke, outer[2] - stroke, outer[3] - stroke];
+  const frame = insideRoundedBox(x, y, outer, 0.07) && !insideRoundedBox(x, y, inner, 0.03);
+  const stand =
+    insideSegment(x, y, [0.5, 0.68], [0.5, 0.79], stroke) ||
+    insideSegment(x, y, [0.35, 0.79], [0.65, 0.79], stroke);
+  if (!detailed) return frame || stand || insideDisc(x, y, 0.5, 0.44, 0.1);
+  const host = [0.5, 0.45];
+  const viewers = [
+    [0.5, 0.31],
+    [0.38, 0.53],
+    [0.62, 0.53],
+  ];
+  const stage =
+    insideDisc(x, y, host[0], host[1], 0.055) ||
+    viewers.some(
+      ([vx, vy]) => insideDisc(x, y, vx, vy, 0.04) || insideSegment(x, y, host, [vx, vy], 0.03),
+    );
+  return frame || stand || stage;
 }
 
 function render(size) {
+  const detailed = size >= 48;
   const pixels = Buffer.alloc(size * size * 4);
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
@@ -37,7 +70,7 @@ function render(size) {
           const y = (py + (sy + 0.5) / SAMPLES) / size;
           if (!insideRoundedSquare(x, y)) continue;
           coverage++;
-          if (insidePlayTriangle(x, y)) foreground++;
+          if (insideScreen(x, y, detailed)) foreground++;
         }
       }
       const offset = (py * size + px) * 4;
