@@ -14,13 +14,13 @@ Brave limits WebRTC address handling by default, which can reduce the candidates
 
 ## Manual tests after the last changes
 
-- [ ] Brave on both sides (Ubuntu): change the codec and the quality again and again while
+- [x] Brave on both sides (Ubuntu): change the codec and the quality again and again while
       sharing, a dozen times, some quickly one after the other. The viewer stays connected and the
       picture keeps playing.
 - [x] Brave host and Firefox viewer, and the other way round, over two networks: the shorter
       codes connect (they are rebuilt on the other side, and only a real run over the internet
       shows reflexive candidates).
-- [ ] Brave and Firefox: on one connection share, stop and share again, six times, then let the
+- [x] Brave and Firefox: on one connection share, stop and share again, six times, then let the
       viewer share and take the stage back. The picture and sound arrive every time.
 - [ ] Paste a code on a phone messenger and back: it is one line and survives wrapping.
 
