@@ -24,20 +24,23 @@ Brave limits WebRTC address handling by default, which can reduce the candidates
       viewer share and take the stage back. The picture and sound arrive every time.
 - [ ] Paste a code on a phone messenger and back: it is one line and survives wrapping.
 
-## Name "WatchStream"
+## Name "WatchP2PStream"
 
-A web search on 2026-10-25 found neither an extension of that name nor a trademark, but it was not
-exhaustive.
+The product is called WatchP2PStream; the repository and the project stay `WatchStream`. The first
+name, "WatchStream", was dropped on 2026-10-30 because Firefox Add-ons already lists a
+near-identical "StreamWatch". A web search and a search through the AMO interface found no extension
+or trademark called "WatchP2PStream" (2026-10-30), but they were not exhaustive and did not reach
+the official trademark databases.
 
-- [ ] Search the Chrome Web Store.
-- [ ] Search Firefox Add-ons (AMO).
+- [ ] Search the Chrome Web Store for "WatchP2PStream".
+- [ ] Search Firefox Add-ons (AMO) for "WatchP2PStream".
 - [ ] Search TMview and the USPTO trademark database.
 - [ ] No third-party trademark in the name, the icon or the store text; services are named only
       factually in the description.
 
 ## Privacy text
 
-- [ ] The store listing says: no WatchStream server, no data collected, a public STUN server
+- [ ] The store listing says: no WatchP2PStream server, no data collected, a public STUN server
       (`stun.l.google.com`) sees participants' public IP addresses, and invitation and reply codes
       contain the sender's IP addresses. The README's Privacy section is the source.
 - [ ] Firefox: `data_collection_permissions` is `none` in the manifest (set).

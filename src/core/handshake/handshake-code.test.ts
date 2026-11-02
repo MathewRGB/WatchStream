@@ -148,7 +148,7 @@ describe('handshake codes', () => {
     await expectReason(decodeInvitation('  \n '), 'empty');
   });
 
-  it('rejects text that is not a WatchStream code', async () => {
+  it('rejects text that is not a WatchP2PStream code', async () => {
     await expectReason(decodeInvitation('hello there'), 'malformed');
   });
 

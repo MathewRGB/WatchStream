@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 export type SidebarTabId = 'invite' | 'people' | 'chat' | 'settings';
 
-/** Drives the WatchStream page the way a person would. */
+/** Drives the WatchP2PStream page the way a person would. */
 export class SessionPage {
   constructor(readonly page: Page) {}
 

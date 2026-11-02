@@ -139,7 +139,7 @@ async function decode(kind: keyof typeof PREFIX, code: string): Promise<Decoded>
 
   const match = /^(WS[IR])(\d+)\.(.+)$/.exec(compact);
   if (!match) {
-    throw new HandshakeCodeError('malformed', 'This is not a WatchStream code.');
+    throw new HandshakeCodeError('malformed', 'This is not a WatchP2PStream code.');
   }
   const [, prefix, version, body] = match as unknown as [string, string, string, string];
   if (prefix !== PREFIX[kind]) {
@@ -149,7 +149,7 @@ async function decode(kind: keyof typeof PREFIX, code: string): Promise<Decoded>
   if (Number(version) !== FORMAT_VERSION) {
     throw new HandshakeCodeError(
       'unsupported-version',
-      'This code was created by an incompatible WatchStream version.',
+      'This code was created by an incompatible WatchP2PStream version.',
     );
   }
 

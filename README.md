@@ -1,8 +1,10 @@
-# WatchStream
+# WatchP2PStream
 
 Watch streams together, browser to browser, without your own media server.
 
-WatchStream is a browser extension for Chrome, Brave and Firefox. A host invites up to twelve
+(The repository is still called `WatchStream`; the product is WatchP2PStream.)
+
+WatchP2PStream is a browser extension for Chrome, Brave and Firefox. A host invites up to twelve
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
 browser.
 
@@ -17,12 +19,12 @@ The host shares a tab, window or screen, and the viewers see and hear it (stream
 host needs access to the content; the picture is re-encoded at near-transparent quality.
 
 Services with copy protection (Netflix, Disney+, Prime Video, Max) are not supported: their
-picture turns black when it is shared, and WatchStream does not circumvent that. Syncing everyone's
+picture turns black when it is shared, and WatchP2PStream does not circumvent that. Syncing everyone's
 own player for such services is future work, see
 [future work](docs/future-work.md#sync-mode-for-protected-sites).
 
 - **Direct connection:** participants connect to the host directly over WebRTC. Video, audio and
-  control data are encrypted on each connection and never pass through a WatchStream server. A
+  control data are encrypted on each connection and never pass through a WatchP2PStream server. A
   viewer's share reaches the other viewers through the host's browser.
 - **Invitation by code:** the host sends an invitation code through any messenger, and the viewer
   sends a reply code back.
@@ -31,7 +33,7 @@ own player for such services is future work, see
 
 ## Using it
 
-1. Click the WatchStream icon in the toolbar. The WatchStream page opens in a tab.
+1. Click the WatchP2PStream icon in the toolbar. The WatchP2PStream page opens in a tab.
 2. **Host:** enter your name, choose **Host a session**, open the **Invite** tab in the sidebar and
    choose **Invite a viewer**. Send the invitation code to one person via any messenger. To invite
    several people, set the number next to the button first; each invitation is numbered and is for
@@ -75,18 +77,18 @@ brings them back. The sidebar stays while the pointer rests on it.
 A message from somebody else shows a small chat symbol near the right edge for one second, also
 when everything else has faded. It does not appear while the sidebar is open.
 
-Each invitation is for one person; a session holds up to twelve viewers. Keep the WatchStream tab
+Each invitation is for one person; a session holds up to twelve viewers. Keep the WatchP2PStream tab
 open: closing it ends the session.
 
 ## Limitations
 
 - Services with copy protection (Netflix, Disney+, etc.) cannot be watched together: shared, their
-  picture is black. WatchStream does not circumvent copy protection.
+  picture is black. WatchP2PStream does not circumvent copy protection.
 - In stream mode the host sends a separate copy to each viewer, so its computer and upload limit
   the quality: Sharp needs about 6 Mbit/s of upload and one encode per viewer. A session holds up
   to twelve viewers; with many of them some may get the picture late. The
   sound adds 32 to 320 kbit/s, depending on the quality.
-- Firefox cannot share the sound of a tab itself. WatchStream takes it from the video in the tab
+- Firefox cannot share the sound of a tab itself. WatchP2PStream takes it from the video in the tab
   instead: when you choose **Share**, it asks once for the tab list and access to your sites, then
   looks for the tab that is playing sound and adds that sound to your share. If it cannot tell
   which tab (nothing plays yet, or several do), choose the tab under **Settings → Sound from a
@@ -104,8 +106,8 @@ open: closing it ends the session.
 - **Connection errors** come with a **Technical details** section. It shows the state of the
   connection, what each side's code offered (local, STUN, relay, IPv6 addresses by count) and the
   latest log lines. **Copy technical details** puts it on the clipboard for a bug report.
-- **The log** is also in the browser console of the WatchStream tab (press F12, then Console, and
-  filter for `WatchStream`). It records connection states, how a link came up (`Path: srflx/srflx`
+- **The log** is also in the browser console of the WatchP2PStream tab (press F12, then Console, and
+  filter for `WatchP2PStream`). It records connection states, how a link came up (`Path: srflx/srflx`
   means a direct connection through STUN, `relay` means through a relay), timeouts, dropped
   messages and failed sharing steps.
 - **What is never logged:** invitation and reply codes, session descriptions, IP addresses, names
@@ -117,7 +119,7 @@ open: closing it ends the session.
 
 ## Privacy
 
-- WatchStream has no server and collects no data.
+- WatchP2PStream has no server and collects no data.
 - A public STUN server (`stun.l.google.com`) is used for address discovery. It sees the
   participants' public IP addresses, but no content.
 - Invitation and reply codes contain your IP addresses. Share them only with the people you
@@ -229,7 +231,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 
 ## Disclaimer
 
-WatchStream is not affiliated with Netflix, YouTube, Disney+, Amazon or any other service
+WatchP2PStream is not affiliated with Netflix, YouTube, Disney+, Amazon or any other service
 mentioned. All trademarks belong to their respective owners.
 
 ## License

@@ -73,7 +73,7 @@ for the host to lower the quality by hand?
 
 ## 6. Late and leaving viewers
 
-1. While sharing with many viewers, close the WatchStream tab of two of them. Expect: the others
+1. While sharing with many viewers, close the WatchP2PStream tab of two of them. Expect: the others
    keep watching, the list and **Places left** follow, and the line shows the new number.
 2. Join again with a new invitation while sharing. Expect: the picture arrives, at the quality that
    is chosen in Settings.

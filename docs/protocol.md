@@ -46,7 +46,7 @@ passive half, so they never form a pair.
   `[A-Za-z0-9_-]{8,64}`, names are 1-40 characters, `sdp` starts with `v=0` and is at most 20 000
   characters. Anything else is "damaged".
 - **Any change to the format increments the version.** A code of another version is refused with
-  a message that both sides need the same WatchStream version.
+  a message that both sides need the same WatchP2PStream version.
 - A usual code is 150 to 200 characters (the fingerprint alone is 43; with public addresses found
   through STUN a Chromium code measured 187 and a Firefox code 199), where version 1 needed 830 to
   880 for the same.

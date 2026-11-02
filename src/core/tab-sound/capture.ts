@@ -40,7 +40,7 @@ export function pickMediaElement(doc: Document): HTMLMediaElement | null {
 }
 
 /**
- * Sends the sound of the page's video to the WatchStream page. The element is routed through a
+ * Sends the sound of the page's video to the WatchP2PStream page. The element is routed through a
  * Web Audio graph: to the speakers, so the host keeps hearing it, and to a processor that copies
  * the samples to the port. Stopping removes the copy and leaves the speakers connected, so the
  * video never goes quiet. Returns whether there was something to capture.

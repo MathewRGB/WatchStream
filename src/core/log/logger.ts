@@ -21,7 +21,7 @@ const MAX_HISTORY = 300;
 const history: LogEntry[] = [];
 
 const consoleSink: LogSink = ({ level, scope, message, data }) => {
-  const line = `[WatchStream] ${scope}: ${message}`;
+  const line = `[WatchP2PStream] ${scope}: ${message}`;
   if (data) console[level](line, data);
   else console[level](line);
 };

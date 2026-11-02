@@ -128,7 +128,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
     <AppShell
       testId="host-view"
       incomingMessages={countIncoming(messages, session.hostId)}
-      title="WatchStream"
+      title="WatchP2PStream"
       status={`Hosting as ${hostName} · ${viewers} ${viewers === 1 ? 'viewer' : 'viewers'}`}
       actions={
         <Button variant="outline" size="sm" onClick={onEnd} data-testid="end-button">

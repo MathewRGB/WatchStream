@@ -3,7 +3,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design tokens (shadcn/ui naming). WatchStream is dark-only for now, so the
+ * Design tokens (shadcn/ui naming). WatchP2PStream is dark-only for now, so the
  * values live in :root and the page sets class="dark" for components that
  * rely on the variant.
  */

@@ -25,7 +25,7 @@ import { StageVideo } from './stage-video';
 import { TechnicalDetails } from './technical-details';
 import { ViewerShareControls } from './viewer-share-controls';
 
-const APP_TITLE = 'WatchStream';
+const APP_TITLE = 'WatchP2PStream';
 
 interface ViewerViewProps {
   connector: PeerConnector;

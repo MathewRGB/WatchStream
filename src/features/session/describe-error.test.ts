@@ -7,7 +7,7 @@ describe('describeError', () => {
   it.each<[HandshakeCodeErrorReason, string]>([
     ['empty', 'paste a code first'],
     ['wrong-kind', 'right code'],
-    ['unsupported-version', 'different WatchStream version'],
+    ['unsupported-version', 'different WatchP2PStream version'],
     ['malformed', 'incomplete or damaged'],
   ])('explains a code that is %s', (reason, expected) => {
     expect(describeError(new HandshakeCodeError(reason, 'Expected a reply code.'))).toContain(

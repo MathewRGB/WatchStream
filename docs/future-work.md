@@ -1,7 +1,7 @@
 # Future work
 
 Ideas that are not planned, with what is known about them, so that nobody has to find it again.
-None of them is needed for the first release. How WatchStream works today is in
+None of them is needed for the first release. How WatchP2PStream works today is in
 [architecture.md](architecture.md).
 
 ## Handing the host role over

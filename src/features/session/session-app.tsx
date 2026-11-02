@@ -20,7 +20,7 @@ type Screen =
   | { kind: 'host'; name: string; session: HostSession }
   | { kind: 'viewer'; name: string };
 
-/** The WatchStream page: switches between start, host and viewer screens. */
+/** The WatchP2PStream page: switches between start, host and viewer screens. */
 export function SessionApp({ connector, storage, capture = captureDisplay }: SessionAppProps) {
   const [screen, setScreen] = useState<Screen>({ kind: 'start' });
 

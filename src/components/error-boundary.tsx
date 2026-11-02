@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div className="flex w-full max-w-md flex-col gap-4" role="alert" data-testid="error-page">
           <h1 className="text-lg font-semibold">Something went wrong</h1>
           <p className="text-sm text-muted-foreground">
-            WatchStream stopped working. Any session on this page has ended. Reload the page to
+            WatchP2PStream stopped working. Any session on this page has ended. Reload the page to
             start again, and send the technical details to the maintainer if it keeps happening.
           </p>
           <TechnicalDetails details={`Error: ${error.name}: ${error.message}`} />

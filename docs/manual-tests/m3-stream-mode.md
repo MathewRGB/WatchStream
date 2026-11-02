@@ -14,7 +14,7 @@ a connection between different networks. This guide covers those.
 
 ## 1. Connect
 
-1. Both: click the WatchStream icon. The WatchStream page opens in a tab.
+1. Both: click the WatchP2PStream icon. The WatchP2PStream page opens in a tab.
 2. Host: enter a name, choose **Host a session**, open the **Invite** tab, choose **Invite a
    viewer** and send the code to the viewer.
 3. Viewer: enter a name, choose **Join a session**, paste the code, choose **Join**.
@@ -67,14 +67,14 @@ sound. Sharing a whole screen or window works the same way.
 
 1. While the host shares, invite a further viewer (a session holds up to twelve). Expect them to see the share as
    soon as they are connected.
-2. Close one viewer's WatchStream tab. Expect the others to keep watching and the host's People
+2. Close one viewer's WatchP2PStream tab. Expect the others to keep watching and the host's People
    list to drop that viewer.
 
 ## 5. The session ends
 
 - Host: choose **End session**. Expect every viewer to read "The session has ended." with
   **Technical details**.
-- Closing the host's WatchStream tab does the same.
+- Closing the host's WatchP2PStream tab does the same.
 
 ## 6. When it does not connect
 

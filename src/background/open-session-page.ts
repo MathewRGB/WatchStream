@@ -6,7 +6,7 @@ export const SESSION_PAGE_PATH = '/session.html';
 const TAB_ID_KEY = 'sessionTabId';
 
 /**
- * Opens the WatchStream page, or focuses it when it is already open, so a
+ * Opens the WatchP2PStream page, or focuses it when it is already open, so a
  * second click on the toolbar icon does not start a second session.
  */
 export async function openSessionPage(api: Browser = browser): Promise<void> {

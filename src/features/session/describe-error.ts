@@ -10,7 +10,7 @@ export function describeError(error: unknown): string {
       case 'wrong-kind':
         return `${error.message} Check that you pasted the right code.`;
       case 'unsupported-version':
-        return 'This code comes from a different WatchStream version. Both of you need the same version.';
+        return 'This code comes from a different WatchP2PStream version. Both of you need the same version.';
       case 'malformed':
         return 'This code is incomplete or damaged. Copy it again in full.';
     }

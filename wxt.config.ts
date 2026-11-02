@@ -9,11 +9,11 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: ({ browser }) => ({
-    name: 'WatchStream',
+    name: 'WatchP2PStream',
     description: 'Watch streams together, browser to browser, without a media server.',
     permissions: ['storage'],
     action: {
-      default_title: 'Open WatchStream',
+      default_title: 'Open WatchP2PStream',
     },
     ...(browser === 'firefox' && {
       // Firefox shares no tab sound, so a script is injected into the tab the host chooses. Nothing

@@ -19,7 +19,7 @@ export function TechnicalDetails({ details }: TechnicalDetailsProps) {
   const text = [
     details,
     `Browser: ${navigator.userAgent}`,
-    'Recent log (also in the browser console, filter "WatchStream"):',
+    'Recent log (also in the browser console, filter "WatchP2PStream"):',
     formatLogHistory(40) || '(empty)',
   ]
     .filter(Boolean)

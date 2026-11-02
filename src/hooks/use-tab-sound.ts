@@ -95,7 +95,7 @@ export function useTabSound(session: HostSession): TabSoundControls {
     setError(null);
     try {
       if (!(await allowTabList())) {
-        setError('WatchStream needs to see your open tabs to offer them.');
+        setError('WatchP2PStream needs to see your open tabs to offer them.');
         return;
       }
       setChoices(await listTabs());

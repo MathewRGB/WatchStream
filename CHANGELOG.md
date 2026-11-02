@@ -34,7 +34,7 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   marked as motion with a preference for keeping the frame rate, so an overloaded host lowers the
   resolution instead of stuttering.
 - Watch together, browser to browser, in Chrome, Brave and Firefox (Firefox 140 or newer): the host
-  shares a tab, window or screen, and the viewers see and hear it. No WatchStream server; video,
+  shares a tab, window or screen, and the viewers see and hear it. No WatchP2PStream server; video,
   sound and chat go directly between host and viewers.
 - Joining by code: the host sends an invitation code through any messenger, the viewer sends a
   reply code back. A code with no public network address, which cannot be reached from another
@@ -49,8 +49,8 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   passes the picture on to everyone else. One picture is on the stage at a time; the host can end a
   viewer's share and its own share takes the stage back.
 - Firefox: sound from a tab. Firefox shares no tab sound, so the host can choose the tab with the
-  video in Settings; WatchStream takes the sound from its video and adds it to the share. When a
-  share starts, WatchStream finds the tab that plays sound by itself (once the host allowed it in
+  video in Settings; WatchP2PStream takes the sound from its video and adds it to the share. When a
+  share starts, WatchP2PStream finds the tab that plays sound by itself (once the host allowed it in
   one prompt at the first Share, not at install); the list in Settings remains for the cases where
   it cannot tell.
 - Chat, a list of the people in the session, and the host's view of who is not keeping up.
@@ -75,7 +75,7 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
   the capture.
 - Ending a session while the share picker is open, or while an invitation is being made, leaves no
   capture and no connection running.
-- Firefox: a tab whose sound started only after WatchStream gave up on it stops capturing.
+- Firefox: a tab whose sound started only after WatchP2PStream gave up on it stops capturing.
 - A chat time stamp no date can hold is dropped instead of taking the viewer's page down.
 
 ### Security

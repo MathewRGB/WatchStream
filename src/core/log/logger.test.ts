@@ -54,7 +54,7 @@ describe('logger', () => {
 
     createLogger('link').warn('closed', { state: 'failed' });
 
-    expect(warn).toHaveBeenCalledWith('[WatchStream] link: closed', { state: 'failed' });
+    expect(warn).toHaveBeenCalledWith('[WatchP2PStream] link: closed', { state: 'failed' });
     warn.mockRestore();
   });
 

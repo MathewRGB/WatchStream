@@ -9,35 +9,35 @@ describe('AppShell', () => {
   it('shows the title, status, actions and stage', () => {
     render(
       <AppShell
-        title="WatchStream"
+        title="WatchP2PStream"
         status="Hosting as user1"
         actions={<button>End</button>}
         stage={<p>the stage</p>}
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'WatchStream' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'WatchP2PStream' })).toBeInTheDocument();
     expect(screen.getByText('Hosting as user1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'End' })).toBeInTheDocument();
     expect(screen.getByText('the stage')).toBeInTheDocument();
   });
 
   it('has no sidebar and no toggle without a sidebar', () => {
-    render(<AppShell title="WatchStream" stage={<p>the stage</p>} />);
+    render(<AppShell title="WatchP2PStream" stage={<p>the stage</p>} />);
 
     expect(screen.queryByTestId('sidebar')).toBeNull();
     expect(screen.queryByTestId('sidebar-toggle')).toBeNull();
   });
 
   it('shows the sidebar next to the stage', () => {
-    render(<AppShell title="WatchStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
+    render(<AppShell title="WatchP2PStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
 
     expect(screen.getByTestId('sidebar')).toHaveTextContent('side');
     expect(screen.getByTestId('sidebar-toggle')).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('collapses and restores the sidebar', async () => {
-    render(<AppShell title="WatchStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
+    render(<AppShell title="WatchP2PStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
 
     await userEvent.click(screen.getByTestId('sidebar-toggle'));
     expect(screen.queryByTestId('sidebar')).toBeNull();
@@ -49,7 +49,7 @@ describe('AppShell', () => {
   });
 
   it('fills the window without letting the page scroll', () => {
-    render(<AppShell title="WatchStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
+    render(<AppShell title="WatchP2PStream" stage={<p>stage</p>} sidebar={<p>side</p>} />);
 
     const shell = screen.getByTestId('app-shell');
     expect(shell).toHaveClass('h-dvh', 'overflow-hidden');
@@ -88,7 +88,7 @@ describe('AppShell full screen', () => {
   function renderShell() {
     return render(
       <AppShell
-        title="WatchStream"
+        title="WatchP2PStream"
         stage={<Stage emptyMessage="x" />}
         sidebar={<input data-testid="draft" aria-label="draft" />}
       />,
@@ -115,7 +115,7 @@ describe('AppShell full screen', () => {
     renderShell();
 
     expect(screen.getByTestId('workspace')).not.toContainElement(
-      screen.getByRole('heading', { name: 'WatchStream' }),
+      screen.getByRole('heading', { name: 'WatchP2PStream' }),
     );
   });
 
@@ -173,7 +173,7 @@ describe('AppShell full screen', () => {
   });
 
   it('has no sidebar element in full screen when the shell has none', async () => {
-    render(<AppShell title="WatchStream" stage={<Stage emptyMessage="x" />} />);
+    render(<AppShell title="WatchP2PStream" stage={<Stage emptyMessage="x" />} />);
 
     await userEvent.click(screen.getByTestId('fullscreen-button'));
 
@@ -297,7 +297,7 @@ describe('AppShell full screen', () => {
       function renderCounting() {
         const shell = (count: number) => (
           <AppShell
-            title="WatchStream"
+            title="WatchP2PStream"
             stage={<Stage emptyMessage="x" />}
             sidebar={<input data-testid="draft" aria-label="draft" />}
             incomingMessages={count}
@@ -377,7 +377,7 @@ describe('AppShell full screen', () => {
       it('has no symbol outside full screen', () => {
         const { rerender } = render(
           <AppShell
-            title="WatchStream"
+            title="WatchP2PStream"
             stage={<Stage emptyMessage="x" />}
             sidebar={<p>side</p>}
             incomingMessages={0}
@@ -386,7 +386,7 @@ describe('AppShell full screen', () => {
 
         rerender(
           <AppShell
-            title="WatchStream"
+            title="WatchP2PStream"
             stage={<Stage emptyMessage="x" />}
             sidebar={<p>side</p>}
             incomingMessages={3}

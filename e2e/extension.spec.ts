@@ -29,10 +29,10 @@ async function openSessionPage(): Promise<SessionPage> {
   return new SessionPage(page);
 }
 
-test('the extension ships the WatchStream page', async () => {
+test('the extension ships the WatchP2PStream page', async () => {
   const page = await openSessionPage();
 
-  await expect(page.page).toHaveTitle('WatchStream');
+  await expect(page.page).toHaveTitle('WatchP2PStream');
   await expect(page.byTestId('start-view')).toBeVisible();
   await page.page.close();
 });

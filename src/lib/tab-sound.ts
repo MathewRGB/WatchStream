@@ -83,7 +83,7 @@ export function requestAutoDetect(): Promise<boolean> {
 }
 
 /**
- * The tab whose sound is meant, among the tabs that play sound now (the WatchStream page itself is
+ * The tab whose sound is meant, among the tabs that play sound now (the WatchP2PStream page itself is
  * not one of them). One tab is the answer. Several: the one in the host's own window if that is
  * only one; otherwise nobody can say, and the host chooses from the list.
  */

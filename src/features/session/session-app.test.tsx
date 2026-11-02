@@ -83,7 +83,7 @@ async function connectSharing(
 
 const names = (page: Page) => page.getAllByTestId('participant-name').map((n) => n.textContent);
 
-describe('WatchStream app', () => {
+describe('WatchP2PStream app', () => {
   let network: FakeNetwork;
 
   beforeEach(() => {

@@ -1,12 +1,12 @@
 # Architecture
 
-How WatchStream is built and why. Each section states what is decided, the reasons, and what was
+How WatchP2PStream is built and why. Each section states what is decided, the reasons, and what was
 considered and not done. What changed when is in the [changelog](../CHANGELOG.md); the wire
 formats are in [protocol.md](protocol.md); ideas for later are in [future-work.md](future-work.md).
 
 ## Goal and constraints
 
-WatchStream lets people watch together what plays in one person's browser, with three hard
+WatchP2PStream lets people watch together what plays in one person's browser, with three hard
 requirements: it is a **browser extension** (Chrome, Brave, Firefox), participants connect
 **directly** with no media server of our own, and the picture reaches the viewers at
 **near-transparent quality**. A cloud browser like Hyperbeam is ruled out by the second point.
@@ -14,7 +14,7 @@ requirements: it is a **browser extension** (Chrome, Brave, Firefox), participan
 What the platform imposes:
 
 - **DRM:** Widevine-protected content (Netflix, Disney+, Prime Video, Max) turns black when a tab
-  or screen is captured. This is a deliberate protection and WatchStream does not circumvent it,
+  or screen is captured. This is a deliberate protection and WatchP2PStream does not circumvent it,
   which would be a circumvention of technical protection measures and against the services' terms.
 - **Re-encoding:** every WebRTC capture is encoded again, so nothing is lossless.
 - **NAT:** direct connections need STUN to find public addresses. Symmetric NAT or CGNAT (roughly
@@ -127,7 +127,7 @@ permission. Chrome and Brave offer "also share tab audio"; Firefox shares no sou
 `chrome.tabCapture` would change what a click on the icon means and needs two more permissions for
 nothing `getDisplayMedia` does not already give.
 
-**Tab sound in Firefox.** When a share starts without sound, WatchStream finds the tab that plays
+**Tab sound in Firefox.** When a share starts without sound, WatchP2PStream finds the tab that plays
 sound (`tabs.audible`; one tab, or the only one in the host's own window; `pickAudibleTab`) and
 uses it. The host can also pick a tab in Settings. A script is injected into the tab
 (`src/entrypoints/tab-sound.content.ts`, Firefox build only, registered at runtime and never
@@ -352,7 +352,7 @@ targets it), MUI or Chakra (heavier, less control over the markup).
 
 ## Privacy
 
-- No WatchStream server, no data collected. Video, sound and chat go directly between host and
+- No WatchP2PStream server, no data collected. Video, sound and chat go directly between host and
   viewer, encrypted by WebRTC (DTLS/SRTP).
 - A public STUN server (`stun.l.google.com`) sees the participants' public IP addresses, no content.
 - Codes contain the sender's IP addresses. Viewers see each other's names, never their addresses.

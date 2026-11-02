@@ -32,7 +32,7 @@ export function StartView({ initialName, onHost, onJoin }: StartViewProps) {
   return (
     <Card data-testid="start-view">
       <CardHeader>
-        <CardTitle className="text-2xl">WatchStream</CardTitle>
+        <CardTitle className="text-2xl">WatchP2PStream</CardTitle>
         <CardDescription>Watch together, browser to browser.</CardDescription>
       </CardHeader>
       <CardContent>
