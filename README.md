@@ -138,6 +138,8 @@ open: closing it ends the session.
 - Invitation and reply codes contain your IP addresses. Share them only with the people you
   invite.
 
+The full privacy policy is in [PRIVACY.md](PRIVACY.md).
+
 ## Development
 
 Requirements: Node.js 22 or newer.

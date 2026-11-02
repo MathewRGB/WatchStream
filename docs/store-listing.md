@@ -1,8 +1,8 @@
 # Store listing texts
 
-The wording for the Chrome Web Store, Firefox Add-ons (AMO) and the privacy policy. It restates the
-README's [Privacy](../README.md#privacy) section and what the code does; when one changes, change
-the others in the same commit. Services are named only factually, and nothing here claims an
+The wording for the Chrome Web Store and Firefox Add-ons (AMO). It restates
+[PRIVACY.md](../PRIVACY.md), the README's [Privacy](../README.md#privacy) section and what the code
+does; when one changes, change the others in the same commit. Services are named only factually, and nothing here claims an
 affiliation with them.
 
 ## Short description (132 characters at most)
@@ -26,38 +26,7 @@ the developer or to any third party, with one exception that cannot be avoided:
 
 ## Privacy policy
 
-**WatchP2PStream does not collect, store or transmit personal data to the developer or to any
-server run by the developer.** The extension has no server, no account, no analytics and no
-advertising, and it loads no code from the internet.
-
-**What stays on your computer.** The extension stores three things locally in your browser: the
-display name you last entered, your volume setting, and, for the length of a browser session, the
-id of the tab it is open in. The log shown under "copy technical details" and the chat messages are
-kept in the page's memory only and are gone when you close it. Removing the extension removes the
-stored values.
-
-**What goes to other people.** When you host or join a session, your browser connects directly to
-the other participants. They receive, encrypted, whatever you share (the picture and sound of the
-tab, window or screen you pick), your chat messages and your display name. Your IP address is
-visible to the people you connect to, because a direct connection needs it. Each invitation or
-reply code you send contains your IP addresses. You decide who receives it.
-
-**The one outside service.** To learn its public address, your browser contacts the public STUN
-server `stun.l.google.com` (Google). It receives your IP address and the port of the request, as
-any server does, and it never receives content. See Google's privacy policy for what Google does
-with such requests. If you use a VPN or block that server, a connection between different networks
-may not come up.
-
-**What you share is your responsibility.** Share only what you may show to the people you invite,
-and send codes only to them.
-
-**Children.** The extension is a general tool and is not directed at children.
-
-**Contact.** Questions and reports: the issues page of the project at
-https://github.com/MathewRGB/WatchStream/issues.
-
-**Changes.** A change to this policy is made in this file and in the README of the project, and is
-recorded in the changelog.
+The full policy is [PRIVACY.md](../PRIVACY.md); the stores link to it.
 
 ## Chrome Web Store: "Privacy practices" tab
 
@@ -72,8 +41,7 @@ recorded in the changelog.
 - **Data usage:** do not tick any category of collected data; the extension transmits nothing to the
   developer. Tick the three certifications (no sale of data, no use for unrelated purposes, no use
   for creditworthiness).
-- **Privacy policy URL:** the project's README `#privacy` section, or this policy published at a
-  stable address.
+- **Privacy policy URL:** https://github.com/MathewRGB/WatchStream/blob/main/PRIVACY.md
 
 ## Firefox Add-ons
 
