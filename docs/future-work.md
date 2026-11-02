@@ -151,8 +151,6 @@ looked at.
 
 - **TURN:** an optional, self-configured relay for symmetric NAT and CGNAT. The test across two
   networks passed without one; add it when users report failures.
-- **A media-free signalling service** for clickable invitations, behind the existing connector
-  interface. Inviting stays manual until then.
 - **Quality limits for the sharer:** `share-granted` could carry the host's chosen limits, so a
   viewer does not upload more than the host passes on.
 - **"Allow without asking"** for viewer shares, as a host setting.
@@ -160,6 +158,4 @@ looked at.
   constant. A spike comes before any promise.
 - **Prefer a hardware encoder** where the browser offers one, once the monitor shows what it is
   worth.
-- **`chrome.tabCapture`** as a shortcut ("share this tab" from the icon) if the picker proves too
-  clumsy.
 - **Unread count** in full screen, or a notice that says who wrote.
