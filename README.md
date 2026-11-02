@@ -8,10 +8,23 @@ WatchP2PStream is a browser extension for Chrome, Brave and Firefox. A host invi
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
 browser.
 
-> **Status:** milestone M6 is done. Host and viewers connect directly, chat, and the host can
-> share a tab, window or screen that up to twelve viewers see and hear, with a quality setting and
-> a volume control. A viewer can share too, once the host allows it. A test between two different public IP addresses (one side through a VPN)
-> succeeded. The extension is not yet published in any store.
+## Why WatchP2PStream
+
+- **No server at all.** No WatchP2PStream server carries the picture, the sound or the chat, and
+  none introduces the participants to each other: even the connection setup travels as codes
+  through a messenger you already use. Nothing to run, nothing to sign up for, no data collected.
+- **No account, no subscription for viewers.** Only the host needs access to the content. A viewer
+  needs the extension and a code, nothing else.
+- **Everyone sees exactly the same picture.** The host's picture and sound are sent, not a playback
+  position, so nobody drifts out of step, and different regions or versions of a title do not
+  matter.
+- **Works with any video the host can play** that has no copy protection, including sites that
+  watch-together tools cannot steer, and with a whole window or screen.
+- **The host is in control.** Up to twelve viewers, one invitation per person, removing a viewer,
+  a quality choice from Minimal to 4K, and a load monitor that says when the host's computer or
+  connection cannot keep up. A viewer can share too, once the host allows it.
+- **Private by design.** Every connection is encrypted between two browsers. The only outside party
+  is a public STUN server that sees participants' public IP addresses (see [Privacy](#privacy)).
 
 ## How it works
 
