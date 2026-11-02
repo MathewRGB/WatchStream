@@ -32,11 +32,16 @@ near-identical "StreamWatch". A web search and a search through the AMO interfac
 or trademark called "WatchP2PStream" (2026-10-30), but they were not exhaustive and did not reach
 the official trademark databases.
 
-- [ ] Search the Chrome Web Store for "WatchP2PStream".
-- [ ] Search Firefox Add-ons (AMO) for "WatchP2PStream".
-- [ ] Search TMview and the USPTO trademark database.
-- [ ] No third-party trademark in the name, the icon or the store text; services are named only
+- [x] Search the Chrome Web Store for "WatchP2PStream".
+- [x] Search Firefox Add-ons (AMO) for "WatchP2PStream".
+- [x] Search TMview and the USPTO trademark database. The only mark found with a "P2P" element is
+      the word mark "P2P" (US serial 97619429, Power2Parent, class 35, advocacy for parents):
+      other goods and services, so no conflict with a browser extension.
+- [x] No third-party trademark in the name, the icon or the store text; services are named only
       factually in the description.
+
+The stores do not clear names against trademark registers when an extension is submitted; a
+conflict would show up later as a complaint. This is a plausibility check, not a trademark search.
 
 ## Privacy text
 
