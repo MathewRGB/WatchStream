@@ -53,7 +53,7 @@ conflict would show up later as a complaint. This is a plausibility check, not a
 
 ## Package
 
-- [ ] `npm run check` and `npm run test:e2e` pass.
-- [ ] `npm run lint:firefox` shows only the two known `innerHTML` warnings from React DOM.
+- [x] `npm run check` and `npm run test:e2e` pass.
+- [x] `npm run lint:firefox` shows only the two known `innerHTML` warnings from React DOM.
 - [ ] `npm run zip` and `npm run zip:firefox` produce the packages; load each by hand once.
 - [x] The two-network test passed (`docs/manual-tests/m3-stream-mode.md`).
