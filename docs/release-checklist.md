@@ -22,7 +22,7 @@ Brave limits WebRTC address handling by default, which can reduce the candidates
       shows reflexive candidates).
 - [x] Brave and Firefox: on one connection share, stop and share again, six times, then let the
       viewer share and take the stage back. The picture and sound arrive every time.
-- [ ] Paste a code on a phone messenger and back: it is one line and survives wrapping.
+- [x] Paste a code on a phone messenger and back: it is one line and survives wrapping.
 
 ## Name "WatchP2PStream"
 
@@ -47,8 +47,9 @@ conflict would show up later as a complaint. This is a plausibility check, not a
 
 - [ ] The store listing says: no WatchP2PStream server, no data collected, a public STUN server
       (`stun.l.google.com`) sees participants' public IP addresses, and invitation and reply codes
-      contain the sender's IP addresses. The README's Privacy section is the source.
-- [ ] Firefox: `data_collection_permissions` is `none` in the manifest (set).
+      contain the sender's IP addresses. The README's Privacy section is the source; the texts to paste
+      are in [store-listing.md](store-listing.md).
+- [x] Firefox: `data_collection_permissions` is `none` in the manifest (set).
 
 ## Package
 
