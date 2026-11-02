@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-02
+
 First release. How it works is in [docs/architecture.md](docs/architecture.md).
 
 ### Added
@@ -85,4 +87,5 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 - Chat text and names from other people are never rendered as HTML; ESLint forbids `innerHTML`,
   `outerHTML` and `dangerouslySetInnerHTML` in the source.
 
-[unreleased]: https://github.com/MathewRGB/WatchStream/commits/main
+[unreleased]: https://github.com/MathewRGB/WatchStream/compare/v0.1.0...main
+[0.1.0]: https://github.com/MathewRGB/WatchStream/releases/tag/v0.1.0
