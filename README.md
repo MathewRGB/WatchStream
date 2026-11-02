@@ -242,7 +242,6 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
 - [Manual test guide for many viewers](docs/manual-tests/m5-many-viewers.md)
 - [Manual test guide for a viewer who shares](docs/manual-tests/m6-viewer-share.md)
-- [Checklist before the first store submission](docs/release-checklist.md)
 
 ## Disclaimer
 
