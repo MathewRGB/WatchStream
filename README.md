@@ -212,26 +212,6 @@ Add a shadcn/ui component with `npx shadcn@latest add <name>`. It lands in `src/
 The CLI currently imports `cn` from an unrelated npm package named `cn` and adds it to
 `package.json`. Point the import at `@/lib/utils` and run `npm uninstall cn` afterwards.
 
-## Roadmap
-
-- [x] **M1:** connection setup by code, chat — tested automatically in Chromium and Firefox and
-      manually by the maintainer in Chrome, Brave and Firefox, and between two different public IP
-      addresses (2026-10-28, one side through a VPN)
-- [x] **M2:** app shell: one window without page scrolling, stage with full-screen mode, sidebar
-      with tabs, reply code copied automatically
-- [x] **M3:** stream mode: share a tab, window or screen, sound in stereo, quality presets,
-      volume control, technical details for connection problems
-- [x] **M4:** the sidebar in full screen: it slides in at the right edge, only the picture shows
-      when idle, a quiet symbol for a message
-- [x] **M5:** up to 12 viewers, a load monitor tells the host when it cannot keep up,
-      several invitations at once, removing a viewer
-- [x] **M6:** viewers can share too: a viewer picks a source and asks, the host allows it with one
-      click and passes the picture on to everyone else
-- [ ] **Release:** the open points in the [release checklist](docs/release-checklist.md)
-- **Future work (not planned, after the release):** handing the host role to a viewer when the
-  host leaves, viewers passing the picture on to other viewers, sync mode for services with copy
-  protection, an optional TURN service; see [future work](docs/future-work.md)
-
 ## Documentation
 
 - [Changelog](CHANGELOG.md)
