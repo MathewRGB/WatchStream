@@ -56,6 +56,11 @@ export interface MediaLink extends MessageLink {
    */
   setWeakLinkMode(mode: WeakLinkMode): Promise<void>;
   /**
+   * How long the receiving side may buffer before it plays, in milliseconds, or `null` for the
+   * browser's own choice (see `playout-buffer.ts`). Applies to what arrives now and later.
+   */
+  setPlayoutBuffer(targetMs: number | null): void;
+  /**
    * Counters of the picture this link sends, for the host's load monitor. `null` while
    * no picture is sent and once the link is closed.
    */

@@ -13,7 +13,12 @@ adheres to [Semantic Versioning](https://semver.org/).
   gives up when the browser's bandwidth estimate to a viewer falls far below the chosen quality,
   as on a long route. Steady keeps the resolution and asks Chromium for a minimum and start bitrate.
 - The load control logs the connection numbers of every link every ten seconds (estimate, target,
-  sent bitrate, loss, round trip, frame size, frame rate, why the encoder holds back).
+  sent bitrate, loss, round trip, frame size, frame rate, why the encoder holds back, and how often
+  the viewer asked for a full picture or a resend, and the kind of path: direct or relayed).
+- A **Smoothing buffer** setting for viewers (Standard, 1 s, 2 s, 4 s) in a new Settings tab. The
+  browser then collects more of the stream before it plays, which calms a stuttering picture on a
+  long route at the price of delay; picture and sound stay in step. Chromium only, remembered
+  between sessions.
 
 ### Changed
 

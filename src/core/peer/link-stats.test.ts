@@ -21,6 +21,53 @@ const FIREFOX = [
 ];
 
 describe('readLinkStats', () => {
+  it('reads the repair counters and the kinds of the connected path', () => {
+    const stats = readLinkStats(
+      [
+        {
+          type: 'outbound-rtp',
+          kind: 'video',
+          pliCount: 4,
+          nackCount: 120,
+          keyFramesEncoded: 9,
+          retransmittedBytesSent: 54_000,
+        },
+        { type: 'local-candidate', id: 'L1', candidateType: 'srflx' },
+        { type: 'remote-candidate', id: 'R1', candidateType: 'relay' },
+        {
+          type: 'candidate-pair',
+          nominated: true,
+          localCandidateId: 'L1',
+          remoteCandidateId: 'R1',
+        },
+      ],
+      1,
+    );
+    expect(stats).toMatchObject({
+      pliCount: 4,
+      nackCount: 120,
+      keyFramesEncoded: 9,
+      retransmittedBytes: 54_000,
+      path: 'srflx/relay',
+    });
+  });
+
+  it('has no path when the candidates cannot be told', () => {
+    const stats = readLinkStats(
+      [
+        { type: 'outbound-rtp', kind: 'video' },
+        {
+          type: 'candidate-pair',
+          nominated: true,
+          localCandidateId: 'L1',
+          remoteCandidateId: 'R1',
+        },
+      ],
+      1,
+    );
+    expect(stats?.path).toBeNull();
+  });
+
   it('reads why and how the encoder holds the picture back', () => {
     const stats = readLinkStats(
       [
@@ -58,6 +105,11 @@ describe('readLinkStats', () => {
       targetBps: null,
       frameHeight: null,
       framesPerSecond: null,
+      pliCount: null,
+      nackCount: null,
+      keyFramesEncoded: null,
+      retransmittedBytes: null,
+      path: null,
     });
   });
 
@@ -74,6 +126,11 @@ describe('readLinkStats', () => {
       targetBps: null,
       frameHeight: null,
       framesPerSecond: null,
+      pliCount: null,
+      nackCount: null,
+      keyFramesEncoded: null,
+      retransmittedBytes: null,
+      path: null,
     });
   });
 
@@ -112,6 +169,11 @@ describe('readLinkStats', () => {
       targetBps: null,
       frameHeight: null,
       framesPerSecond: null,
+      pliCount: null,
+      nackCount: null,
+      keyFramesEncoded: null,
+      retransmittedBytes: null,
+      path: null,
     });
   });
 

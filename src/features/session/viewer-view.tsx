@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { MessageSquare, Users } from 'lucide-react';
+import { MessageSquare, SlidersHorizontal, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CandidateSummary } from '@/core/peer/candidates';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
+import { usePlayoutBuffer } from '@/hooks/use-playout-buffer';
 import { useViewerSession } from '@/hooks/use-viewer-session';
 import { useViewerShare } from '@/hooks/use-viewer-share';
 import { useVolume } from '@/hooks/use-volume';
@@ -23,6 +24,7 @@ import { Sidebar, type SidebarTab } from './sidebar';
 import { Stage } from './stage';
 import { StageVideo } from './stage-video';
 import { TechnicalDetails } from './technical-details';
+import { ViewerSettingsTab } from './viewer-settings-tab';
 import { ViewerShareControls } from './viewer-share-controls';
 
 const APP_TITLE = 'WatchP2PStream';
@@ -185,6 +187,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
   const sharing = useViewerShare(session, capture);
   const messages = useChatMessages(session);
   const { volume, setVolume } = useVolume(storage);
+  const { buffer, setBuffer } = usePlayoutBuffer(session, storage);
   const { hostName } = session;
 
   const tabs: SidebarTab[] = [
@@ -206,6 +209,12 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
           onSend={(text) => session.sendChat(text)}
         />
       ),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <SlidersHorizontal />,
+      content: <ViewerSettingsTab buffer={buffer} onBufferChange={setBuffer} />,
     },
   ];
 

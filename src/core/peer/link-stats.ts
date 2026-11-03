@@ -25,6 +25,18 @@ export interface LinkStats {
   frameHeight?: number | null;
   /** Frames a second the encoder produces right now. */
   framesPerSecond?: number | null;
+  /**
+   * How often the viewer had to ask for help since the link began: a full picture (`pliCount`),
+   * a resend of lost packets (`nackCount`), and how many full pictures the encoder made. Each
+   * full picture is large, so many of them on a lossy route feed the next loss.
+   */
+  pliCount?: number | null;
+  nackCount?: number | null;
+  keyFramesEncoded?: number | null;
+  /** Bytes sent again because they were lost. */
+  retransmittedBytes?: number | null;
+  /** Kinds of the connected candidate pair, e.g. `srflx/srflx` or `relay/srflx`; `null` if unknown. */
+  path?: string | null;
 }
 
 /**
@@ -36,8 +48,16 @@ export function readLinkStats(reports: Iterable<object>, at: number): LinkStats 
   let source: StatsEntry | undefined;
   let remote: StatsEntry | undefined;
   let pair: StatsEntry | undefined;
+  const candidates = new Map<string, string>();
   for (const item of reports) {
     const report = item as StatsEntry;
+    if (
+      (report.type === 'local-candidate' || report.type === 'remote-candidate') &&
+      typeof report.id === 'string' &&
+      typeof report.candidateType === 'string'
+    ) {
+      candidates.set(report.id, report.candidateType);
+    }
     const video = report.kind === 'video';
     if (report.type === 'outbound-rtp' && video) outbound ??= report;
     else if (report.type === 'media-source' && video) source ??= report;
@@ -62,5 +82,24 @@ export function readLinkStats(reports: Iterable<object>, at: number): LinkStats 
     targetBps: number(outbound.targetBitrate),
     frameHeight: number(outbound.frameHeight),
     framesPerSecond: number(outbound.framesPerSecond),
+    pliCount: number(outbound.pliCount),
+    nackCount: number(outbound.nackCount),
+    keyFramesEncoded: number(outbound.keyFramesEncoded),
+    retransmittedBytes: number(outbound.retransmittedBytesSent),
+    path: pathOf(pair, candidates),
   };
+}
+
+/** `local/remote` candidate kinds of the connected pair, or `null` when they cannot be told. */
+function pathOf(
+  pair: StatsEntry | undefined,
+  candidates: ReadonlyMap<string, string>,
+): string | null {
+  const local =
+    typeof pair?.localCandidateId === 'string' ? candidates.get(pair.localCandidateId) : undefined;
+  const remote =
+    typeof pair?.remoteCandidateId === 'string'
+      ? candidates.get(pair.remoteCandidateId)
+      : undefined;
+  return local && remote ? `${local}/${remote}` : null;
 }

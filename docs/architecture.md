@@ -213,7 +213,18 @@ it is a choice. A change of the floor starts a negotiation while a picture is se
 Every few seconds the load control logs one `link reading` line per link (cap, the browser's
 estimate and target, bitrate sent, loss, round trip, height, frame rate and
 `qualityLimitationReason`; numbers and enums only), so a picture that falls apart after a while
-can be read in the log afterwards.
+can be read in the log afterwards. The line also carries the cumulative `pliCount` (full pictures
+the viewer asked for), `nackCount` (resends), `keyFramesEncoded`, the kilobytes sent again and the
+path kinds (`srflx/srflx` direct, `relay` through TURN): many full pictures on a lossy route feed
+the next loss, and the path says whether the route or the settings are to blame.
+
+**Smoothing buffer (viewer).** The viewer can ask its own browser to buffer longer before it
+plays (`PlayoutBufferId`, `playout-buffer.ts`): `RTCRtpReceiver.jitterBufferTarget` of 1, 2 or 4
+seconds on every receiver, set when the choice changes and again when a track arrives. It is the
+counterpart of the host's weak-connection mode: that one changes what is sent, this one how
+patiently it is played. Picture and sound are both buffered, so they stay in step; the only price
+is delay, which matters little when everyone watches the same stream. The choice is kept in
+`localStorage` (`usePlayoutBuffer`); a browser without the property ignores it.
 
 ## 7. Up to twelve viewers, and a load monitor
 

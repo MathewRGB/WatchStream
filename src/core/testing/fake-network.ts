@@ -108,6 +108,13 @@ export class FakeLink implements OfferingLink {
     this.codec = codec;
   }
 
+  /** The latest target set through `setPlayoutBuffer`. */
+  playoutBufferMs: number | null = null;
+
+  setPlayoutBuffer(targetMs: number | null): void {
+    this.playoutBufferMs = targetMs;
+  }
+
   /** The latest mode set through `setWeakLinkMode`. */
   weakLinkMode: WeakLinkMode = 'balanced';
 

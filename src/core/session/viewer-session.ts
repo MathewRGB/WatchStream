@@ -3,6 +3,11 @@ import { createLogger, describeThrown } from '../log/logger';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
+import {
+  DEFAULT_PLAYOUT_BUFFER,
+  playoutBufferTarget,
+  type PlayoutBufferId,
+} from '../media/playout-buffer';
 import type { LinkSignal, MediaLink, PeerConnector } from '../peer/message-link';
 import { summarizeReceive, type ReceiveStats } from '../peer/receive-stats';
 import {
@@ -72,6 +77,7 @@ export class ViewerSession {
   private reportTimer: ReturnType<typeof setInterval> | null = null;
   private lastReading: ReceiveStats | null = null;
   private reading = false;
+  private currentBuffer: PlayoutBufferId = DEFAULT_PLAYOUT_BUFFER;
 
   private constructor(
     readonly hostName: string,
@@ -214,6 +220,16 @@ export class ViewerSession {
   /** What state the connection is in, for a message the viewer can copy. */
   get diagnostics(): string {
     return describeDiagnostics(this.link.diagnostics());
+  }
+
+  /** How long this viewer's browser buffers before it plays; counts for what arrives later too. */
+  get playoutBuffer(): PlayoutBufferId {
+    return this.currentBuffer;
+  }
+
+  setPlayoutBuffer(id: PlayoutBufferId): void {
+    this.currentBuffer = id;
+    this.link.setPlayoutBuffer(playoutBufferTarget(id));
   }
 
   leave(): void {

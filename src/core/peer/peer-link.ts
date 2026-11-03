@@ -70,6 +70,7 @@ export class PeerLink implements OfferingLink {
   private limits: MediaLimits | null = null;
   private codec: CodecId = DEFAULT_CODEC;
   private weakLink: WeakLinkMode = DEFAULT_WEAK_LINK;
+  private playoutBufferMs: number | null = null;
   /**
    * The steps of the negotiation (`receiveSignal`, offers) run one after the other. The browser
    * answers `InvalidStateError` to a step that starts while another one is half done, and a host
@@ -269,6 +270,22 @@ export class PeerLink implements OfferingLink {
     }
   }
 
+  setPlayoutBuffer(targetMs: number | null): void {
+    this.playoutBufferMs = targetMs;
+    for (const receiver of this.connection.getReceivers()) this.applyPlayoutBuffer(receiver);
+  }
+
+  /** Chromium only; a browser without the property, or one that refuses the value, plays as before. */
+  private applyPlayoutBuffer(receiver: RTCRtpReceiver): void {
+    if (!('jitterBufferTarget' in receiver)) return;
+    try {
+      (receiver as RTCRtpReceiver & { jitterBufferTarget: number | null }).jitterBufferTarget =
+        this.playoutBufferMs;
+    } catch (error) {
+      this.log.debug('could not set the playout buffer', describeThrown(error));
+    }
+  }
+
   private hints() {
     return this.limits ? bitrateHints(this.weakLink, this.limits.maxBitrateBps) : null;
   }
@@ -429,6 +446,7 @@ export class PeerLink implements OfferingLink {
 
   private receiveTrack(event: RTCTrackEvent): void {
     const { track } = event;
+    this.applyPlayoutBuffer(event.receiver);
     // One picture and one sound at a time. A negotiation that ends one share and starts the next
     // reports the new track before the old one has ended, and Firefox would stay on the old one.
     for (const old of this.remote.getTracks()) {

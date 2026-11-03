@@ -536,6 +536,40 @@ async function sentCodec(link: HostLink): Promise<string | null> {
   return typeof codec?.mimeType === 'string' ? codec.mimeType : null;
 }
 
+/** The smoothing buffer the viewer's receivers hold, per kind. */
+function playoutTargets(viewer: ViewerSession): Array<[string | undefined, unknown]> {
+  const link = (viewer as unknown as { link: { connection: RTCPeerConnection } }).link;
+  return link.connection
+    .getReceivers()
+    .map((receiver) => [
+      receiver.track?.kind,
+      (receiver as { jitterBufferTarget?: unknown }).jitterBufferTarget,
+    ]);
+}
+
+describe.skipIf(!('jitterBufferTarget' in RTCRtpReceiver.prototype))(
+  'the viewer smoothing buffer over WebRTC',
+  () => {
+    it('reaches the receivers of the shared stream', async () => {
+      const host = startHost();
+      const viewer = await join(host, 'user2');
+      viewer.setPlayoutBuffer('medium');
+      const arrived = nextMedia(viewer);
+      host.startSharing(createTestStream());
+      const media = (await arrived)!;
+      expect(await plays(media.stream)).toBe(true);
+
+      const targets = playoutTargets(viewer);
+      // The test stream carries a picture only; every receiver that exists gets the target.
+      expect(targets.map(([kind]) => kind)).toContain('video');
+      expect(targets.every(([, target]) => target === 2000)).toBe(true);
+
+      viewer.setPlayoutBuffer('standard');
+      expect(playoutTargets(viewer).every(([, target]) => target === null)).toBe(true);
+    }, 40_000);
+  },
+);
+
 // Firefox takes no codec preference (it keeps VP8 first), so the choice is a Chromium matter.
 describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over WebRTC', () => {
   it('changes the codec that is really sent, also while sharing, and the picture keeps playing', async () => {

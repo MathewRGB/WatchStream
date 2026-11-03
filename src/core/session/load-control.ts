@@ -130,6 +130,14 @@ export class LoadControl {
         height: reading.frameHeight ?? null,
         fps: reading.framesPerSecond === null ? null : Math.round(reading.framesPerSecond ?? 0),
         limit: reading.limitationReason ?? null,
+        pli: reading.pliCount ?? null,
+        nack: reading.nackCount ?? null,
+        keyFrames: reading.keyFramesEncoded ?? null,
+        resentKB:
+          reading.retransmittedBytes === null || reading.retransmittedBytes === undefined
+            ? null
+            : Math.round(reading.retransmittedBytes / 1000),
+        path: reading.path ?? null,
       });
     }
   }
