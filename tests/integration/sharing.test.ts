@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LinkStats } from '../../src/core/peer/link-stats';
 import type { MediaLink } from '../../src/core/peer/message-link';
 import type { ReceiveReport } from '../../src/core/peer/receive-stats';
+import { detectAutoCodec } from '../../src/core/peer/video-codecs';
 import { MAX_SDP_LENGTH } from '../../src/core/peer/session-description';
 import type { SharedMedia, ViewerSession } from '../../src/core/session/viewer-session';
 import {
@@ -545,16 +546,50 @@ describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over Web
     const media = (await arrived)!;
     expect(await plays(media.stream)).toBe(true);
     const link = hostLinks(host)[0]!;
-    expect(await sentCodec(link)).toBe('video/H264');
+    // Automatic is VP9 where this browser has no hardware H.264 encoder, else H.264.
+    const automatic = (await detectAutoCodec()) === 'vp9' ? 'video/VP9' : 'video/H264';
+    await waitFor<void>((resolve) => {
+      const poll = async () =>
+        (await sentCodec(link)) === automatic ? resolve() : setTimeout(() => void poll(), 250);
+      void poll();
+    }, 15_000);
 
-    host.setCodec('vp9');
+    host.setCodec('vp8');
 
     await waitFor<void>((resolve) => {
       const poll = async () =>
-        (await sentCodec(link)) === 'video/VP9' ? resolve() : setTimeout(() => void poll(), 250);
+        (await sentCodec(link)) === 'video/VP8' ? resolve() : setTimeout(() => void poll(), 250);
       void poll();
     }, 15_000);
     expect(await plays(media.stream)).toBe(true);
+  }, 40_000);
+
+  it('applies the weak-connection mode to the sender, and the steady floor keeps the picture playing', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    const arrived = nextMedia(viewer);
+    host.startSharing(createTestStream());
+    const media = (await arrived)!;
+    expect(await plays(media.stream)).toBe(true);
+    const link = hostLinks(host)[0]!;
+    const preference = () =>
+      link.senders.find((s) => s.track?.kind === 'video')?.getParameters().degradationPreference;
+    await waitFor<void>((resolve) => {
+      const poll = () => (preference() === 'balanced' ? resolve() : setTimeout(poll, 100));
+      poll();
+    }, 10_000);
+
+    // The floor travels in a new negotiation while the picture is sent.
+    host.setWeakLink('steady');
+
+    await waitFor<void>((resolve) => {
+      const poll = () =>
+        preference() === 'maintain-resolution' ? resolve() : setTimeout(poll, 100);
+      poll();
+    }, 10_000);
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    expect(await plays(media.stream)).toBe(true);
+    expect(host.participants).toHaveLength(2);
   }, 40_000);
 
   it('keeps the viewer and the picture when codec and quality are changed again and again', async () => {

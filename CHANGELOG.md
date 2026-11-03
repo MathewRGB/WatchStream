@@ -7,6 +7,19 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A **Weak connection** setting (smooth motion, balanced, steady sharpness) for what the picture
+  gives up when the browser's bandwidth estimate to a viewer falls far below the chosen quality,
+  as on a long route. Steady keeps the resolution and asks Chromium for a minimum and start bitrate.
+- The load control logs the connection numbers of every link every ten seconds (estimate, target,
+  sent bitrate, loss, round trip, frame size, frame rate, why the encoder holds back).
+
+### Changed
+
+- The automatic codec is VP9 first where the browser has no hardware H.264 encoder, else H.264.
+- The sender no longer insists on `maintain-framerate`; the default is `balanced`.
+
 ## [0.1.0] - 2026-11-02
 
 First release. How it works is in [docs/architecture.md](docs/architecture.md).

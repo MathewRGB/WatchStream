@@ -1,4 +1,5 @@
 import { resolveLimits, type CustomQuality, type QualityChoice } from '@/core/media/quality';
+import { WEAK_LINK_OPTIONS, type WeakLinkMode } from '@/core/media/weak-link';
 import type { CodecId, CodecOption } from '@/core/peer/video-codecs';
 import type { TabSoundControls } from '@/hooks/use-tab-sound';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,9 @@ interface SettingsTabProps {
   codec?: CodecId;
   codecOptions?: readonly CodecOption[];
   onCodecChange?: (id: CodecId) => void;
+  /** What the sender gives up on a weak connection; none, no section. */
+  weakLink?: WeakLinkMode;
+  onWeakLinkChange?: (mode: WeakLinkMode) => void;
 }
 
 /**
@@ -34,6 +38,8 @@ export function SettingsTab({
   codec = 'auto',
   codecOptions = [],
   onCodecChange,
+  weakLink = 'balanced',
+  onWeakLinkChange,
 }: SettingsTabProps) {
   const chosenCodec = codecOptions.find((option) => option.id === codec);
   return (
@@ -75,6 +81,45 @@ export function SettingsTab({
                   onChange={() => onCodecChange(option.id)}
                   className="mt-1"
                   data-testid={`codec-${option.id}`}
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        </SettingsSection>
+      )}
+      {onWeakLinkChange && (
+        <SettingsSection
+          id="weak-link"
+          title="Weak connection"
+          summary={WEAK_LINK_OPTIONS.find((option) => option.id === weakLink)?.label}
+        >
+          <fieldset className="flex flex-col gap-3" data-testid="weak-link-options">
+            <legend className="sr-only">Weak connection</legend>
+            <p className="text-xs text-muted-foreground">
+              What the picture gives up when the connection to a viewer cannot carry it, for example
+              on a long route. The browser measures this by itself and can fall far below the
+              quality you chose.
+            </p>
+            {WEAK_LINK_OPTIONS.map((option) => (
+              <label
+                key={option.id}
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 has-[:focus-visible]:ring-2',
+                  option.id === weakLink && 'border-primary bg-primary/5',
+                )}
+              >
+                <input
+                  type="radio"
+                  name="weak-link"
+                  value={option.id}
+                  checked={option.id === weakLink}
+                  onChange={() => onWeakLinkChange(option.id)}
+                  className="mt-1"
+                  data-testid={`weak-link-${option.id}`}
                 />
                 <span className="flex flex-col">
                   <span className="text-sm font-medium">{option.label}</span>

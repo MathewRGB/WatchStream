@@ -17,6 +17,14 @@ export interface LinkStats {
   /** Share of this link's packets lost, 0 to 1, as the viewer reports it; `null` if not known. */
   lossFraction: number | null;
   rttMs: number | null;
+  /** Why the browser holds the picture back (`bandwidth`, `cpu`, `none`); `null` if not said. */
+  limitationReason?: string | null;
+  /** The bitrate the encoder aims at right now, in bit/s. */
+  targetBps?: number | null;
+  /** Height in pixels of the frames being encoded, after the browser's own scaling. */
+  frameHeight?: number | null;
+  /** Frames a second the encoder produces right now. */
+  framesPerSecond?: number | null;
 }
 
 /**
@@ -47,5 +55,12 @@ export function readLinkStats(reports: Iterable<object>, at: number): LinkStats 
     availableBps: number(pair?.availableOutgoingBitrate),
     lossFraction: number(remote?.fractionLost),
     rttMs: rttSeconds === null ? null : rttSeconds * 1000,
+    limitationReason:
+      typeof outbound.qualityLimitationReason === 'string'
+        ? outbound.qualityLimitationReason
+        : null,
+    targetBps: number(outbound.targetBitrate),
+    frameHeight: number(outbound.frameHeight),
+    framesPerSecond: number(outbound.framesPerSecond),
   };
 }

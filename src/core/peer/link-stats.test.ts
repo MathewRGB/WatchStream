@@ -21,6 +21,30 @@ const FIREFOX = [
 ];
 
 describe('readLinkStats', () => {
+  it('reads why and how the encoder holds the picture back', () => {
+    const stats = readLinkStats(
+      [
+        {
+          type: 'outbound-rtp',
+          kind: 'video',
+          framesEncoded: 1,
+          bytesSent: 1,
+          qualityLimitationReason: 'bandwidth',
+          targetBitrate: 120_000,
+          frameHeight: 360,
+          framesPerSecond: 22,
+        },
+      ],
+      1,
+    );
+    expect(stats).toMatchObject({
+      limitationReason: 'bandwidth',
+      targetBps: 120_000,
+      frameHeight: 360,
+      framesPerSecond: 22,
+    });
+  });
+
   it('reads the numbers of a Chromium link', () => {
     expect(readLinkStats(CHROMIUM, 1000)).toEqual({
       at: 1000,
@@ -30,6 +54,10 @@ describe('readLinkStats', () => {
       availableBps: 3_920_000,
       lossFraction: 0.02,
       rttMs: 12,
+      limitationReason: null,
+      targetBps: null,
+      frameHeight: null,
+      framesPerSecond: null,
     });
   });
 
@@ -42,6 +70,10 @@ describe('readLinkStats', () => {
       availableBps: null,
       lossFraction: 0,
       rttMs: 4,
+      limitationReason: null,
+      targetBps: null,
+      frameHeight: null,
+      framesPerSecond: null,
     });
   });
 
@@ -76,6 +108,10 @@ describe('readLinkStats', () => {
       availableBps: null,
       lossFraction: null,
       rttMs: null,
+      limitationReason: null,
+      targetBps: null,
+      frameHeight: null,
+      framesPerSecond: null,
     });
   });
 

@@ -45,6 +45,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
     quality,
     customQuality,
     codec,
+    weakLink,
     load,
     receiveReports,
   } = useHostSession(session);
@@ -118,6 +119,8 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
           codec={codec}
           codecOptions={codecOptions}
           onCodecChange={(id) => session.setCodec(id)}
+          weakLink={weakLink}
+          onWeakLinkChange={(mode) => session.setWeakLink(mode)}
           tabSound={tabSound.supported ? tabSound : undefined}
         />
       ),

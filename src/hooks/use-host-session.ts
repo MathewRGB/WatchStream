@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { CustomQuality, QualityChoice } from '@/core/media/quality';
 import type { ReceiveReport } from '@/core/peer/receive-stats';
+import type { WeakLinkMode } from '@/core/media/weak-link';
 import type { CodecId } from '@/core/peer/video-codecs';
 import type { Participant } from '@/core/protocol/messages';
 import type { HostSession, IncomingShare, LoadStatus } from '@/core/session/host-session';
@@ -13,6 +14,7 @@ const EVENTS = [
   'sharing',
   'quality',
   'codec',
+  'weakLink',
   'load',
   'incoming',
   'shareRequests',
@@ -34,6 +36,8 @@ export interface HostSnapshot {
   customQuality: CustomQuality;
   /** The video codec the host chose. */
   codec: CodecId;
+  /** What the sender gives up on a weak connection. */
+  weakLink: WeakLinkMode;
   /** What is really sent, and how the viewers fare. */
   load: LoadStatus;
   /** How the picture arrives at each viewer, as the viewers say. */
@@ -56,6 +60,7 @@ export function useHostSession(session: HostSession): HostSnapshot {
     quality: session.quality,
     customQuality: session.customQuality,
     codec: session.codec,
+    weakLink: session.weakLink,
     load: session.load,
     receiveReports: session.receiveReports,
   };

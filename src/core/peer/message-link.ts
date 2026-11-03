@@ -3,6 +3,7 @@ import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from './diagnostics';
 import type { LinkStats } from './link-stats';
 import type { ReceiveStats } from './receive-stats';
+import type { WeakLinkMode } from '../media/weak-link';
 import type { CodecId } from './video-codecs';
 
 export type LinkState = 'connecting' | 'open' | 'closed';
@@ -49,6 +50,11 @@ export interface MediaLink extends MessageLink {
    * negotiation on, and starts one when a picture is already sent. Never removes a fallback.
    */
   setVideoCodec(codec: CodecId): Promise<void>;
+  /**
+   * What the sender gives up when the connection cannot carry the picture (see `weak-link.ts`).
+   * Applies at once; a change of the bitrate floor starts a negotiation when a picture is sent.
+   */
+  setWeakLinkMode(mode: WeakLinkMode): Promise<void>;
   /**
    * Counters of the picture this link sends, for the host's load monitor. `null` while
    * no picture is sent and once the link is closed.

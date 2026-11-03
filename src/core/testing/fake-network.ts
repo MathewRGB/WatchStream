@@ -3,6 +3,7 @@ import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from '../peer/diagnostics';
 import type { LinkStats } from '../peer/link-stats';
 import type { ReceiveStats } from '../peer/receive-stats';
+import type { WeakLinkMode } from '../media/weak-link';
 import type { CodecId } from '../peer/video-codecs';
 import type {
   LinkEvents,
@@ -105,6 +106,13 @@ export class FakeLink implements OfferingLink {
 
   async setVideoCodec(codec: CodecId): Promise<void> {
     this.codec = codec;
+  }
+
+  /** The latest mode set through `setWeakLinkMode`. */
+  weakLinkMode: WeakLinkMode = 'balanced';
+
+  async setWeakLinkMode(mode: WeakLinkMode): Promise<void> {
+    this.weakLinkMode = mode;
   }
 
   /** What `stats()` answers; a test sets it, as the browser would count on. `null`: no picture. */

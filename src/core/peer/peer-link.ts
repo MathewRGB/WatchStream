@@ -5,6 +5,13 @@ import { summarizeCandidates } from './candidates';
 import { readLinkStats, type LinkStats } from './link-stats';
 import { readReceiveStats, type ReceiveStats } from './receive-stats';
 import { tuneOpus } from './opus';
+import {
+  applyBitrateHints,
+  bitrateHints,
+  DEFAULT_WEAK_LINK,
+  degradationFor,
+  type WeakLinkMode,
+} from '../media/weak-link';
 import { DEFAULT_CODEC, preferVideoCodecs, type CodecId } from './video-codecs';
 import type { LinkDiagnostics } from './diagnostics';
 import type {
@@ -62,6 +69,7 @@ export class PeerLink implements OfferingLink {
   private outgoing: MediaStream | null = null;
   private limits: MediaLimits | null = null;
   private codec: CodecId = DEFAULT_CODEC;
+  private weakLink: WeakLinkMode = DEFAULT_WEAK_LINK;
   /**
    * The steps of the negotiation (`receiveSignal`, offers) run one after the other. The browser
    * answers `InvalidStateError` to a step that starts while another one is half done, and a host
@@ -218,12 +226,15 @@ export class PeerLink implements OfferingLink {
     }
 
     // A polite peer's setRemoteDescription rolls back its own pending offer.
-    await this.connection.setRemoteDescription({ type: signal.type, sdp: signal.sdp });
+    await this.connection.setRemoteDescription({
+      type: signal.type,
+      sdp: signal.type === 'answer' ? this.withBitrateHints(signal.sdp) : signal.sdp,
+    });
     if (signal.type === 'offer') {
       const answer = await this.connection.createAnswer();
       await this.connection.setLocalDescription({
         type: 'answer',
-        sdp: tuneOpus(answer.sdp ?? ''),
+        sdp: this.withBitrateHints(tuneOpus(answer.sdp ?? '')),
       });
       this.emitLocalDescription('answer');
     } else {
@@ -235,8 +246,36 @@ export class PeerLink implements OfferingLink {
   }
 
   async setMediaLimits(limits: MediaLimits): Promise<void> {
+    const before = this.limits;
     this.limits = limits;
     await this.applyLimits();
+    // The floor is a share of the cap and travels in the description; a new cap needs a new one.
+    if (before && before.maxBitrateBps !== limits.maxBitrateBps && this.hints()) {
+      await this.negotiate();
+    }
+  }
+
+  async setWeakLinkMode(mode: WeakLinkMode): Promise<void> {
+    if (mode === this.weakLink) return;
+    const hadHints = this.hints() !== null;
+    this.weakLink = mode;
+    await this.applyLimits();
+    // The floor travels in the description: a picture that is sent needs a new one when it changes.
+    if (
+      hadHints !== (this.hints() !== null) &&
+      this.senders.some((s) => s.track?.kind === 'video')
+    ) {
+      await this.negotiate();
+    }
+  }
+
+  private hints() {
+    return this.limits ? bitrateHints(this.weakLink, this.limits.maxBitrateBps) : null;
+  }
+
+  /** The description with the bitrate floor of the weak-link mode (Chromium; others ignore it). */
+  private withBitrateHints(sdp: string): string {
+    return applyBitrateHints(sdp, this.hints());
   }
 
   stats(): Promise<LinkStats | null> {
@@ -354,9 +393,9 @@ export class PeerLink implements OfferingLink {
         } else {
           const height = track.getSettings().height ?? limits.maxHeight;
           // What is shared is mostly film and sport: smooth motion over sharp single frames. When
-          // the encoder falls behind, it lowers the resolution and keeps the frame rate.
+          // the encoder falls behind, what it gives up is the host's choice (`WeakLinkMode`).
           track.contentHint = 'motion';
-          parameters.degradationPreference = 'maintain-framerate';
+          parameters.degradationPreference = degradationFor(this.weakLink);
           encoding.maxBitrate = limits.maxBitrateBps;
           encoding.maxFramerate = limits.maxFramerate;
           encoding.scaleResolutionDownBy = Math.max(1, height / limits.maxHeight);
@@ -417,7 +456,10 @@ export class PeerLink implements OfferingLink {
     this.offerWanted = false;
     try {
       const offer = await this.connection.createOffer();
-      await this.connection.setLocalDescription({ type: 'offer', sdp: tuneOpus(offer.sdp ?? '') });
+      await this.connection.setLocalDescription({
+        type: 'offer',
+        sdp: this.withBitrateHints(tuneOpus(offer.sdp ?? '')),
+      });
       this.emitLocalDescription('offer');
     } catch (error) {
       this.log.error('media negotiation failed', describeThrown(error));

@@ -182,10 +182,14 @@ the picture is picked, and each link then asks the captured track for the frame 
 if the capture produces 60, and capturing 60 to send 15 would be work for nothing. A track that
 cannot be asked (a canvas, in the tests) keeps what it has.
 
-**Codec and encoder hints.** The host asks for H.264 first and keeps VP8 as the fallback
-(`preferVideoCodecs`, applied with `setCodecPreferences` when a video track is added; only the
-order changes, so a viewer without H.264 still connects; not in Firefox, which loads its H.264
-as a plugin on demand and sent no picture without it, so it keeps VP8 first).
+**Codec and encoder hints.** The automatic order is decided per computer (`detectAutoCodec`,
+`navigator.mediaCapabilities.encodingInfo`): H.264 first where the browser reports a
+power-efficient (hardware) encoder for it, otherwise VP9 first, because a software H.264 encoder
+needs about a third more data and holds a rate badly on a long route. H.264 and VP8 stay behind
+as fallbacks (`preferVideoCodecs`, applied with `setCodecPreferences` when a video track is added;
+only the order changes, so a viewer without the first codec still connects; not in Firefox, which
+loads its H.264 as a plugin on demand and sent no picture without it, so it keeps VP8 first and
+`detectAutoCodec` answers nothing).
 The host can choose the codec in Settings (`CodecId`: automatic, H.264, VP9, VP8, AV1; only those
 the browser lists, and no section where it takes no preference). The choice goes first and H.264
 and VP8 stay behind it, so nothing is removed and a viewer that cannot use it gets the next one.
@@ -194,9 +198,22 @@ negotiates again. VP9 needs about a third less data for the same picture and cos
 more, AV1 even more, which is why the choice is the host's and the default stays automatic. A graphics chip can encode H.264, which
 Windows browsers use by default; on Linux, Chrome and Brave encode WebRTC video in software unless
 hardware encoding is switched on in the browser, so there the codec alone changes little. The
-video track gets `contentHint = 'motion'` and the sender `degradationPreference =
-'maintain-framerate'`: when the encoder falls behind, the picture gets smaller instead of
-stuttering.
+video track gets `contentHint = 'motion'`.
+
+**Weak connection.** The browser estimates the bandwidth to each viewer itself and, on a long or
+lossy route, can fall far below the cap (measured Germany to Kyrgyzstan: 0.1 of 3 to 5 Mbit/s), so
+the quality step alone changes little. The host chooses in Settings what the picture gives up then
+(`WeakLinkMode`, `weak-link.ts`): _smooth_ (`maintain-framerate`: small and blurry first),
+_balanced_ (the default, `balanced`) or _steady_ (`maintain-resolution`: the frame rate drops, and
+the description carries Chromium's `x-google-min-bitrate` / `x-google-start-bitrate` at 40 % and
+70 % of the cap, written into the offer, the answer and the answer the host receives; other
+browsers ignore them). Steady holds a floor the line may not carry, which costs lost packets, so
+it is a choice. A change of the floor starts a negotiation while a picture is sent.
+
+Every few seconds the load control logs one `link reading` line per link (cap, the browser's
+estimate and target, bitrate sent, loss, round trip, height, frame rate and
+`qualityLimitationReason`; numbers and enums only), so a picture that falls apart after a while
+can be read in the log afterwards.
 
 ## 7. Up to twelve viewers, and a load monitor
 

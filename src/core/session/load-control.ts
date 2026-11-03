@@ -1,7 +1,15 @@
 import { LoadMonitor, type LinkHealth } from '../media/load-monitor';
 import { SendRate } from '../media/send-rate';
 import type { MediaLimits, QualityChoice } from '../media/quality';
+import { createLogger } from '../log/logger';
 import type { LinkStats } from '../peer/link-stats';
+
+const log = createLogger('load');
+/** One log line per link every this many rounds, so the history is not flooded. */
+const LOG_EVERY_ROUNDS = 5;
+
+const kbps = (bps: number | null | undefined): number | null =>
+  bps === null || bps === undefined ? null : Math.round(bps / 1000);
 
 /** How well the host carries its viewers. */
 export interface LoadStatus {
@@ -50,6 +58,7 @@ export class LoadControl {
   private readonly rate = new SendRate();
   private timer: ReturnType<typeof setInterval> | null = null;
   private reading = false;
+  private rounds = 0;
   /** Counts the resets, so that a reading that was under way during one is dropped. */
   private generation = 0;
   private struggling = false;
@@ -97,6 +106,34 @@ export class LoadControl {
     this.health.delete(id);
   }
 
+  /**
+   * Every few rounds one line per link with what the browser says about the connection, so a
+   * picture that falls apart after a while can be read afterwards: the estimate against the cap,
+   * the loss, the round trip and why the encoder holds back. Counts and enums only.
+   */
+  private logReadings(readings: ReadonlyMap<string, LinkStats | null>): void {
+    this.rounds += 1;
+    if (this.rounds % LOG_EVERY_ROUNDS !== 0) return;
+    const cap = this.options.limits().maxBitrateBps;
+    let index = 0;
+    for (const reading of readings.values()) {
+      index += 1;
+      if (!reading) continue;
+      log.info('link reading', {
+        link: index,
+        capKbps: Math.round(cap / 1000),
+        estimateKbps: kbps(reading.availableBps),
+        targetKbps: kbps(reading.targetBps),
+        sentKbps: kbps(this.rate.bps),
+        lossPercent: reading.lossFraction === null ? null : Math.round(reading.lossFraction * 100),
+        rttMs: reading.rttMs === null ? null : Math.round(reading.rttMs),
+        height: reading.frameHeight ?? null,
+        fps: reading.framesPerSecond === null ? null : Math.round(reading.framesPerSecond ?? 0),
+        limit: reading.limitationReason ?? null,
+      });
+    }
+  }
+
   /** One round: read every link, let the monitor judge, and keep what it says. */
   private async read(): Promise<void> {
     const links = this.options.links();
@@ -117,6 +154,7 @@ export class LoadControl {
         limits: this.options.limits(),
       });
       this.rate.update(readings);
+      this.logReadings(readings);
       this.struggling = decision.struggling;
       if (decision.cause) this.cause = decision.cause;
       this.health = new Map(decision.links);

@@ -14,7 +14,8 @@ import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
 import type { LinkSignal, MediaLink, OfferingLink, PeerConnector } from '../peer/message-link';
 import type { ReceiveReport } from '../peer/receive-stats';
-import { DEFAULT_CODEC, type CodecId } from '../peer/video-codecs';
+import { DEFAULT_CODEC, detectAutoCodec, type CodecId } from '../peer/video-codecs';
+import { DEFAULT_WEAK_LINK, type WeakLinkMode } from '../media/weak-link';
 import {
   normalizeChatText,
   parseViewerMessage,
@@ -40,6 +41,8 @@ export interface HostSessionOptions {
   monitorIntervalMs?: number;
   createId?: () => string;
   now?: () => number;
+  /** Asks what `auto` comes to on this computer; tests set it. Defaults to the browser's answer. */
+  detectAutoCodec?: () => Promise<'h264' | 'vp9' | null>;
 }
 
 export interface HostSessionEvents {
@@ -53,6 +56,8 @@ export interface HostSessionEvents {
   quality: QualityChoice;
   /** The video codec the host chose changed (payload: the new choice). */
   codec: CodecId;
+  /** What the sender gives up on a weak connection changed (payload: the new choice). */
+  weakLink: WeakLinkMode;
   /** The load status changed: whether the host struggles, the cause, how the viewers fare. */
   load: LoadStatus;
   /** A viewer's share started (its picture) or ended (`null`); see `incoming`. */
@@ -120,6 +125,9 @@ export class HostSession {
   /** Whether the host has set a custom value; until then `custom` starts from the step in use. */
   private customTouched = false;
   private currentCodec: CodecId = DEFAULT_CODEC;
+  /** What `auto` comes to on this computer, once the browser has said; `auto` until then. */
+  private autoCodec: CodecId = 'auto';
+  private currentWeakLink: WeakLinkMode = DEFAULT_WEAK_LINK;
   private readonly loadControl: LoadControl;
   private lastLoadKey = '';
 
@@ -136,6 +144,16 @@ export class HostSession {
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.now = options.now ?? Date.now;
     this.hostId = this.createId();
+    void (options.detectAutoCodec ?? detectAutoCodec)()
+      .then((codec) => {
+        if (!codec || codec === this.autoCodec) return;
+        this.log.info('automatic codec', { codec });
+        this.autoCodec = codec;
+        if (this.currentCodec === 'auto') {
+          for (const { link } of this.viewers.values()) this.applyCodec(link);
+        }
+      })
+      .catch(() => undefined);
   }
 
   get events(): Pick<Emitter<HostSessionEvents>, 'on'> {
@@ -334,6 +352,18 @@ export class HostSession {
     this.publishLoad();
   }
 
+  /** What the sender gives up when the connection to a viewer is too weak for the picture. */
+  get weakLink(): WeakLinkMode {
+    return this.currentWeakLink;
+  }
+
+  setWeakLink(mode: WeakLinkMode): void {
+    if (mode === this.currentWeakLink) return;
+    this.currentWeakLink = mode;
+    for (const { link } of this.viewers.values()) this.applyWeakLink(link);
+    this.emitter.emit('weakLink', mode);
+  }
+
   /** The stream the host currently shares, or `null`. */
   get sharedStream(): MediaStream | null {
     return this.shared;
@@ -480,6 +510,7 @@ export class HostSession {
     // The link keeps the limits and applies them whenever a video track gets negotiated.
     this.applyQuality(link);
     this.applyCodec(link);
+    this.applyWeakLink(link);
     if (this.sending) this.startSharingWith(link);
     this.publishRoster();
     this.publishSlots();
@@ -648,8 +679,15 @@ export class HostSession {
 
   private applyCodec(link: MediaLink): void {
     // Only an order: failing to set it leaves the browser's own, and no one is dropped.
-    void link.setVideoCodec(this.currentCodec).catch((error) => {
+    const codec = this.currentCodec === 'auto' ? this.autoCodec : this.currentCodec;
+    void link.setVideoCodec(codec).catch((error) => {
       this.log.warn('could not set the video codec', describeThrown(error));
+    });
+  }
+
+  private applyWeakLink(link: MediaLink): void {
+    void link.setWeakLinkMode(this.currentWeakLink).catch((error) => {
+      this.log.warn('could not set the weak-link mode', describeThrown(error));
     });
   }
 

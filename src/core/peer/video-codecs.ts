@@ -4,7 +4,8 @@
  * offered, and nothing is removed, so a viewer whose browser lacks the chosen codec still connects
  * with the next one.
  *
- * - `auto`: H.264 first (a graphics chip can encode it, on Windows by default), then VP8.
+ * - `auto`: H.264 where a graphics chip encodes it (see `detectAutoCodec`), else VP9, which holds
+ *   a picture together on far less data when the processor has to do the work; then H.264, VP8.
  * - `h264`: the same, for a host that wants to say so.
  * - `vp9`: about a third less data for the same picture, at a higher cost for the processor.
  * - `vp8`: software-encoded everywhere, the fallback of last resort.
@@ -24,7 +25,8 @@ export const CODEC_OPTIONS: readonly CodecOption[] = [
   {
     id: 'auto',
     label: 'Automatic',
-    description: 'H.264 first, which a graphics chip can encode, then VP8. Right for most hosts.',
+    description:
+      'H.264 where your graphics chip encodes it, otherwise VP9, which keeps the picture clean on a weak connection. Right for most hosts.',
   },
   {
     id: 'h264',
@@ -53,6 +55,32 @@ const AUTOMATIC_ORDER = ['video/h264', 'video/vp8'];
 
 function offeredOrder(preference: CodecId): string[] {
   return preference === 'auto' ? AUTOMATIC_ORDER : [`video/${preference}`, ...AUTOMATIC_ORDER];
+}
+
+/**
+ * What `auto` comes to on this computer: H.264 where the browser reports a power-efficient
+ * (hardware) encoder for it, else VP9 when the browser can encode that, else H.264. A software
+ * H.264 encoder needs about a third more data than VP9 for the same picture and holds a rate
+ * badly, which shows on a long route. `null` where the browser cannot say (Firefox, old versions).
+ */
+export async function detectAutoCodec(): Promise<'h264' | 'vp9' | null> {
+  if (typeof navigator === 'undefined' || !navigator.mediaCapabilities?.encodingInfo) return null;
+  if (/firefox/i.test(navigator.userAgent)) return null;
+  const probe = async (contentType: string) => {
+    try {
+      return await navigator.mediaCapabilities.encodingInfo({
+        type: 'webrtc',
+        video: { contentType, width: 1280, height: 720, bitrate: 3_000_000, framerate: 30 },
+      });
+    } catch {
+      return null;
+    }
+  };
+  const h264 = await probe('video/H264;profile-level-id=42e01f');
+  if (h264?.supported && h264.powerEfficient) return 'h264';
+  const vp9 = await probe('video/VP9');
+  if (vp9?.supported) return 'vp9';
+  return h264 === null ? null : 'h264';
 }
 
 /**
