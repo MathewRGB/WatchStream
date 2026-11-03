@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { AudioDelayTracker } from '../../src/core/media/delay-tracker';
 import { DelayedAudio } from '../../src/core/media/delayed-audio';
-import { createTestStream, join, startHost, waitFor } from './helpers';
+import { createTestStream, createTestStreamWithAudio, join, startHost, waitFor } from './helpers';
 import type { SharedMedia } from '../../src/core/session/viewer-session';
 
 /** A stream whose sound is silent for `silentMs` and then a steady tone: an onset to time. */
@@ -73,6 +74,43 @@ describe('DelayedAudio over WebRTC', () => {
     } finally {
       direct.dispose();
       late.dispose();
+      element.remove();
+    }
+  }, 30_000);
+
+  it('measures how late the picture is from the real jitter-buffer counters', async () => {
+    const host = startHost();
+    const viewer = await join(host, 'user2');
+    viewer.setPlayoutBuffer('medium');
+    const arrived = waitFor<SharedMedia | null>((resolve) => {
+      const off = viewer.events.on('media', (media) => {
+        off();
+        resolve(media);
+      });
+    });
+    host.startSharing(createTestStreamWithAudio());
+    const media = (await arrived)!;
+    const element = document.createElement('video');
+    element.muted = true;
+    element.srcObject = media.stream;
+    document.body.append(element);
+    await element.play();
+    const sound = new DelayedAudio(media.stream, 2000, 0);
+    await sound.resume();
+
+    const tracker = new AudioDelayTracker();
+    let measured: number | null = null;
+    try {
+      for (let i = 0; i < 10; i += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        measured = tracker.update(await viewer.readPlayoutCounters()) ?? measured;
+      }
+      // The picture waits about as long as it was asked to and the sound almost not at all.
+      expect(measured).not.toBeNull();
+      expect(measured!).toBeGreaterThan(1500);
+      expect(measured!).toBeLessThan(2400);
+    } finally {
+      sound.dispose();
       element.remove();
     }
   }, 30_000);

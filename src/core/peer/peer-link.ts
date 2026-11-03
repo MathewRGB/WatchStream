@@ -5,6 +5,8 @@ import { summarizeCandidates } from './candidates';
 import { readLinkStats, type LinkStats } from './link-stats';
 import { readReceiveStats, type ReceiveStats } from './receive-stats';
 import { tuneOpus } from './opus';
+import { readPlayoutCounters } from './playout-counters';
+import type { PlayoutCounters } from '../media/delay-tracker';
 import {
   applyBitrateHints,
   bitrateHints,
@@ -300,6 +302,10 @@ export class PeerLink implements OfferingLink {
 
   stats(): Promise<LinkStats | null> {
     return this.readStats(readLinkStats);
+  }
+
+  playoutCounters(): Promise<PlayoutCounters | null> {
+    return this.readStats((reports) => readPlayoutCounters(reports));
   }
 
   receiveStats(): Promise<ReceiveStats | null> {

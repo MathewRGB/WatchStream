@@ -1,10 +1,12 @@
 /** How often the stream is checked for a sound track that arrived or went. */
 const WATCH_INTERVAL_MS = 500;
-/** The longest delay the graph can hold, in seconds; the longest playout buffer is 4 s. */
+/** Time constant of a change of delay; a few of these and it has arrived. */
+const GLIDE_SECONDS = 1;
+/** The longest delay the graph can hold, in seconds; the longest playout buffer is 2 s. */
 const MAX_DELAY_SECONDS = 6;
 
 /**
- * Plays the sound of a received stream late, by a fixed time.
+ * Plays the sound of a received stream late, by a time that can be changed while it plays.
  *
  * Why this exists: the viewer's smoothing buffer (`jitterBufferTarget`) holds the PICTURE back
  * by the chosen time, but the browser does not hold the sound back with it. Measured in Chromium:
@@ -22,6 +24,7 @@ export class DelayedAudio {
   private readonly gain: GainNode;
   private source: MediaStreamAudioSourceNode | null = null;
   private connectedTrack: string | null = null;
+  private delayKnown = false;
   private readonly timer: ReturnType<typeof setInterval>;
 
   constructor(
@@ -48,8 +51,18 @@ export class DelayedAudio {
     return this.context;
   }
 
+  /**
+   * Moves the delay to `ms`. The first value is taken at once; later ones glide, because a delay
+   * that jumps is heard as a skip and one that changes slowly only shifts the pitch a little.
+   */
   setDelay(ms: number): void {
-    this.delay.delayTime.value = Math.min(MAX_DELAY_SECONDS, Math.max(0, ms / 1000));
+    const seconds = Math.min(MAX_DELAY_SECONDS, Math.max(0, ms / 1000));
+    if (!this.delayKnown) {
+      this.delay.delayTime.value = seconds;
+      this.delayKnown = true;
+      return;
+    }
+    this.delay.delayTime.setTargetAtTime(seconds, this.context.currentTime, GLIDE_SECONDS);
   }
 
   /** 0 (silent) to 1 (full). */

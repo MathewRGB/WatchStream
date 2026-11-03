@@ -3,6 +3,7 @@ import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from '../peer/diagnostics';
 import type { LinkStats } from '../peer/link-stats';
 import type { ReceiveStats } from '../peer/receive-stats';
+import type { PlayoutCounters } from '../media/delay-tracker';
 import type { WeakLinkMode } from '../media/weak-link';
 import type { CodecId } from '../peer/video-codecs';
 import type {
@@ -106,6 +107,13 @@ export class FakeLink implements OfferingLink {
 
   async setVideoCodec(codec: CodecId): Promise<void> {
     this.codec = codec;
+  }
+
+  /** What `playoutCounters()` answers; a test sets it. */
+  playoutReading: PlayoutCounters | null = null;
+
+  async playoutCounters(): Promise<PlayoutCounters | null> {
+    return this.currentState === 'closed' ? null : this.playoutReading;
   }
 
   /** The latest target set through `setPlayoutBuffer`. */

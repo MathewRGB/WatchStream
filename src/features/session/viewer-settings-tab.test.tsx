@@ -20,8 +20,8 @@ describe('ViewerSettingsTab', () => {
     const onBufferChange = vi.fn();
     render(<ViewerSettingsTab buffer="standard" onBufferChange={onBufferChange} />);
 
-    await userEvent.click(screen.getByTestId('playout-buffer-long'));
+    await userEvent.click(screen.getByTestId('playout-buffer-medium'));
 
-    expect(onBufferChange).toHaveBeenCalledWith('long');
+    expect(onBufferChange).toHaveBeenCalledWith('medium');
   });
 });

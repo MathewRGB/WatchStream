@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AudioDelayTracker, type PlayoutCounters } from '@/core/media/delay-tracker';
 import { DelayedAudio } from '@/core/media/delayed-audio';
 import { cn } from '@/lib/utils';
 import { FADE_WHEN_IDLE } from './stage-fullscreen';
@@ -25,7 +26,16 @@ interface StageVideoProps {
    * holds back (the smoothing buffer). 0 plays the stream as it is.
    */
   audioDelayMs?: number;
+  /**
+   * Reads how long picture and sound wait in the browser's buffers. With it the sound delay
+   * follows the picture's real buffer, which on a real connection is larger than the target;
+   * `audioDelayMs` is what is used until a measurement exists.
+   */
+  readPlayoutCounters?: () => Promise<PlayoutCounters | null>;
 }
+
+/** How often the buffers are measured to keep the sound in step with the picture. */
+const MEASURE_INTERVAL_MS = 1_000;
 
 /** The level a viewer gets when they switch the sound on from 0. */
 const FALLBACK_VOLUME = 0.5;
@@ -42,6 +52,7 @@ export function StageVideo({
   volume = 1,
   onVolumeChange,
   audioDelayMs = 0,
+  readPlayoutCounters,
 }: StageVideoProps) {
   const source = useMemo(
     () => (silent ? new MediaStream(stream.getVideoTracks()) : stream),
@@ -86,9 +97,26 @@ export function StageVideo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, delaying]);
 
+  // Until the browser's counters say how late the picture really is, the asked-for time is used;
+  // then the sound follows the measured difference.
   useEffect(() => {
     delayed.current?.setDelay(audioDelayMs);
-  }, [audioDelayMs, delaying]);
+    if (!delaying || !readPlayoutCounters) return;
+    const tracker = new AudioDelayTracker();
+    let stopped = false;
+    const timer = setInterval(() => {
+      void readPlayoutCounters()
+        .then((counters) => {
+          const measured = stopped ? null : tracker.update(counters);
+          if (measured !== null) delayed.current?.setDelay(measured);
+        })
+        .catch(() => undefined);
+    }, MEASURE_INTERVAL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [audioDelayMs, delaying, readPlayoutCounters]);
 
   useEffect(() => {
     delayed.current?.setLevel(muted ? 0 : level);

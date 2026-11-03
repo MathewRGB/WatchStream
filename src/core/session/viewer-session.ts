@@ -3,6 +3,7 @@ import { createLogger, describeThrown } from '../log/logger';
 import { decodeInvitation, encodeReply } from '../handshake/handshake-code';
 import { summarizeCandidates, type CandidateSummary } from '../peer/candidates';
 import { describeDiagnostics } from '../peer/diagnostics';
+import type { PlayoutCounters } from '../media/delay-tracker';
 import {
   DEFAULT_PLAYOUT_BUFFER,
   playoutBufferTarget,
@@ -225,6 +226,11 @@ export class ViewerSession {
   /** How long this viewer's browser buffers before it plays; counts for what arrives later too. */
   get playoutBuffer(): PlayoutBufferId {
     return this.currentBuffer;
+  }
+
+  /** The jitter-buffer counters of picture and sound, for the stage's sound delay. */
+  readPlayoutCounters(): Promise<PlayoutCounters | null> {
+    return this.link.playoutCounters();
   }
 
   setPlayoutBuffer(id: PlayoutBufferId): void {

@@ -3,6 +3,7 @@ import type { MediaLimits } from '../media/quality';
 import type { LinkDiagnostics } from './diagnostics';
 import type { LinkStats } from './link-stats';
 import type { ReceiveStats } from './receive-stats';
+import type { PlayoutCounters } from '../media/delay-tracker';
 import type { WeakLinkMode } from '../media/weak-link';
 import type { CodecId } from './video-codecs';
 
@@ -60,6 +61,11 @@ export interface MediaLink extends MessageLink {
    * browser's own choice (see `playout-buffer.ts`). Applies to what arrives now and later.
    */
   setPlayoutBuffer(targetMs: number | null): void;
+  /**
+   * How long the picture and the sound wait in the receiver's jitter buffers, as cumulative
+   * counters; `null` once the link is closed. The stage delays the sound by their difference.
+   */
+  playoutCounters(): Promise<PlayoutCounters | null>;
   /**
    * Counters of the picture this link sends, for the host's load monitor. `null` while
    * no picture is sent and once the link is closed.

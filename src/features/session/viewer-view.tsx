@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageSquare, SlidersHorizontal, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -189,6 +189,8 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
   const messages = useChatMessages(session);
   const { volume, setVolume } = useVolume(storage);
   const { buffer, setBuffer } = usePlayoutBuffer(session, storage);
+  // Stable, or the stage would start its measurement over on every render.
+  const readPlayoutCounters = useCallback(() => session.readPlayoutCounters(), [session]);
   const { hostName } = session;
 
   const tabs: SidebarTab[] = [
@@ -248,6 +250,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
                 volume={volume}
                 onVolumeChange={setVolume}
                 audioDelayMs={playoutBufferSupported() ? (playoutBufferTarget(buffer) ?? 0) : 0}
+                readPlayoutCounters={readPlayoutCounters}
                 label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
               />
             )
