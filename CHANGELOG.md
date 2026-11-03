@@ -20,6 +20,12 @@ adheres to [Semantic Versioning](https://semver.org/).
   long route at the price of delay; picture and sound stay in step. Chromium only, remembered
   between sessions.
 
+### Fixed
+
+- With several Settings sections open the whole window could scroll, giving a second scrollbar
+  beside the settings. The hidden group labels (`sr-only`, absolutely positioned) had no
+  positioned ancestor, so the panel's overflow did not contain them. Only the panel scrolls now.
+
 ### Changed
 
 - The automatic codec is VP9 first where the browser has no hardware H.264 encoder, else H.264.

@@ -39,7 +39,9 @@ export function Sidebar({ tabs, defaultTab }: SidebarProps) {
           key={tab.id}
           value={tab.id}
           forceMount
-          className="min-h-0 flex-1 overflow-y-auto p-3 data-[state=inactive]:hidden"
+          // `relative`: an `sr-only` element (absolute) inside has no positioned ancestor
+          // otherwise, escapes this panel's overflow and stretches the whole page.
+          className="relative min-h-0 flex-1 overflow-y-auto p-3 data-[state=inactive]:hidden"
           data-testid={`tab-panel-${tab.id}`}
         >
           {tab.content}

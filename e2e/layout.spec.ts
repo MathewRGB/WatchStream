@@ -92,6 +92,26 @@ for (const size of SIZES) {
   });
 }
 
+test('with every settings section open only the settings panel scrolls, not the page', async () => {
+  const host = await openSessionPage(SIZES[0]!);
+  await host.start('user1', 'host');
+  await host.openTab('settings');
+
+  const toggles = host.page.locator('[data-testid^="settings-section-"][data-testid$="-toggle"]');
+  for (const toggle of await toggles.all()) {
+    if ((await toggle.getAttribute('data-state')) !== 'open') await toggle.click();
+  }
+
+  // Positive control: the panel really is taller than its window, so it has to scroll by itself.
+  const panel = await host.byTestId('tab-panel-settings').evaluate((el) => ({
+    scrollable: el.scrollHeight > el.clientHeight,
+    overflowY: getComputedStyle(el).overflowY,
+  }));
+  expect(panel).toEqual({ scrollable: true, overflowY: 'auto' });
+  expect(await host.pageScrolls()).toBe(false);
+  await host.page.close();
+});
+
 test('a long chat scrolls inside its list and keeps the input in view', async () => {
   const host = await openSessionPage(SIZES[0]!);
   await host.start('user1', 'host');
