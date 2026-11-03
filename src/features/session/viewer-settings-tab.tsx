@@ -21,8 +21,7 @@ export function ViewerSettingsTab({ buffer, onBufferChange }: ViewerSettingsTabP
           <legend className="sr-only">Smoothing buffer</legend>
           <p className="text-xs text-muted-foreground">
             If the picture stutters or freezes, let your browser collect more of it before it plays.
-            Picture and sound stay in step; they are only later than the host&apos;s. Chromium
-            browsers only.
+            Picture and sound are both delayed by the same time. Chromium browsers only.
           </p>
           {PLAYOUT_BUFFER_OPTIONS.map((option) => (
             <label

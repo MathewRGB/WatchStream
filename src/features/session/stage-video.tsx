@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DelayedAudio } from '@/core/media/delayed-audio';
 import { cn } from '@/lib/utils';
 import { FADE_WHEN_IDLE } from './stage-fullscreen';
 import { StageNote } from './stage-note';
@@ -19,6 +20,11 @@ interface StageVideoProps {
   volume?: number;
   /** Called when the viewer moves the volume slider, so the level can be remembered. */
   onVolumeChange?: (volume: number) => void;
+  /**
+   * Plays the sound this many milliseconds late, to keep it in step with a picture the browser
+   * holds back (the smoothing buffer). 0 plays the stream as it is.
+   */
+  audioDelayMs?: number;
 }
 
 /** The level a viewer gets when they switch the sound on from 0. */
@@ -35,6 +41,7 @@ export function StageVideo({
   silent = false,
   volume = 1,
   onVolumeChange,
+  audioDelayMs = 0,
 }: StageVideoProps) {
   const source = useMemo(
     () => (silent ? new MediaStream(stream.getVideoTracks()) : stream),
@@ -45,6 +52,8 @@ export function StageVideo({
   const [level, setLevel] = useState(volume);
   const [blocked, setBlocked] = useState(false);
   const soundOff = muted || level === 0;
+  const delayed = useRef<DelayedAudio | null>(null);
+  const delaying = !silent && audioDelayMs > 0 && typeof AudioContext !== 'undefined';
 
   useEffect(() => {
     const element = video.current;
@@ -52,25 +61,60 @@ export function StageVideo({
     element.srcObject = source;
   }, [source]);
 
+  // The sound goes through a delay of its own; the element then stays muted but attached, which
+  // is what makes the browser deliver the stream's sound to the graph.
+  useEffect(() => {
+    if (!delaying) return;
+    let audio: DelayedAudio;
+    try {
+      audio = new DelayedAudio(source, audioDelayMs, 1);
+    } catch {
+      return;
+    }
+    delayed.current = audio;
+    void audio.resume().then((playing) => {
+      if (!playing && delayed.current === audio) {
+        setMuted(true);
+        setBlocked(true);
+      }
+    });
+    return () => {
+      if (delayed.current === audio) delayed.current = null;
+      audio.dispose();
+    };
+    // The delay itself is applied by the effect below, so a new length does not restart the sound.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, delaying]);
+
+  useEffect(() => {
+    delayed.current?.setDelay(audioDelayMs);
+  }, [audioDelayMs, delaying]);
+
+  useEffect(() => {
+    delayed.current?.setLevel(muted ? 0 : level);
+  }, [muted, level, delaying]);
+
   useEffect(() => {
     const element = video.current;
     if (!element) return;
     element.volume = level;
-    element.muted = muted;
+    element.muted = muted || delaying;
     void Promise.resolve(element.play?.()).catch(() => {
       if (!muted) {
         setMuted(true);
         setBlocked(true);
       }
     });
-  }, [source, muted, level]);
+  }, [source, muted, level, delaying]);
 
   const changeLevel = (next: number) => {
+    void delayed.current?.resume();
     setLevel(next);
     onVolumeChange?.(next);
   };
 
   const toggleMute = () => {
+    void delayed.current?.resume();
     setBlocked(false);
     if (soundOff && level === 0) changeLevel(FALLBACK_VOLUME);
     setMuted(!soundOff);

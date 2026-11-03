@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CandidateSummary } from '@/core/peer/candidates';
 import type { PeerConnector } from '@/core/peer/message-link';
+import { playoutBufferSupported, playoutBufferTarget } from '@/core/media/playout-buffer';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { usePlayoutBuffer } from '@/hooks/use-playout-buffer';
@@ -246,6 +247,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
                 stream={media.stream}
                 volume={volume}
                 onVolumeChange={setVolume}
+                audioDelayMs={playoutBufferSupported() ? (playoutBufferTarget(buffer) ?? 0) : 0}
                 label={`${participants.find((p) => p.id === media.sourceId)?.name ?? hostName} is sharing`}
               />
             )

@@ -16,9 +16,10 @@ adheres to [Semantic Versioning](https://semver.org/).
   sent bitrate, loss, round trip, frame size, frame rate, why the encoder holds back, and how often
   the viewer asked for a full picture or a resend, and the kind of path: direct or relayed).
 - A **Smoothing buffer** setting for viewers (Standard, 1 s, 2 s, 4 s) in a new Settings tab. The
-  browser then collects more of the stream before it plays, which calms a stuttering picture on a
-  long route at the price of delay; picture and sound stay in step. Chromium only, remembered
-  between sessions.
+  browser then collects more of the picture before it plays, which calms a stuttering picture on a
+  long route at the price of delay. The sound is delayed by the same time in the page (Web Audio),
+  because the browser holds back only the picture: the sound would play seconds early. Chromium
+  and Firefox; remembered between sessions.
 
 ### Fixed
 

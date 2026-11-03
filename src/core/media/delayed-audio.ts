@@ -1,0 +1,92 @@
+/** How often the stream is checked for a sound track that arrived or went. */
+const WATCH_INTERVAL_MS = 500;
+/** The longest delay the graph can hold, in seconds; the longest playout buffer is 4 s. */
+const MAX_DELAY_SECONDS = 6;
+
+/**
+ * Plays the sound of a received stream late, by a fixed time.
+ *
+ * Why this exists: the viewer's smoothing buffer (`jitterBufferTarget`) holds the PICTURE back
+ * by the chosen time, but the browser does not hold the sound back with it. Measured in Chromium:
+ * with 2 s or 4 s the picture was 1.98 s / 3.97 s late and the sound 10 ms, and the browser's own
+ * lip sync did not close the gap. A sound that plays seconds before its picture is worse than a
+ * stutter. So the buffer is set on the picture only, and the sound goes through a delay of the same
+ * length here.
+ *
+ * The element that shows the picture stays attached to the stream (muted): Chromium delivers the
+ * sound of a remote stream to a graph only while the stream is attached to a media element.
+ */
+export class DelayedAudio {
+  private readonly context: AudioContext;
+  private readonly delay: DelayNode;
+  private readonly gain: GainNode;
+  private source: MediaStreamAudioSourceNode | null = null;
+  private connectedTrack: string | null = null;
+  private readonly timer: ReturnType<typeof setInterval>;
+
+  constructor(
+    private readonly stream: MediaStream,
+    delayMs: number,
+    level: number,
+  ) {
+    this.context = new AudioContext({ latencyHint: 'playback' });
+    this.delay = this.context.createDelay(MAX_DELAY_SECONDS);
+    this.gain = this.context.createGain();
+    this.setDelay(delayMs);
+    this.setLevel(level);
+    this.delay.connect(this.gain).connect(this.context.destination);
+    this.refresh();
+    this.timer = setInterval(() => this.refresh(), WATCH_INTERVAL_MS);
+  }
+
+  /** A node after the volume, to listen at the output (the tests do). */
+  get output(): AudioNode {
+    return this.gain;
+  }
+
+  get audioContext(): AudioContext {
+    return this.context;
+  }
+
+  setDelay(ms: number): void {
+    this.delay.delayTime.value = Math.min(MAX_DELAY_SECONDS, Math.max(0, ms / 1000));
+  }
+
+  /** 0 (silent) to 1 (full). */
+  setLevel(level: number): void {
+    this.gain.gain.value = Math.min(1, Math.max(0, level));
+  }
+
+  /**
+   * Starts the output; browsers keep an audio context suspended until the page has been used.
+   * Resolves to whether sound is playing now.
+   */
+  async resume(): Promise<boolean> {
+    try {
+      await this.context.resume();
+    } catch {
+      return false;
+    }
+    return this.context.state === 'running';
+  }
+
+  dispose(): void {
+    clearInterval(this.timer);
+    this.source?.disconnect();
+    this.source = null;
+    void this.context.close().catch(() => undefined);
+  }
+
+  /** Follows the stream: the sound track may arrive after the picture, or be replaced. */
+  private refresh(): void {
+    const track = this.stream.getAudioTracks().find((t) => t.readyState === 'live');
+    const id = track?.id ?? null;
+    if (id === this.connectedTrack) return;
+    this.source?.disconnect();
+    this.source = null;
+    this.connectedTrack = id;
+    if (!track) return;
+    this.source = this.context.createMediaStreamSource(new MediaStream([track]));
+    this.source.connect(this.delay);
+  }
+}

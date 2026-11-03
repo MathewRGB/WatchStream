@@ -220,11 +220,19 @@ the next loss, and the path says whether the route or the settings are to blame.
 
 **Smoothing buffer (viewer).** The viewer can ask its own browser to buffer longer before it
 plays (`PlayoutBufferId`, `playout-buffer.ts`): `RTCRtpReceiver.jitterBufferTarget` of 1, 2 or 4
-seconds on every receiver, set when the choice changes and again when a track arrives. It is the
-counterpart of the host's weak-connection mode: that one changes what is sent, this one how
-patiently it is played. Picture and sound are both buffered, so they stay in step; the only price
-is delay, which matters little when everyone watches the same stream. The choice is kept in
-`localStorage` (`usePlayoutBuffer`); a browser without the property ignores it.
+seconds on the VIDEO receiver, set when the choice changes and again when a track arrives. It is
+the counterpart of the host's weak-connection mode: that one changes what is sent, this one how
+patiently it is played. The price is delay, which matters little when everyone watches the same
+stream. The choice is kept in `localStorage` (`usePlayoutBuffer`).
+
+The sound is delayed by the stage itself, not by the browser. Measured in Chromium and Firefox
+(loopback, 2 s and 4 s): the picture sat 1.98 s / 3.97 s in the buffer, the sound 10 ms; with
+the target on the audio receiver as well the sound stayed at 10 ms (Chromium caps an audio target
+at 3 s anyway), and the browser's lip sync did not close the gap, so the sound played seconds
+before its picture. `DelayedAudio` therefore sends the stream's sound through a Web Audio
+`DelayNode` of the same length (`StageVideo`, prop `audioDelayMs`); the video element stays attached
+but muted, because Chromium delivers the sound of a remote stream to a graph only then. Where the
+browser does not know `jitterBufferTarget` (`playoutBufferSupported`) nothing is delayed.
 
 ## 7. Up to twelve viewers, and a load monitor
 
