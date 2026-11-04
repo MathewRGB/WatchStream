@@ -32,8 +32,8 @@ The full policy is [PRIVACY.md](../PRIVACY.md); the stores link to it.
 
 - **Single purpose:** share a tab, window or screen with other people over a direct browser-to-browser
   connection, and watch it together with a chat.
-- **Permission justification, `storage`:** remembers the display name and the volume setting on this
-  computer and keeps the id of the open session tab for the length of a browser session. Nothing
+- **Permission justification, `storage`:** remembers the display name, the volume setting and the choice for the smoothing
+  buffer on this computer and keeps the id of the open session tab for the length of a browser session. Nothing
   leaves the computer.
 - **Host permissions:** none requested. Chrome and Brave get no host permission and no content
   script; the tab picker is the browser's own.

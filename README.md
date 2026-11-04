@@ -55,7 +55,8 @@ own player for such services is future work, see
    **Join**. The reply code is copied to your clipboard automatically and a notice says so; paste
    it into your chat with the host.
 4. **Host:** paste the reply code into the invitation and choose **Connect**.
-5. Once connected, the sidebar shows **People** and **Chat**.
+5. Once connected, the sidebar shows **People**, **Chat** and **Settings** (the host also has
+   **Invite**). The chat keeps the latest 500 messages.
 6. **Host:** choose **Share** on the stage and pick a tab, window or screen in the browser's own
    picker. In Chrome and Brave, tick "Also share tab audio" to send the sound as well. Viewers see
    it on their stage, with a mute button and a volume slider; **Stop sharing** (or the browser's own stop button) ends it. The host can
@@ -68,11 +69,25 @@ own player for such services is future work, see
    you chose it, so you can lower it yourself. The **People** tab marks a viewer who is not
    keeping up; viewers see none of this. The host can remove a viewer there, after one question;
    that viewer can come back with a new invitation.
+
+   Two more sections in the host's **Settings** are closed at first. **Video codec** chooses how
+   the picture is compressed (Automatic picks H.264 where a graphics chip encodes it, otherwise
+   VP9; only in Chrome and Brave). **Weak connection** chooses what the picture gives up when the
+   connection to a viewer cannot carry it, for example on a long route: _Smooth motion_ keeps the
+   frame rate and lets the picture get small and blurry, _Balanced_ (the default) gives up a
+   little of both, _Steady sharpness_ keeps the picture sharp and lets the frame rate drop. Steady
+   asks Chrome and Brave for a minimum bitrate, which on a bad line can make the picture stutter.
+
 7. **Viewer:** to share something yourself, choose **Share** on the stage and pick a tab, window or
    screen. The host sees "<name> wants to share" on the stage and in the People tab and decides
    with **Allow** or **Decline**. Once allowed, the host and all other viewers see your picture,
    with your sound. You can stop at any time; the host can end it too, and starting a share of
    their own takes the stage back. One picture is on the stage at a time.
+8. **Viewer:** if the picture stutters or freezes, open **Settings** and choose a **Smoothing
+   buffer** (1 s or 2 s). Your browser then collects more of the picture before it plays it, and
+   the sound is delayed by the time the picture waits, so both stay in step. The price is that you
+   see everything that much later than the host, which matters little when everyone watches the
+   same stream. It works in Chrome, Brave and Firefox and is remembered for your next session.
 
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.
@@ -112,7 +127,9 @@ open: closing it ends the session.
   [future work](docs/future-work.md#sound-level-independent-of-the-hosts-volume).
 - Behind some routers (e.g. carrier-grade NAT) no direct connection is possible without an
   additional relay server (TURN).
-- Firefox 140 or newer is required.
+- Chrome and Brave 114 or newer, and Firefox 140 or newer, are required.
+- A viewer can send ten chat messages in ten seconds; the host drops more than that, so one
+  person cannot flood the others.
 
 ## When something goes wrong
 
@@ -222,6 +239,7 @@ The CLI currently imports `cn` from an unrelated npm package named `cn` and adds
 - [Manual test guide for the sidebar in full screen](docs/manual-tests/m4-fullscreen-sidebar.md)
 - [Manual test guide for many viewers](docs/manual-tests/m5-many-viewers.md)
 - [Manual test guide for a viewer who shares](docs/manual-tests/m6-viewer-share.md)
+- [Manual test guide for the settings for a weak connection](docs/manual-tests/m7-connection-settings.md)
 
 ## Disclaimer
 

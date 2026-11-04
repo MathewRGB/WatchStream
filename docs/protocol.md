@@ -72,6 +72,9 @@ ignore messages that a newer version added.
 - Chat text is trimmed and at most 1000 characters. The host relays each message to every viewer,
   the sender included, so everyone sees one order.
 - Names come from the codes; there is no separate hello.
+- The host passes on at most ten chat messages of one viewer in ten seconds; the rest are dropped
+  and logged (`dropped a chat message: the viewer sends too many`). A person does not type that
+  fast, and a viewer that did would otherwise flood everyone else.
 
 ### Media
 
@@ -101,6 +104,8 @@ ignore messages that a newer version added.
   `kbps`, `jitterMs`, `bufferMs`, `freezes`, `freezeMs`, `height` and `rttMs`. Each is a number
   from 0 to 1 000 000, or `null` when the browser does not report it; a missing field reads as
   `null`, extra fields are cut, and a report with any other value is dropped as a whole.
+- The host takes at most thirty reports of one viewer in ten seconds (six times what a viewer
+  sends); more are dropped.
 - The host keeps the latest report of each viewer while a picture goes out, shows it in the People
   tab and forgets it when the picture ends or the viewer leaves. It changes nothing by itself.
 - The numbers contain no address or name; they are the viewer's counters, summarised.

@@ -8,8 +8,9 @@ advertising, and it loads no code from the internet.
 
 ## What stays on your computer
 
-The extension stores three things locally in your browser: the display name you last entered, your
-volume setting, and, for the length of a browser session, the id of the tab it is open in. The log
+The extension stores four things locally in your browser: the display name you last entered, your
+volume setting, your choice for the smoothing buffer (how long your browser collects the picture
+before it plays it), and, for the length of a browser session, the id of the tab it is open in. The log
 shown under "copy technical details" and the chat messages are kept in the page's memory only and
 are gone when you close it. Removing the extension removes the stored values.
 

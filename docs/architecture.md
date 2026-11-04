@@ -86,6 +86,19 @@ APIs, so the same build runs as a plain page, which lets the cross-browser tests
 Not done: a popup (it closes while the user copies a code into a messenger) and an offscreen
 document (Chromium only, invisible).
 
+If the interface itself fails, the error page ends the sessions that are still running
+(`open-sessions.ts`: the page registers a host or viewer session when it starts it and forgets it
+when it ends in the usual way). The error boundary cannot reach the session objects that live in
+state further down, and a session that stayed open would keep its connections and, for a viewer,
+go on sending reports while the page says it has ended. The registry is not a place to put
+cleanup of the usual kind: ending a session from an effect would end it in React's development
+double-mount too.
+
+What a viewer may send as often as it likes is capped by the host (`rate-limit.ts`): ten chat
+messages and thirty reports in ten seconds. The host relays a chat message to everyone, so one
+viewer could otherwise flood the rest. The window is measured with the page's own clock, not with
+the injectable `now` of the session, which only time-stamps messages.
+
 ## 5. Media on the open connection
 
 Sharing adds tracks to the connection that is already open and negotiates over its data channel
@@ -357,6 +370,13 @@ CPU. The sharer sends at the quality its browser picks; only the host applies th
   next session wondering why there is no sound. The host's preview has no sound controls.
 - **A message in full screen** shows a small chat symbol near the right edge for one second, unless
   the open sidebar is in view.
+- **The chat keeps the latest 500 messages**; each one after that makes the oldest be forgotten.
+  The number of messages from others, which the symbol above rests on, is counted when they come
+  in and not taken from the list, because in a full list the count of messages stays the same
+  while the news does not. The list scrolls on the id of the newest message for the same reason.
+- **Settings the page remembers** (the name, the volume, the smoothing buffer) go through
+  `settings-storage.ts`; a browser that refuses to store them costs only the memory, never the
+  session.
 - Traps that cost time: popups rendered into `body` (Radix portals) are invisible in full screen;
   the handle at the edge must stay in the page, unseen and inert, while the sidebar covers it (an
   element that is gone cannot report that the pointer left, and the sidebar then never closed); and

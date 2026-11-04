@@ -22,17 +22,37 @@ adheres to [Semantic Versioning](https://semver.org/).
   back only the picture: the sound would play seconds early. Chromium and Firefox; remembered
   between sessions.
 - The extension logo shows in the window header, left of the title.
+- A manual test guide for the settings for a weak connection: [docs/manual-tests/m7-connection-settings.md](docs/manual-tests/m7-connection-settings.md).
+
+### Changed
+
+- The automatic codec is VP9 first where the browser has no hardware H.264 encoder, else H.264.
+- The sender no longer insists on `maintain-framerate`; the default is `balanced`.
+- The chat keeps the latest 500 messages and forgets the oldest from the 501st on.
+- The host passes on at most ten chat messages and thirty reception reports of one viewer in ten
+  seconds, so one viewer cannot flood the others.
+- The manifest asks for Chrome and Brave 114 or newer (the smoothing buffer and the short codes
+  need it), and `package.json` for Node 22 or newer.
+- The radio choices in Settings share one component.
 
 ### Fixed
 
 - With several Settings sections open the whole window could scroll, giving a second scrollbar
   beside the settings. The hidden group labels (`sr-only`, absolutely positioned) had no
   positioned ancestor, so the panel's overflow did not contain them. Only the panel scrolls now.
+- When the interface itself failed, the error page said the session had ended while its
+  connections stayed open. The page now ends the host or viewer session it was running.
+- A listener that threw stopped the others from getting the event, and could leave a closed link
+  with its listeners. The failure is logged and the rest carry on.
+- The page no longer stops when the browser refuses to remember the name, and the volume and the
+  smoothing buffer are read and written in the same careful way.
+- The hint for the smoothing buffer said "Chromium browsers only", but it works in Firefox too.
+- The sound delay forgets what it knew about the old sound when the next share has none.
 
-### Changed
+### Security
 
-- The automatic codec is VP9 first where the browser has no hardware H.264 encoder, else H.264.
-- The sender no longer insists on `maintain-framerate`; the default is `balanced`.
+- The error text on the error page goes through the same filter as the log, so it carries no
+  addresses either.
 
 ## [0.1.0] - 2026-11-02
 
