@@ -117,6 +117,22 @@ describe('WatchP2PStream app', () => {
     expect(again.getByTestId('name-input')).toHaveValue('user1');
   });
 
+  it('starts a session although the browser refuses to remember the name', async () => {
+    const refusing = {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+      setItem: () => {
+        throw new DOMException('full', 'QuotaExceededError');
+      },
+    };
+    const page = openPage(network, refusing);
+
+    await start(page, 'user1', 'host');
+
+    expect(page.getByTestId('host-view')).toBeInTheDocument();
+  });
+
   it('connects a viewer through invitation and reply codes', async () => {
     const host = openPage(network);
     await start(host, 'user1', 'host');

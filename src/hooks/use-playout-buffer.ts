@@ -5,8 +5,7 @@ import {
   type PlayoutBufferId,
 } from '@/core/media/playout-buffer';
 import type { ViewerSession } from '@/core/session/viewer-session';
-
-const BUFFER_KEY = 'watchstream.playout-buffer';
+import { readSetting, writeSetting, type SettingsStorage } from '@/lib/settings-storage';
 
 export interface PlayoutBufferControl {
   buffer: PlayoutBufferId;
@@ -19,7 +18,7 @@ export interface PlayoutBufferControl {
  */
 export function usePlayoutBuffer(
   session: ViewerSession,
-  storage: Pick<Storage, 'getItem' | 'setItem'>,
+  storage: SettingsStorage,
 ): PlayoutBufferControl {
   const [buffer, setState] = useState<PlayoutBufferId>(() => readBuffer(storage));
 
@@ -30,11 +29,7 @@ export function usePlayoutBuffer(
   const setBuffer = useCallback(
     (next: PlayoutBufferId) => {
       setState(next);
-      try {
-        storage.setItem(BUFFER_KEY, next);
-      } catch {
-        // Storage is full or blocked; the choice just is not remembered.
-      }
+      writeSetting(storage, 'playoutBuffer', next);
     },
     [storage],
   );
@@ -42,11 +37,7 @@ export function usePlayoutBuffer(
   return { buffer, setBuffer };
 }
 
-function readBuffer(storage: Pick<Storage, 'getItem'>): PlayoutBufferId {
-  try {
-    const stored = storage.getItem(BUFFER_KEY);
-    return isPlayoutBufferId(stored) ? stored : DEFAULT_PLAYOUT_BUFFER;
-  } catch {
-    return DEFAULT_PLAYOUT_BUFFER;
-  }
+function readBuffer(storage: SettingsStorage): PlayoutBufferId {
+  const stored = readSetting(storage, 'playoutBuffer');
+  return isPlayoutBufferId(stored) ? stored : DEFAULT_PLAYOUT_BUFFER;
 }

@@ -2,18 +2,17 @@ import { useState } from 'react';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { HostSession } from '@/core/session/host-session';
 import { captureDisplay, type CaptureDisplay } from '@/lib/capture';
+import { readSetting, writeSetting, type SettingsStorage } from '@/lib/settings-storage';
 import { HostView } from './host-view';
 import { StartView } from './start-view';
 import { ViewerView } from './viewer-view';
 
 export interface SessionAppProps {
   connector: PeerConnector;
-  storage: Pick<Storage, 'getItem' | 'setItem'>;
+  storage: SettingsStorage;
   /** Asks the user what to share; replaced in tests. */
   capture?: CaptureDisplay;
 }
-
-const NAME_KEY = 'watchstream.name';
 
 type Screen =
   | { kind: 'start' }
@@ -24,7 +23,7 @@ type Screen =
 export function SessionApp({ connector, storage, capture = captureDisplay }: SessionAppProps) {
   const [screen, setScreen] = useState<Screen>({ kind: 'start' });
 
-  const remember = (name: string) => storage.setItem(NAME_KEY, name);
+  const remember = (name: string) => writeSetting(storage, 'name', name);
 
   switch (screen.kind) {
     case 'start':
@@ -32,7 +31,7 @@ export function SessionApp({ connector, storage, capture = captureDisplay }: Ses
         <div className="grid h-dvh place-items-center overflow-y-auto p-4">
           <div className="w-full max-w-md">
             <StartView
-              initialName={storage.getItem(NAME_KEY) ?? ''}
+              initialName={readSetting(storage, 'name') ?? ''}
               onHost={(name) => {
                 remember(name);
                 setScreen({

@@ -13,6 +13,7 @@ import { useViewerShare } from '@/hooks/use-viewer-share';
 import { useVolume } from '@/hooks/use-volume';
 import type { CaptureDisplay } from '@/lib/capture';
 import { copyText } from '@/lib/clipboard';
+import type { SettingsStorage } from '@/lib/settings-storage';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
 import { CodeInput } from './code-box';
@@ -32,7 +33,7 @@ const APP_TITLE = 'WatchP2PStream';
 interface ViewerViewProps {
   connector: PeerConnector;
   /** Remembers the volume. */
-  storage: Pick<Storage, 'getItem' | 'setItem'>;
+  storage: SettingsStorage;
   /** Asks the user what to share when they want to share too. */
   capture: CaptureDisplay;
   viewerName: string;
@@ -167,7 +168,7 @@ interface JoinedSessionProps {
   replyCode: string;
   copied: boolean;
   candidates: CandidateSummary;
-  storage: Pick<Storage, 'getItem' | 'setItem'>;
+  storage: SettingsStorage;
   capture: CaptureDisplay;
   onLeave: () => void;
 }
