@@ -394,6 +394,22 @@ WXT builds one TypeScript codebase for Chrome, Brave and Firefox (Manifest V3). 
 React 19 with Tailwind CSS 4 and shadcn/ui (component source copied into `src/components/ui/` and
 owned here), icons from `lucide-react`.
 
+The host side of a session is `HostSession` (`src/core/session/host-session.ts`), which owns the
+invitations, the roster, the chat and the links, and hands the rest to small classes that it
+creates and that know nothing about each other:
+
+- `ShareCoordinator` (`share-coordinator.ts`): who is on the stage. The host's own share, the
+  requests of viewers, the one viewer who was allowed and whose picture is passed on. It reaches
+  the session only through the closures of `SharingHost` (send a message, guard a link, tell the
+  listeners), so it can be read and tested without the rest.
+- `MediaChoices` (`media-choices.ts`): the quality, the codec and the weak-connection mode the host
+  chose, and what follows from them (the limits, the codec to offer first). The session applies
+  them to the links and tells the listeners.
+- `LoadControl` (`load-control.ts`): the load monitor on a timer.
+- `RateLimit` (`rate-limit.ts`): what a viewer may send as often as it likes.
+
+The public methods of `HostSession` did not change when these were split out; they pass on.
+
 ```
 src/
   core/         no React, no extension APIs: handshake, protocol, peer links, sessions, media
