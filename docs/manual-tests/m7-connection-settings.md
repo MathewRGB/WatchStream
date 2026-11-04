@@ -18,7 +18,7 @@ sound and picture are in step, or know what a real long route does. This guide c
 
 ## 1. Weak connection (host)
 
-1. Host: share the tab at **Balanced**. Open **Settings → Weak connection** and write down how the
+1. Host: share the tab (Weak connection starts at **Steady sharpness**, the default). Open **Settings → Weak connection** and write down how the
    picture looks on the viewer.
 2. Choose **Smooth motion**. Expect: nothing breaks and the viewer's picture goes on. On a bad
    route the picture is smaller or blurrier but keeps moving.

@@ -1,5 +1,5 @@
 import { resolveLimits, type CustomQuality, type QualityChoice } from '@/core/media/quality';
-import { WEAK_LINK_OPTIONS, type WeakLinkMode } from '@/core/media/weak-link';
+import { DEFAULT_WEAK_LINK, WEAK_LINK_OPTIONS, type WeakLinkMode } from '@/core/media/weak-link';
 import type { CodecId, CodecOption } from '@/core/peer/video-codecs';
 import type { TabSoundControls } from '@/hooks/use-tab-sound';
 import { OptionGroup } from './choice-card';
@@ -38,7 +38,7 @@ export function SettingsTab({
   codec = 'auto',
   codecOptions = [],
   onCodecChange,
-  weakLink = 'balanced',
+  weakLink = DEFAULT_WEAK_LINK,
   onWeakLinkChange,
 }: SettingsTabProps) {
   const chosenCodec = codecOptions.find((option) => option.id === codec);

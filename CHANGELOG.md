@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The **Weak connection** default is now _Steady sharpness_ instead of _Balanced_, because a sharp
+  picture matters more than the frame rate in most cases.
+
 ## [0.2.1] - 2026-11-04
 
 ### Changed

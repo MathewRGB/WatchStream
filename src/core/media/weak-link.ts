@@ -7,8 +7,8 @@
  *   for video).
  * - `balanced`: trade frame rate and resolution against each other.
  * - `steady`: keep the resolution and let the frame rate drop, and ask the encoder to hold a floor
- *   of bitrate. On a link that really cannot carry the floor this costs lost packets, so it is a
- *   choice and not the default.
+ *   of bitrate. On a link that really cannot carry the floor this costs lost packets, so it is
+ *   the default, because it turned out that sharpness is quite important for most of the cases.
  */
 export type WeakLinkMode = 'smooth' | 'balanced' | 'steady';
 

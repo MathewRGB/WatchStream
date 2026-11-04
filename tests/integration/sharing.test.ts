@@ -598,7 +598,7 @@ describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over Web
     expect(await plays(media.stream)).toBe(true);
   }, 40_000);
 
-  it('applies the weak-connection mode to the sender, and the steady floor keeps the picture playing', async () => {
+  it('applies the weak-connection mode to the sender, and the steady floor, the default, keeps the picture playing', async () => {
     const host = startHost();
     const viewer = await join(host, 'user2');
     const arrived = nextMedia(viewer);
@@ -609,16 +609,18 @@ describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over Web
     const preference = () =>
       link.senders.find((s) => s.track?.kind === 'video')?.getParameters().degradationPreference;
     await waitFor<void>((resolve) => {
-      const poll = () => (preference() === 'balanced' ? resolve() : setTimeout(poll, 100));
+      const poll = () => (preference() === 'maintain-resolution' ? resolve() : setTimeout(poll, 100));
       poll();
     }, 10_000);
 
-    // The floor travels in a new negotiation while the picture is sent.
-    host.setWeakLink('steady');
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    expect(await plays(media.stream)).toBe(true);
+
+    // Dropping the floor travels in a new negotiation while the picture is sent.
+    host.setWeakLink('balanced');
 
     await waitFor<void>((resolve) => {
-      const poll = () =>
-        preference() === 'maintain-resolution' ? resolve() : setTimeout(poll, 100);
+      const poll = () => (preference() === 'balanced' ? resolve() : setTimeout(poll, 100));
       poll();
     }, 10_000);
     await new Promise((resolve) => setTimeout(resolve, 1_500));

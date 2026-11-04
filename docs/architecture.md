@@ -217,11 +217,11 @@ video track gets `contentHint = 'motion'`.
 lossy route, can fall far below the cap (measured Germany to Kyrgyzstan: 0.1 of 3 to 5 Mbit/s), so
 the quality step alone changes little. The host chooses in Settings what the picture gives up then
 (`WeakLinkMode`, `weak-link.ts`): _smooth_ (`maintain-framerate`: small and blurry first),
-_balanced_ (the default, `balanced`) or _steady_ (`maintain-resolution`: the frame rate drops, and
+_balanced_ (`balanced`) or _steady_ (the default, `maintain-resolution`: the frame rate drops, and
 the description carries Chromium's `x-google-min-bitrate` / `x-google-start-bitrate` at 40 % and
 70 % of the cap, written into the offer, the answer and the answer the host receives; other
-browsers ignore them). Steady holds a floor the line may not carry, which costs lost packets, so
-it is a choice. A change of the floor starts a negotiation while a picture is sent.
+browsers ignore them). Steady holds a floor the line may not carry, which costs lost packets, but it is the
+default because sharpness matters for most uses. A change of the floor starts a negotiation while a picture is sent.
 
 Every few seconds the load control logs one `link reading` line per link (cap, the browser's
 estimate and target, bitrate sent, loss, round trip, height, frame rate and

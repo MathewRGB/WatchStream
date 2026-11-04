@@ -3,13 +3,13 @@ import { qualityPreset } from '../media/quality';
 import { MediaChoices } from './media-choices';
 
 describe('MediaChoices', () => {
-  it('starts at Balanced, automatic codec, balanced weak-link mode', () => {
+  it('starts at Balanced, automatic codec, steady weak-link mode', () => {
     const choices = new MediaChoices();
 
     expect(choices.quality).toBe('balanced');
     expect(choices.limits).toEqual(qualityPreset('balanced'));
     expect(choices.codec).toBe('auto');
-    expect(choices.weakLink).toBe('balanced');
+    expect(choices.weakLink).toBe('steady');
   });
 
   it('starts fine-tuning from the step that was in use', () => {
@@ -46,8 +46,8 @@ describe('MediaChoices', () => {
 
     expect(choices.setCodec('auto')).toBe(false);
     expect(choices.setCodec('vp9')).toBe(true);
-    expect(choices.setWeakLink('balanced')).toBe(false);
-    expect(choices.setWeakLink('steady')).toBe(true);
+    expect(choices.setWeakLink('steady')).toBe(false);
+    expect(choices.setWeakLink('balanced')).toBe(true);
   });
 
   it('offers what automatic comes to once the browser said, and the choice itself otherwise', () => {

@@ -74,8 +74,8 @@ own player for such services is future work, see
    the picture is compressed (Automatic picks H.264 where a graphics chip encodes it, otherwise
    VP9; only in Chrome and Brave). **Weak connection** chooses what the picture gives up when the
    connection to a viewer cannot carry it, for example on a long route: _Smooth motion_ keeps the
-   frame rate and lets the picture get small and blurry, _Balanced_ (the default) gives up a
-   little of both, _Steady sharpness_ keeps the picture sharp and lets the frame rate drop. Steady
+   frame rate and lets the picture get small and blurry, _Balanced_ gives up a
+   little of both, _Steady sharpness_ (the default) keeps the picture sharp and lets the frame rate drop. Steady
    asks Chrome and Brave for a minimum bitrate, which on a bad line can make the picture stutter.
 
 7. **Viewer:** to share something yourself, choose **Share** on the stage and pick a tab, window or

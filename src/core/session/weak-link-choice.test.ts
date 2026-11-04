@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { createHost, flush, joinViewer } from '../testing/session-fixtures';
 
 describe('what the sender gives up on a weak connection', () => {
-  it('is balanced at first and reaches every viewer link, also a late one', async () => {
+  it('is steady at first and reaches every viewer link, also a late one', async () => {
     const { host, network } = createHost();
     await joinViewer(host, network, 'one');
-    expect(host.weakLink).toBe('balanced');
-    expect(network.offers[0]!.weakLinkMode).toBe('balanced');
+    expect(host.weakLink).toBe('steady');
+    expect(network.offers[0]!.weakLinkMode).toBe('steady');
 
-    host.setWeakLink('steady');
+    host.setWeakLink('balanced');
     await flush();
     await joinViewer(host, network, 'two');
 
-    expect(network.offers.map((link) => link.weakLinkMode)).toEqual(['steady', 'steady']);
+    expect(network.offers.map((link) => link.weakLinkMode)).toEqual(['balanced', 'balanced']);
   });
 
   it('tells the listeners once', () => {
