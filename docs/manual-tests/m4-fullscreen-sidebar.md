@@ -25,7 +25,7 @@ monitor. This guide covers those.
 1. In full screen, move the pointer along the right edge of the screen, above and below the arrow,
    and let it touch the edge there. Expect: nothing opens.
 2. Rest the pointer on the arrow in the middle of the right edge. Expect: the arrow is easy to see
-   (a bar filled with the accent colour, with a shadow), and
+   (a half-transparent bar tinted with the accent colour, with a shadow; judge on a bright picture too), and
    the sidebar slides in over the picture. The picture does not move or shrink.
 3. Move the pointer into the sidebar and use it: switch tabs, read the chat, the people list. On
    the host the Invite and Settings tabs work too.

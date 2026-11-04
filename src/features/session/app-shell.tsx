@@ -137,7 +137,7 @@ export function AppShell({
           {floating && (
             // The way in: the pointer resting on this handle at the middle of the right edge
             // opens the sidebar, the edge as a whole does not (that opened it by accident). It is
-            // raised from the picture, with a border in the accent colour, so it is found. Also
+            // tinted with the accent colour, half transparent, so it is found without shouting. Also
             // for touch and for screens where the pointer cannot reach this edge (a second
             // monitor on the right). A real button, so the keyboard reaches it too. It stays in
             // the page while the sidebar covers it, only unseen and inert: a pointer that left
@@ -146,7 +146,7 @@ export function AppShell({
             <button
               type="button"
               className={cn(
-                'absolute top-1/2 right-0 z-10 flex h-24 w-7 -translate-y-1/2 items-center justify-center rounded-l-lg border border-r-0 border-primary bg-primary text-primary-foreground opacity-90 shadow-lg hover:opacity-100 focus-visible:opacity-100',
+                'absolute top-1/2 right-0 z-10 flex h-24 w-7 -translate-y-1/2 items-center justify-center rounded-l-lg border border-r-0 border-primary/40 bg-primary/35 text-primary-foreground opacity-90 shadow-md backdrop-blur-sm hover:opacity-100 focus-visible:opacity-100',
                 FADE_WHEN_IDLE,
                 peek.open && 'invisible',
               )}
@@ -157,7 +157,8 @@ export function AppShell({
               {...hoverProps}
               data-testid="sidebar-handle"
             >
-              <ChevronLeft className="size-5" />
+              {/* The shadow keeps the arrow readable on a bright picture, where the tint is pale. */}
+              <ChevronLeft className="size-5 drop-shadow-[0_0_2px_rgb(0_0_0/0.8)]" />
             </button>
           )}
           {(docked || floating) && (

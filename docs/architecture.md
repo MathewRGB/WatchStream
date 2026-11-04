@@ -360,7 +360,7 @@ CPU. The sharer sends at the quality its browser picks; only the host applies th
   the handle (an arrow, 28 px wide and 96 px high) at the middle of the right edge, and slides out
   400 ms after the pointer left. The edge as a whole does not open it: a strip along the whole
   edge did, and opened the sidebar whenever the pointer went to the right to reach a scroll bar
-  or another window. The handle is filled with the accent colour and has a shadow, so that it is found: the
+  or another window. The handle is tinted with the accent colour (35 % opaque, with a blur behind it) and has a shadow, so that it is found without shouting: the
   highlight has to be there at rest, because the sidebar opens the moment the pointer is on it. The sidebar stays while
   something in it has focus; a click on the picture closes it. A click on the handle and the `S`
   key serve touch screens and a monitor on the right.

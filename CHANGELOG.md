@@ -10,7 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - In full screen the sidebar opens when the pointer rests on the arrow in the middle of the right
-  edge, no longer when it touches the edge anywhere. The arrow is bigger, filled with the accent colour
+  edge, no longer when it touches the edge anywhere. The arrow is bigger, tinted with the accent colour, half transparent,
   and has a shadow, so that it stands out from the picture.
 
 ## [0.2.0] - 2026-11-04

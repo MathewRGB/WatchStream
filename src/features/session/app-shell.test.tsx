@@ -210,12 +210,12 @@ describe('AppShell full screen', () => {
       expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
     });
 
-    it('stands out from the picture: filled with the accent colour and raised', async () => {
+    it('stands out from the picture: tinted with the accent colour, not solid', async () => {
       await enterFullscreen();
 
       // Not only under the pointer: the sidebar opens the moment the pointer is on it.
       const handle = screen.getByTestId('sidebar-handle');
-      expect(handle).toHaveClass('bg-primary', 'text-primary-foreground', 'shadow-lg');
+      expect(handle).toHaveClass('bg-primary/35', 'text-primary-foreground', 'shadow-md');
     });
 
     it('slides the sidebar over the picture when the pointer rests on the handle', async () => {
