@@ -64,7 +64,14 @@ export function StageVideo({
   const [blocked, setBlocked] = useState(false);
   const soundOff = muted || level === 0;
   const delayed = useRef<DelayedAudio | null>(null);
-  const delaying = !silent && audioDelayMs > 0 && typeof AudioContext !== 'undefined';
+  const wanted = !silent && audioDelayMs > 0 && typeof AudioContext !== 'undefined';
+  // Once the sound has gone through the delay, it stays there for this stream, at 0 ms if the
+  // viewer goes back to Standard: swapping to the element's own sound would be a second,
+  // audible jump (the delay it was playing with against the plain path).
+  const [engagedFor, setEngagedFor] = useState<MediaStream | null>(null);
+  const delaying =
+    !silent && typeof AudioContext !== 'undefined' && (wanted || engagedFor === source);
+  if (wanted && engagedFor !== source) setEngagedFor(source);
 
   useEffect(() => {
     const element = video.current;

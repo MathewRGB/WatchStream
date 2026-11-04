@@ -73,6 +73,17 @@ describe('StageVideo with a delayed sound', () => {
     expect(made[0]!.setDelay).toHaveBeenLastCalledWith(4000);
   });
 
+  it('keeps the sound on the delay path at 0 ms when the viewer goes back to Standard', () => {
+    const { rerender } = render(<StageVideo stream={stream} audioDelayMs={2000} />);
+    rerender(<StageVideo stream={stream} audioDelayMs={0} />);
+
+    // No second jump from the delayed sound to the element's own: same graph, delay 0.
+    expect(made).toHaveLength(1);
+    expect(made[0]!.dispose).not.toHaveBeenCalled();
+    expect(made[0]!.setDelay).toHaveBeenLastCalledWith(0);
+    expect(element().muted).toBe(true);
+  });
+
   it('says so when the browser keeps the sound from starting', async () => {
     resumes = false;
 

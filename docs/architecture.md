@@ -239,8 +239,17 @@ target; on a real route the viewer reported the sound seconds EARLY, because the
 is larger than the target (jitter, decoding). `AudioDelayTracker` now takes the browser's
 `jitterBufferDelay` / `jitterBufferEmittedCount` of the video and the audio receiver once a second,
 averages the last round of each, and delays the sound by the picture's wait minus the sound's own
-(smoothed, glided into with a one-second time constant, at most five seconds). The asked-for time is
-used until a measurement exists. A 4 s step was removed: it was too long to watch with.
+(smoothed, at most five seconds). The asked-for time is used until a measurement exists.
+
+How the delay is changed matters as much as how long it is. A delay node reads its input at 1 minus
+the rate at which the delay changes, so a delay that moves by two seconds in about a second plays
+the sound backwards or at triple speed: heard as a scratch when the viewer picked 1 s or 2 s, and
+as a slow, late catch-up on going back to Standard. `planDelayChange` (`delay-plan.ts`) therefore
+glides a correction of up to 0.3 s at no more than 5 % (a pitch shift under a semitone), and makes a
+bigger change a cut: the sound fades out in 80 ms, the delay is set, it fades in over 150 ms. The
+picture jumps at once anyway. A change that comes during a cut waits for it. Once a stream has been
+played through the delay it stays on that path at 0 ms when the viewer returns to Standard, because
+swapping to the element's own sound would be a second jump. A 4 s step was removed: it was too long to watch with.
 
 ## 7. Up to twelve viewers, and a load monitor
 
