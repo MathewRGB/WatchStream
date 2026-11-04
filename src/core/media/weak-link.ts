@@ -12,7 +12,7 @@
  */
 export type WeakLinkMode = 'smooth' | 'balanced' | 'steady';
 
-export const DEFAULT_WEAK_LINK: WeakLinkMode = 'balanced';
+export const DEFAULT_WEAK_LINK: WeakLinkMode = 'steady';
 
 export interface WeakLinkOption {
   id: WeakLinkMode;
