@@ -1,5 +1,4 @@
 import { useId } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import {
@@ -14,7 +13,7 @@ import {
   type CustomQuality,
   type QualityChoice,
 } from '@/core/media/quality';
-import { cn } from '@/lib/utils';
+import { ChoiceCard } from './choice-card';
 import { formatBitrate, uploadPerViewer } from './describe-quality';
 
 interface VideoQualityOptionsProps {
@@ -73,52 +72,6 @@ export function VideoQualityOptions({
       />
       {quality === 'custom' && <CustomControls custom={custom} onChange={onCustomChange} />}
     </fieldset>
-  );
-}
-
-interface ChoiceCardProps {
-  name: string;
-  value: string;
-  checked: boolean;
-  onSelect: () => void;
-  label: string;
-  description: string;
-  badge?: string;
-}
-
-function ChoiceCard({
-  name,
-  value,
-  checked,
-  onSelect,
-  label,
-  description,
-  badge,
-}: ChoiceCardProps) {
-  return (
-    <label
-      className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 has-[:focus-visible]:ring-2',
-        checked && 'border-primary bg-primary/5',
-      )}
-    >
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        checked={checked}
-        onChange={onSelect}
-        className="mt-1"
-        data-testid={`${name}-${value}`}
-      />
-      <span className="flex flex-col">
-        <span className="flex items-center gap-2 text-sm font-medium">
-          {label}
-          {badge && <Badge variant="secondary">{badge}</Badge>}
-        </span>
-        <span className="text-xs text-muted-foreground">{description}</span>
-      </span>
-    </label>
   );
 }
 

@@ -277,7 +277,7 @@ export class PeerLink implements OfferingLink {
     for (const receiver of this.connection.getReceivers()) this.applyPlayoutBuffer(receiver);
   }
 
-  /** Chromium only; a browser without the property, or one that refuses the value, plays as before. */
+  /** Chromium and Firefox; a browser without the property, or one that refuses the value, plays as before. */
   private applyPlayoutBuffer(receiver: RTCRtpReceiver): void {
     // The picture only. The browser does not hold the sound back with it (measured: 10 ms at a
     // 4 s target), so the stage delays the sound itself (`DelayedAudio`).

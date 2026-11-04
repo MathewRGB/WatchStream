@@ -1,10 +1,10 @@
 /**
  * How long the viewer's browser may hold the picture and sound before it plays them. A longer
  * buffer lets late and reordered packets arrive in time, so a jittery long route stutters less,
- * and costs only delay, which matters little when everyone watches the same stream. Chromium's
- * `RTCRtpReceiver.jitterBufferTarget`, in milliseconds, holds the PICTURE back by
+ * and costs only delay, which matters little when everyone watches the same stream. The
+ * `RTCRtpReceiver.jitterBufferTarget` (Chromium and Firefox), in milliseconds, holds the PICTURE back by
  * that time; the browser does not hold the sound back with it, so the stage delays the sound by
- * the same time (`DelayedAudio`). Other browsers ignore the setting.
+ * the same time (`DelayedAudio`). A browser without the property ignores the setting.
  */
 export type PlayoutBufferId = 'standard' | 'short' | 'medium';
 

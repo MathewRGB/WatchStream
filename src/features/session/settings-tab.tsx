@@ -2,7 +2,7 @@ import { resolveLimits, type CustomQuality, type QualityChoice } from '@/core/me
 import { WEAK_LINK_OPTIONS, type WeakLinkMode } from '@/core/media/weak-link';
 import type { CodecId, CodecOption } from '@/core/peer/video-codecs';
 import type { TabSoundControls } from '@/hooks/use-tab-sound';
-import { cn } from '@/lib/utils';
+import { OptionGroup } from './choice-card';
 import { describeQuality } from './describe-quality';
 import { SettingsSection } from './settings-section';
 import { TabSoundSection } from './tab-sound-section';
@@ -59,36 +59,14 @@ export function SettingsTab({
       </SettingsSection>
       {onCodecChange && codecOptions.length > 1 && (
         <SettingsSection id="codec" title="Video codec" summary={chosenCodec?.label}>
-          <fieldset className="flex flex-col gap-3" data-testid="codec-options">
-            <legend className="sr-only">Video codec</legend>
-            <p className="text-xs text-muted-foreground">
-              How the picture is compressed. Viewers whose browser cannot use your choice get the
-              next one automatically. Changing it while sharing restarts the picture for a moment.
-            </p>
-            {codecOptions.map((option) => (
-              <label
-                key={option.id}
-                className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 has-[:focus-visible]:ring-2',
-                  option.id === codec && 'border-primary bg-primary/5',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="codec"
-                  value={option.id}
-                  checked={option.id === codec}
-                  onChange={() => onCodecChange(option.id)}
-                  className="mt-1"
-                  data-testid={`codec-${option.id}`}
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
+          <OptionGroup
+            name="codec"
+            legend="Video codec"
+            intro="How the picture is compressed. Viewers whose browser cannot use your choice get the next one automatically. Changing it while sharing restarts the picture for a moment."
+            options={codecOptions}
+            value={codec}
+            onChange={onCodecChange}
+          />
         </SettingsSection>
       )}
       {onWeakLinkChange && (
@@ -97,37 +75,14 @@ export function SettingsTab({
           title="Weak connection"
           summary={WEAK_LINK_OPTIONS.find((option) => option.id === weakLink)?.label}
         >
-          <fieldset className="flex flex-col gap-3" data-testid="weak-link-options">
-            <legend className="sr-only">Weak connection</legend>
-            <p className="text-xs text-muted-foreground">
-              What the picture gives up when the connection to a viewer cannot carry it, for example
-              on a long route. The browser measures this by itself and can fall far below the
-              quality you chose.
-            </p>
-            {WEAK_LINK_OPTIONS.map((option) => (
-              <label
-                key={option.id}
-                className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 has-[:focus-visible]:ring-2',
-                  option.id === weakLink && 'border-primary bg-primary/5',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="weak-link"
-                  value={option.id}
-                  checked={option.id === weakLink}
-                  onChange={() => onWeakLinkChange(option.id)}
-                  className="mt-1"
-                  data-testid={`weak-link-${option.id}`}
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
+          <OptionGroup
+            name="weak-link"
+            legend="Weak connection"
+            intro="What the picture gives up when the connection to a viewer cannot carry it, for example on a long route. The browser measures this by itself and can fall far below the quality you chose."
+            options={WEAK_LINK_OPTIONS}
+            value={weakLink}
+            onChange={onWeakLinkChange}
+          />
         </SettingsSection>
       )}
       {tabSound && (

@@ -1,5 +1,5 @@
 import { PLAYOUT_BUFFER_OPTIONS, type PlayoutBufferId } from '@/core/media/playout-buffer';
-import { cn } from '@/lib/utils';
+import { OptionGroup } from './choice-card';
 import { SettingsSection } from './settings-section';
 
 interface ViewerSettingsTabProps {
@@ -17,36 +17,14 @@ export function ViewerSettingsTab({ buffer, onBufferChange }: ViewerSettingsTabP
         summary={PLAYOUT_BUFFER_OPTIONS.find((option) => option.id === buffer)?.label}
         defaultOpen
       >
-        <fieldset className="flex flex-col gap-3" data-testid="playout-buffer-options">
-          <legend className="sr-only">Smoothing buffer</legend>
-          <p className="text-xs text-muted-foreground">
-            If the picture stutters or freezes, let your browser collect more of it before it plays.
-            Picture and sound are both delayed by the same time. Chromium browsers only.
-          </p>
-          {PLAYOUT_BUFFER_OPTIONS.map((option) => (
-            <label
-              key={option.id}
-              className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 has-[:focus-visible]:ring-2',
-                option.id === buffer && 'border-primary bg-primary/5',
-              )}
-            >
-              <input
-                type="radio"
-                name="playout-buffer"
-                value={option.id}
-                checked={option.id === buffer}
-                onChange={() => onBufferChange(option.id)}
-                className="mt-1"
-                data-testid={`playout-buffer-${option.id}`}
-              />
-              <span className="flex flex-col">
-                <span className="text-sm font-medium">{option.label}</span>
-                <span className="text-xs text-muted-foreground">{option.description}</span>
-              </span>
-            </label>
-          ))}
-        </fieldset>
+        <OptionGroup
+          name="playout-buffer"
+          legend="Smoothing buffer"
+          intro="If the picture stutters or freezes, let your browser collect more of it before it plays. Picture and sound are both delayed by the same time. Works in Chrome, Brave and Firefox."
+          options={PLAYOUT_BUFFER_OPTIONS}
+          value={buffer}
+          onChange={onBufferChange}
+        />
       </SettingsSection>
     </div>
   );
