@@ -15,6 +15,8 @@ export default defineConfig({
     action: {
       default_title: 'Open WatchP2PStream',
     },
+    // The smoothing buffer (`jitterBufferTarget`) and `deflate-raw` for the codes need Chromium 114.
+    ...(browser !== 'firefox' && { minimum_chrome_version: '114' }),
     ...(browser === 'firefox' && {
       // Firefox shares no tab sound, so a script is injected into the tab the host chooses. Nothing
       // is granted at install: the tab list and each site are asked for when the host picks them.
