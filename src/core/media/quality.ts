@@ -98,7 +98,8 @@ const MAX_AUTO_BITRATE_BPS = 20_000_000;
 /**
  * The picture's bitrate for a resolution and a frame rate, when the host does not set one: bits
  * per pixel that fall as the picture grows, as the four steps above already do (360p at 15 fps
- * gets 0.6 Mbit/s, 720p at 30 fps 3.5, 1080p at 30 fps 5.7 against the step's 6). A 16:9 picture.
+ * gets 0.55 Mbit/s against the step's 0.6, 720p at 30 fps 3.55 against 3.5, 1080p at 30 fps 5.7
+ * against 6). A 16:9 picture.
  */
 export function autoVideoBitrate(height: number, framerate: number): number {
   const bitsPerPixel = Math.max(0.05, 0.2 - 0.0001 * height);

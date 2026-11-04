@@ -31,6 +31,8 @@ export class AudioDelayTracker {
   private video: BufferCounter | null = null;
   private audio: BufferCounter | null = null;
   private smoothed: number | null = null;
+  /** The last wait of the sound that could be measured; stands in while a round has too few samples. */
+  private lastAudioAverage: number | null = null;
 
   /**
    * Takes the latest counters; returns the delay in ms to give the sound, or `null` while nothing
@@ -42,7 +44,10 @@ export class AudioDelayTracker {
     const videoAverage = windowAverage(this.video, video, MIN_VIDEO_FRAMES);
     const audioAverage = windowAverage(this.audio, audio, MIN_AUDIO_SAMPLES);
     // A new receiver (the share began again) starts its counters over: begin the estimate over.
-    if (restarted(this.video, video) || restarted(this.audio, audio)) this.smoothed = null;
+    if (restarted(this.video, video) || restarted(this.audio, audio)) {
+      this.smoothed = null;
+      this.lastAudioAverage = null;
+    }
     if (video) this.video = video;
     if (audio) this.audio = audio;
     if (videoAverage === null) return this.current();
@@ -57,8 +62,6 @@ export class AudioDelayTracker {
         : this.smoothed * (1 - WEIGHT_OF_NEW) + target * WEIGHT_OF_NEW;
     return this.current();
   }
-
-  private lastAudioAverage: number | null = null;
 
   private current(): number | null {
     return this.smoothed === null ? null : Math.round(this.smoothed);

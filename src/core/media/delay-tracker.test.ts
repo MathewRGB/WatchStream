@@ -73,6 +73,21 @@ describe('AudioDelayTracker', () => {
     expect(next).toBe(490);
   });
 
+  it('forgets the old sound when the next share has none', () => {
+    const tracker = new AudioDelayTracker();
+    const v = { s: 0, n: 0 };
+    const a = { s: 0, n: 0 };
+    for (let i = 0; i < 4; i += 1) {
+      tracker.update({ video: counter(v, 2000, 30), audio: counter(a, 500, 48_000) });
+    }
+    const fresh = { s: 0, n: 0 };
+    tracker.update({ video: counter(fresh, 800, 30), audio: null });
+    const next = tracker.update({ video: counter(fresh, 800, 30), audio: null });
+
+    // The picture waits 800 ms and no sound waits at all: not 800 minus the old sound's 500.
+    expect(next).toBe(800);
+  });
+
   it('keeps the last value while the picture is too still to average', () => {
     const tracker = new AudioDelayTracker();
     const v = { s: 0, n: 0 };
