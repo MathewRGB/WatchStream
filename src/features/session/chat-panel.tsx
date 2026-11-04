@@ -23,10 +23,13 @@ export function ChatPanel({ messages, selfId, onSend }: ChatPanelProps) {
   // Scroll the list and nothing else. `scrollIntoView` would also scroll every ancestor, and one
   // of them is the full-screen workspace, where the sidebar waits off-screen: it was pulled in
   // sideways, taking the picture with it, whenever a message came in.
+  // Keyed on the newest message and not on the count: a full chat drops the oldest message for each
+  // new one, and the count then stays the same.
+  const newestId = messages.at(-1)?.id;
   useEffect(() => {
     const element = list.current;
     if (element) element.scrollTop = element.scrollHeight;
-  }, [messages.length]);
+  }, [newestId]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();

@@ -17,7 +17,6 @@ import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
 import { CodeInput } from './code-box';
 import { describeError } from './describe-error';
-import { countIncoming } from './incoming';
 import { ParticipantList } from './participant-list';
 import { ReplyStep } from './reply-step';
 import { SetupArea } from './setup-area';
@@ -186,7 +185,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
   const { participants, participantId, media, share, shareEnd, ownShare } =
     useViewerSession(session);
   const sharing = useViewerShare(session, capture);
-  const messages = useChatMessages(session);
+  const chat = useChatMessages(session, participantId);
   const { volume, setVolume } = useVolume(storage);
   const { buffer, setBuffer } = usePlayoutBuffer(session, storage);
   // Stable, or the stage would start its measurement over on every render.
@@ -207,7 +206,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
       icon: <MessageSquare />,
       content: (
         <ChatPanel
-          messages={messages}
+          messages={chat.messages}
           selfId={participantId}
           onSend={(text) => session.sendChat(text)}
         />
@@ -224,7 +223,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
   return (
     <AppShell
       testId="viewer-view"
-      incomingMessages={countIncoming(messages, participantId)}
+      incomingMessages={chat.incoming}
       title={APP_TITLE}
       status={<span data-testid="viewer-state">Connected to {hostName}</span>}
       actions={<LeaveButton onClick={onLeave} />}

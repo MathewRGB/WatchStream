@@ -60,6 +60,19 @@ describe('ChatPanel', () => {
     delete Element.prototype.scrollIntoView;
   });
 
+  it('scrolls to the newest message also when the list stays as long as it was', () => {
+    // A full chat forgets its oldest message for each new one: the count does not change.
+    const { rerender } = render(
+      <ChatPanel messages={[message({ id: 'a' })]} selfId="me" onSend={vi.fn()} />,
+    );
+    const list = screen.getByTestId('chat-messages');
+    Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 700 });
+
+    rerender(<ChatPanel messages={[message({ id: 'b' })]} selfId="me" onSend={vi.fn()} />);
+
+    expect(list.scrollTop).toBe(700);
+  });
+
   it('renders message text as text, never as markup', () => {
     const text = '<img src=x onerror=alert(1)>';
     const { container } = render(

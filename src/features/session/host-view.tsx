@@ -17,7 +17,6 @@ import { useTabSound } from '@/hooks/use-tab-sound';
 import type { CaptureDisplay } from '@/lib/capture';
 import { AppShell } from './app-shell';
 import { ChatPanel } from './chat-panel';
-import { countIncoming } from './incoming';
 import { InviteTab } from './invite-tab';
 import { LoadLine } from './load-line';
 import { ParticipantList } from './participant-list';
@@ -64,7 +63,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
     [tabSound.prepareAuto, tabSound.autoSoundTrack],
   );
   const share = useScreenShare(session, capture, tabSound.soundTrack, autoSound);
-  const messages = useChatMessages(session);
+  const chat = useChatMessages(session, session.hostId);
   const viewers = participants.length - 1;
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? 'A viewer';
 
@@ -100,7 +99,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
       icon: <MessageSquare />,
       content: (
         <ChatPanel
-          messages={messages}
+          messages={chat.messages}
           selfId={session.hostId}
           onSend={(text) => session.sendChat(text)}
         />
@@ -130,7 +129,7 @@ export function HostView({ session, hostName, capture, onEnd }: HostViewProps) {
   return (
     <AppShell
       testId="host-view"
-      incomingMessages={countIncoming(messages, session.hostId)}
+      incomingMessages={chat.incoming}
       title="WatchP2PStream"
       status={`Hosting as ${hostName} · ${viewers} ${viewers === 1 ? 'viewer' : 'viewers'}`}
       actions={
