@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### Added
 
 - A **Weak connection** setting (smooth motion, balanced, steady sharpness) for what the picture
@@ -134,5 +136,6 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 - Chat text and names from other people are never rendered as HTML; ESLint forbids `innerHTML`,
   `outerHTML` and `dangerouslySetInnerHTML` in the source.
 
-[unreleased]: https://github.com/MathewRGB/WatchStream/compare/v0.1.0...main
+[unreleased]: https://github.com/MathewRGB/WatchStream/compare/v0.2.0...main
+[0.2.0]: https://github.com/MathewRGB/WatchStream/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MathewRGB/WatchStream/releases/tag/v0.1.0
