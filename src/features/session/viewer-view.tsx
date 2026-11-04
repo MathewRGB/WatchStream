@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageSquare, SlidersHorizontal, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { APP_NAME } from '@/core/app-name';
 import type { CandidateSummary } from '@/core/peer/candidates';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { playoutBufferSupported, playoutBufferTarget } from '@/core/media/playout-buffer';
@@ -28,8 +29,6 @@ import { StageVideo } from './stage-video';
 import { TechnicalDetails } from './technical-details';
 import { ViewerSettingsTab } from './viewer-settings-tab';
 import { ViewerShareControls } from './viewer-share-controls';
-
-const APP_TITLE = 'WatchP2PStream';
 
 interface ViewerViewProps {
   connector: PeerConnector;
@@ -78,7 +77,7 @@ export function ViewerView({ connector, storage, capture, viewerName, onLeave }:
   return (
     <AppShell
       testId="viewer-view"
-      title={APP_TITLE}
+      title={APP_NAME}
       status="Join a session"
       actions={<LeaveButton onClick={leave} />}
       stage={
@@ -230,7 +229,7 @@ function ConnectedView({ session, storage, capture, onLeave }: JoinedSessionProp
     <AppShell
       testId="viewer-view"
       incomingMessages={chat.incoming}
-      title={APP_TITLE}
+      title={APP_NAME}
       status={<span data-testid="viewer-state">Connected to {hostName}</span>}
       actions={<LeaveButton onClick={onLeave} />}
       stage={
@@ -271,7 +270,7 @@ function EndedView({ session, onLeave }: Pick<JoinedSessionProps, 'session' | 'o
   return (
     <AppShell
       testId="viewer-view"
-      title={APP_TITLE}
+      title={APP_NAME}
       status="Disconnected"
       actions={<LeaveButton onClick={onLeave} />}
       stage={
@@ -312,7 +311,7 @@ function JoiningView({ session, replyCode, copied, candidates, onLeave }: Joined
   return (
     <AppShell
       testId="viewer-view"
-      title={APP_TITLE}
+      title={APP_NAME}
       status={`Joining ${session.hostName}'s session`}
       actions={<LeaveButton onClick={onLeave} />}
       stage={

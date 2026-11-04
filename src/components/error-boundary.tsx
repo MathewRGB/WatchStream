@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { APP_NAME } from '@/core/app-name';
 import { createLogger, describeThrown, scrubMessage } from '@/core/log/logger';
 import { Button } from '@/components/ui/button';
 import { TechnicalDetails } from '@/features/session/technical-details';
@@ -39,8 +40,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <div className="flex w-full max-w-md flex-col gap-4" role="alert" data-testid="error-page">
           <h1 className="text-lg font-semibold">Something went wrong</h1>
           <p className="text-sm text-muted-foreground">
-            WatchP2PStream stopped working. Any session on this page has ended. Reload the page to
-            start again, and send the technical details to the maintainer if it keeps happening.
+            {APP_NAME} stopped working. Any session on this page has ended. Reload the page to start
+            again, and send the technical details to the maintainer if it keeps happening.
           </p>
           <TechnicalDetails details={`Error: ${error.name}: ${scrubMessage(error.message)}`} />
           <div>

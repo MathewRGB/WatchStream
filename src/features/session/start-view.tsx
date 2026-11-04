@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { APP_NAME } from '@/core/app-name';
 import { MAX_NAME_LENGTH } from '@/core/handshake/handshake-code';
 
 interface StartViewProps {
@@ -32,7 +33,7 @@ export function StartView({ initialName, onHost, onJoin }: StartViewProps) {
   return (
     <Card data-testid="start-view">
       <CardHeader>
-        <CardTitle className="text-2xl">WatchP2PStream</CardTitle>
+        <CardTitle className="text-2xl">{APP_NAME}</CardTitle>
         <CardDescription>Watch together, browser to browser.</CardDescription>
       </CardHeader>
       <CardContent>

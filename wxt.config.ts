@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
+import { APP_NAME } from './src/core/app-name';
 
 export default defineConfig({
   srcDir: 'src',
@@ -9,11 +10,11 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: ({ browser }) => ({
-    name: 'WatchP2PStream',
+    name: APP_NAME,
     description: 'Watch streams together, browser to browser, without a media server.',
     permissions: ['storage'],
     action: {
-      default_title: 'Open WatchP2PStream',
+      default_title: `Open ${APP_NAME}`,
     },
     // The smoothing buffer (`jitterBufferTarget`) and `deflate-raw` for the codes need Chromium 114.
     ...(browser !== 'firefox' && { minimum_chrome_version: '114' }),

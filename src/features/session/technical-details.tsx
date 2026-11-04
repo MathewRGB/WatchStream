@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { APP_NAME } from '@/core/app-name';
 import { formatLogHistory } from '@/core/log/logger';
 import { copyText } from '@/lib/clipboard';
 
@@ -19,7 +20,7 @@ export function TechnicalDetails({ details }: TechnicalDetailsProps) {
   const text = [
     details,
     `Browser: ${navigator.userAgent}`,
-    'Recent log (also in the browser console, filter "WatchP2PStream"):',
+    `Recent log (also in the browser console, filter "${APP_NAME}"):`,
     formatLogHistory(40) || '(empty)',
   ]
     .filter(Boolean)

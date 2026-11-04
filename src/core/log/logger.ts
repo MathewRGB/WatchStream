@@ -1,3 +1,5 @@
+import { APP_NAME } from '../app-name';
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /**
@@ -21,7 +23,7 @@ const MAX_HISTORY = 300;
 const history: LogEntry[] = [];
 
 const consoleSink: LogSink = ({ level, scope, message, data }) => {
-  const line = `[WatchP2PStream] ${scope}: ${message}`;
+  const line = `[${APP_NAME}] ${scope}: ${message}`;
   if (data) console[level](line, data);
   else console[level](line);
 };

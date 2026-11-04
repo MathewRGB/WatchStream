@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { APP_NAME } from '@/core/app-name';
 import {
   autoVideoBitrate,
   CUSTOM_AUDIO_BITRATES_BPS,
@@ -48,7 +49,7 @@ export function VideoQualityOptions({
       <p className="text-xs text-muted-foreground" data-testid="quality-automatic-note">
         Your upload limits what viewers get: you send a separate copy to each. A change applies at
         once, also while sharing. This is what is sent; if your computer or connection cannot keep
-        up, WatchP2PStream tells you on the stage and keeps the quality you chose.
+        up, {APP_NAME} tells you on the stage and keeps the quality you chose.
       </p>
       {QUALITY_PRESETS.map((preset) => (
         <ChoiceCard

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HostSession } from '@/core/session/host-session';
+import { APP_NAME } from '@/core/app-name';
 import {
   allowTabList,
   autoDetectAllowed,
@@ -95,7 +96,7 @@ export function useTabSound(session: HostSession): TabSoundControls {
     setError(null);
     try {
       if (!(await allowTabList())) {
-        setError('WatchP2PStream needs to see your open tabs to offer them.');
+        setError(`${APP_NAME} needs to see your open tabs to offer them.`);
         return;
       }
       setChoices(await listTabs());

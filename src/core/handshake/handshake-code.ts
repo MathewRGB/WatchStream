@@ -1,4 +1,5 @@
 import { decodeBase64Url, encodeBase64Url } from './base64url';
+import { APP_NAME } from '../app-name';
 import { isSessionDescription } from '../peer/session-description';
 import { compress, decompress } from './compression';
 import { createLogger } from '../log/logger';
@@ -139,7 +140,7 @@ async function decode(kind: keyof typeof PREFIX, code: string): Promise<Decoded>
 
   const match = /^(WS[IR])(\d+)\.(.+)$/.exec(compact);
   if (!match) {
-    throw new HandshakeCodeError('malformed', 'This is not a WatchP2PStream code.');
+    throw new HandshakeCodeError('malformed', `This is not a ${APP_NAME} code.`);
   }
   const [, prefix, version, body] = match as unknown as [string, string, string, string];
   if (prefix !== PREFIX[kind]) {
@@ -149,7 +150,7 @@ async function decode(kind: keyof typeof PREFIX, code: string): Promise<Decoded>
   if (Number(version) !== FORMAT_VERSION) {
     throw new HandshakeCodeError(
       'unsupported-version',
-      'This code was created by an incompatible WatchP2PStream version.',
+      `This code was created by an incompatible ${APP_NAME} version.`,
     );
   }
 
