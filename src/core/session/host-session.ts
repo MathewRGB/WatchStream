@@ -26,6 +26,7 @@ import {
   type ShareDenial,
 } from '../protocol/messages';
 import { LoadControl, type LoadStatus } from './load-control';
+import { RateLimit } from './rate-limit';
 import { SessionError } from './session-error';
 
 export type { LoadStatus } from './load-control';
@@ -77,7 +78,15 @@ export interface IncomingShare {
 interface Viewer {
   participant: Participant;
   link: MediaLink;
+  /** What this viewer may send as often as it likes is capped; see `RateLimit`. */
+  chatLimit: RateLimit;
+  reportLimit: RateLimit;
 }
+
+/** A person types a few lines in ten seconds, not more than this. */
+const CHAT_LIMIT = { events: 10, windowMs: 10_000 };
+/** A viewer reports every two seconds; this leaves room for several reports in a burst. */
+const REPORT_LIMIT = { events: 30, windowMs: 10_000 };
 
 /**
  * The most viewers a session holds. A ceiling in the code and no setting: what a host's
@@ -267,7 +276,12 @@ export class HostSession {
       throw new SessionError(failure.reason, failure.message, details);
     }
 
-    this.addViewer({ participant, link });
+    this.addViewer({
+      participant,
+      link,
+      chatLimit: new RateLimit(CHAT_LIMIT.events, CHAT_LIMIT.windowMs),
+      reportLimit: new RateLimit(REPORT_LIMIT.events, REPORT_LIMIT.windowMs),
+    });
     return participant;
   }
 
@@ -535,7 +549,8 @@ export class HostSession {
   }
 
   private handleViewerMessage(link: MediaLink, raw: string, sender: Participant): void {
-    if (!this.viewers.has(sender.id)) {
+    const viewer = this.viewers.get(sender.id);
+    if (!viewer) {
       // Removed a moment ago: the link is still open, but the viewer is not in the session.
       this.log.debug('dropped a message from a viewer who is gone', { length: raw.length });
       return;
@@ -543,7 +558,8 @@ export class HostSession {
     const message = parseViewerMessage(raw);
     switch (message?.type) {
       case 'chat':
-        this.publishChat(sender, message.text);
+        if (viewer.chatLimit.allow()) this.publishChat(sender, message.text);
+        else this.log.warn('dropped a chat message: the viewer sends too many');
         break;
       case 'media-answer':
         if (message.sourceId === this.hostId) {
@@ -560,7 +576,7 @@ export class HostSession {
         break;
       case 'receive-report':
         // Only while a picture goes out: a late report must not outlive the share it was about.
-        if (this.sending) this.setReport(sender.id, message.report);
+        if (this.sending && viewer.reportLimit.allow()) this.setReport(sender.id, message.report);
         break;
       case 'share-request':
         this.handleShareRequest(sender);

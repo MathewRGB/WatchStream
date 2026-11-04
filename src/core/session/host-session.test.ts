@@ -340,6 +340,22 @@ describe('HostSession', () => {
       expect(host.participants).toHaveLength(2);
     });
 
+    it('passes on at most ten messages of one viewer in ten seconds, and not for the others', async () => {
+      const { host, network } = createHost();
+      await joinViewer(host, network, 'user2');
+      await joinViewer(host, network, 'user3');
+      const onChat = vi.fn();
+      host.events.on('chat', onChat);
+      const flooder = network.offers[0]!;
+
+      for (let n = 1; n <= 15; n += 1)
+        flooder.receive(JSON.stringify({ type: 'chat', text: `${n}` }));
+      network.offers[1]!.receive(JSON.stringify({ type: 'chat', text: 'still heard' }));
+
+      expect(onChat).toHaveBeenCalledTimes(11);
+      expect(onChat).toHaveBeenLastCalledWith(expect.objectContaining({ text: 'still heard' }));
+    });
+
     it('rejects an empty host message', () => {
       const { host } = createHost();
 
