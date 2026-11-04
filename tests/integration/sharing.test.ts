@@ -609,7 +609,8 @@ describe.skipIf(/firefox/i.test(navigator.userAgent))('the codec choice over Web
     const preference = () =>
       link.senders.find((s) => s.track?.kind === 'video')?.getParameters().degradationPreference;
     await waitFor<void>((resolve) => {
-      const poll = () => (preference() === 'maintain-resolution' ? resolve() : setTimeout(poll, 100));
+      const poll = () =>
+        preference() === 'maintain-resolution' ? resolve() : setTimeout(poll, 100);
       poll();
     }, 10_000);
 

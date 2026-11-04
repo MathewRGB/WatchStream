@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-04
+
+First stable release, prepared for the Chrome Web Store.
+
 ### Changed
 
 - The **Weak connection** default is now _Steady sharpness_ instead of _Balanced_, because a sharp
@@ -149,7 +153,8 @@ First release. How it works is in [docs/architecture.md](docs/architecture.md).
 - Chat text and names from other people are never rendered as HTML; ESLint forbids `innerHTML`,
   `outerHTML` and `dangerouslySetInnerHTML` in the source.
 
-[unreleased]: https://github.com/MathewRGB/WatchStream/compare/v0.2.1...main
+[unreleased]: https://github.com/MathewRGB/WatchStream/compare/v1.0.0...main
+[1.0.0]: https://github.com/MathewRGB/WatchStream/compare/v0.2.1...v1.0.0
 [0.2.1]: https://github.com/MathewRGB/WatchStream/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/MathewRGB/WatchStream/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MathewRGB/WatchStream/releases/tag/v0.1.0
