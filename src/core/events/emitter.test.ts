@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { clearLogHistory, logHistory, setLogSink } from '../log/logger';
 import { Emitter } from './emitter';
 
 interface Events {
@@ -62,5 +63,31 @@ describe('Emitter', () => {
     emitter.emit('message', 'hi');
 
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('logs a listener that throws and still delivers to the others', () => {
+    setLogSink(() => {});
+    clearLogHistory();
+    try {
+      const emitter = new Emitter<Events>();
+      const later = vi.fn();
+      emitter.on('message', () => {
+        throw new TypeError('broken listener');
+      });
+      emitter.on('message', later);
+
+      expect(() => emitter.emit('message', 'hi')).not.toThrow();
+
+      expect(later).toHaveBeenCalledWith('hi');
+      expect(logHistory()).toContainEqual(
+        expect.objectContaining({
+          level: 'error',
+          message: 'a listener failed',
+          data: expect.objectContaining({ event: 'message', error: 'TypeError' }),
+        }),
+      );
+    } finally {
+      setLogSink(null);
+    }
   });
 });

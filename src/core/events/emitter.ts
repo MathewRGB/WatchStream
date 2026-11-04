@@ -1,6 +1,14 @@
+import { createLogger, describeThrown } from '../log/logger';
+
 export type Listener<T> = (payload: T) => void;
 
-/** Minimal typed event emitter. `on` returns a function that unsubscribes. */
+const log = createLogger('events');
+
+/**
+ * Minimal typed event emitter. `on` returns a function that unsubscribes. A listener that throws
+ * is logged and skipped: the others still get the event, and the code that emitted it (a link
+ * closing, a session ending) carries on.
+ */
 export class Emitter<Events extends object> {
   private readonly listeners = new Map<keyof Events, Set<Listener<never>>>();
 
@@ -16,7 +24,11 @@ export class Emitter<Events extends object> {
 
   emit<K extends keyof Events>(event: K, payload: Events[K]): void {
     for (const listener of [...(this.listeners.get(event) ?? [])]) {
-      (listener as Listener<Events[K]>)(payload);
+      try {
+        (listener as Listener<Events[K]>)(payload);
+      } catch (error) {
+        log.error('a listener failed', { event: String(event), ...describeThrown(error) });
+      }
     }
   }
 
