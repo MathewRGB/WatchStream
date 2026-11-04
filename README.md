@@ -92,11 +92,12 @@ own player for such services is future work, see
 The window is one screen: the stage on the left (it has a full-screen button) and a sidebar with
 tabs on the right, which you can hide with the button in the header.
 
-In full screen the sidebar is hidden. Move the pointer to the right edge of the screen and it
-slides in over the picture; it slides out again a moment after the pointer left. It stays open
-while you are typing in it, and a click on the picture closes it. If the pointer cannot reach the
-edge (touch screen, a second monitor on the right), use the small handle at the right edge, or
-press `S` to show and hide the sidebar.
+In full screen the sidebar is hidden. Rest the pointer on the arrow in the middle of the right
+edge of the screen and the sidebar slides in over the picture; it slides out again a moment after
+the pointer left. The rest of the edge does nothing, so the sidebar does not open by accident. It
+stays open while you are typing in it, and a click on the picture closes it. If the pointer cannot
+reach the arrow (touch screen, a second monitor on the right), click it or press `S` to show and
+hide the sidebar.
 
 In full screen, three seconds without moving the pointer, pressing a key, clicking or scrolling
 leave only the picture: all controls fade out and the mouse pointer disappears. Moving the pointer

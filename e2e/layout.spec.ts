@@ -233,7 +233,7 @@ test('the connected viewer sees the stage and the sidebar side by side', async (
   await viewer.page.close();
 });
 
-test('in full screen the sidebar slides in at the right edge and stays while typing', async () => {
+test('in full screen the sidebar slides in at the handle on the right edge and stays while typing', async () => {
   const host = await openSessionPage(SIZES[0]!);
   const viewer = await openSessionPage(SIZES[0]!);
   await host.start('user1', 'host');
@@ -248,7 +248,14 @@ test('in full screen the sidebar slides in at the right edge and stays while typ
     .toBe(true);
   expect(await isShown()).toBe(false);
 
-  // Touching the edge brings it in, over the picture: the stage keeps its size.
+  // The edge as a whole does not open it: only the handle at its middle does.
+  for (const y of [screen.height * 0.2, screen.height * 0.8]) {
+    await viewer.page.mouse.move(screen.width - 3, y);
+    await viewer.page.waitForTimeout(700);
+    expect(await isShown()).toBe(false);
+  }
+
+  // Resting on the handle brings it in, over the picture: the stage keeps its size.
   const stageBefore = (await viewer.byTestId('stage').boundingBox())!;
   await viewer.page.mouse.move(screen.width - 3, screen.height / 2);
   await expect.poll(isShown).toBe(true);
@@ -345,7 +352,7 @@ test('in full screen the controls and the pointer go when idle and come back on 
   await host.page.mouse.move(screen.width / 2, screen.height / 2);
   await expect.poll(() => style('fullscreen-button', 'opacity')).toBe('0.8');
   expect(await style('share-button', 'opacity')).toBe('1');
-  expect(await style('sidebar-handle', 'opacity')).toBe('0.6');
+  expect(await style('sidebar-handle', 'opacity')).toBe('0.9');
   await expect(host.byTestId('workspace')).toHaveAttribute('data-idle', 'false');
   expect(await style('workspace', 'cursor')).not.toBe('none');
 

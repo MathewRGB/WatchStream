@@ -187,7 +187,7 @@ describe('AppShell full screen', () => {
 
     expect(screen.queryByTestId('sidebar')).toBeNull();
   });
-  describe('revealing the sidebar at the right edge', () => {
+  describe('revealing the sidebar with the handle', () => {
     async function enterFullscreen() {
       renderShell();
       await userEvent.click(screen.getByTestId('fullscreen-button'));
@@ -197,17 +197,32 @@ describe('AppShell full screen', () => {
       vi.useRealTimers();
     });
 
-    it('has no edge strip outside full screen', () => {
+    it('has no handle outside full screen', () => {
       renderShell();
 
-      expect(screen.queryByTestId('sidebar-edge')).toBeNull();
+      expect(screen.queryByTestId('sidebar-handle')).toBeNull();
     });
 
-    it('slides the sidebar over the picture when the pointer touches the edge', async () => {
+    it('has no strip along the screen edge: only the handle opens the sidebar', async () => {
+      await enterFullscreen();
+
+      expect(screen.queryByTestId('sidebar-edge')).toBeNull();
+      expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
+    });
+
+    it('stands out from the picture: filled with the accent colour and raised', async () => {
+      await enterFullscreen();
+
+      // Not only under the pointer: the sidebar opens the moment the pointer is on it.
+      const handle = screen.getByTestId('sidebar-handle');
+      expect(handle).toHaveClass('bg-primary', 'text-primary-foreground', 'shadow-lg');
+    });
+
+    it('slides the sidebar over the picture when the pointer rests on the handle', async () => {
       await enterFullscreen();
       expect(screen.getByTestId('sidebar')).toHaveAttribute('inert');
 
-      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
 
       const sidebar = screen.getByTestId('sidebar');
       expect(sidebar).not.toHaveAttribute('inert');
@@ -217,10 +232,10 @@ describe('AppShell full screen', () => {
 
     it('slides it out again a moment after the pointer left', async () => {
       await enterFullscreen();
-      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
       vi.useFakeTimers();
 
-      fireEvent.pointerLeave(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerLeave(screen.getByTestId('sidebar-handle'));
       act(() => void vi.advanceTimersByTime(399));
       expect(screen.getByTestId('sidebar')).not.toHaveAttribute('inert');
       act(() => void vi.advanceTimersByTime(1));
@@ -231,7 +246,7 @@ describe('AppShell full screen', () => {
 
     it('stays while a message is being typed, with the pointer long gone', async () => {
       await enterFullscreen();
-      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
       await userEvent.type(screen.getByTestId('draft'), 'still writing');
       vi.useFakeTimers();
 
@@ -362,7 +377,7 @@ describe('AppShell full screen', () => {
       it('stays away while the sidebar is open and in view, which shows the message', async () => {
         const { receive } = renderCounting();
         await act(async () => {});
-        fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+        fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
 
         receive(1);
 
@@ -448,7 +463,7 @@ describe('AppShell full screen', () => {
 
       it('does not start while the pointer rests on the sidebar, where someone reads', async () => {
         await enterFullscreenOnFakeClock();
-        fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+        fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
 
         act(() => void vi.advanceTimersByTime(30_000));
         expect(screen.getByTestId('workspace')).toHaveAttribute('data-idle', 'false');
@@ -470,7 +485,7 @@ describe('AppShell full screen', () => {
 
     it('closes on a press on the picture', async () => {
       await enterFullscreen();
-      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
 
       fireEvent.pointerDown(screen.getByTestId('stage'));
 
@@ -479,7 +494,7 @@ describe('AppShell full screen', () => {
 
     it('is closed again after leaving full screen and entering it anew', async () => {
       await enterFullscreen();
-      fireEvent.pointerEnter(screen.getByTestId('sidebar-edge'));
+      fireEvent.pointerEnter(screen.getByTestId('sidebar-handle'));
 
       await userEvent.click(screen.getByTestId('fullscreen-button'));
       await userEvent.click(screen.getByTestId('fullscreen-button'));

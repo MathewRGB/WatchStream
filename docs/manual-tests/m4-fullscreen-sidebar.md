@@ -2,7 +2,7 @@
 
 The automated tests drive a real mouse and keyboard in Chromium (unit tests, and Playwright end to
 end). Firefox is covered by hand: its extension cannot be loaded by the test tool. The tests cannot
-judge how it feels: how wide the edge strip is, whether 400 ms before it slides out is right, or
+judge how it feels: how easy the arrow is to hit and to see, whether 400 ms before it slides out is right, or
 whether it covers the picture where you look. They also cannot test a touch screen or a second
 monitor. This guide covers those.
 
@@ -20,25 +20,28 @@ monitor. This guide covers those.
    handle sits at the middle of the right edge.
 3. Press `Esc`. Expect: the normal window is back, with the sidebar in its column where it was.
 
-## 2. The edge
+## 2. The arrow
 
-1. In full screen, move the pointer to the right edge of the screen and let it touch it.
-2. Expect: the sidebar slides in over the picture. The picture does not move or shrink.
+1. In full screen, move the pointer along the right edge of the screen, above and below the arrow,
+   and let it touch the edge there. Expect: nothing opens.
+2. Rest the pointer on the arrow in the middle of the right edge. Expect: the arrow is easy to see
+   (a bar filled with the accent colour, with a shadow), and
+   the sidebar slides in over the picture. The picture does not move or shrink.
 3. Move the pointer into the sidebar and use it: switch tabs, read the chat, the people list. On
    the host the Invite and Settings tabs work too.
 4. Move the pointer away. Expect: the sidebar slides out shortly after (about half a second).
-5. Move the pointer across the right edge quickly, and slip off the sidebar and back. Expect: it
-   does not flicker shut while you are still near it.
+5. Move the pointer over the arrow quickly, and slip off the sidebar and back. Expect: it does not
+   flicker shut while you are still near it.
 
-Judge, and write down if it needs changing: is the strip easy enough to hit and hard enough to
-trigger by accident? Is the delay too short or too long? Does the sidebar cover something you need?
+Judge, and write down if it needs changing: is the arrow easy enough to find and to hit, and does
+the sidebar stay shut when you only go to the edge to reach something else? Is the delay too short or too long? Does the sidebar cover something you need?
 
 ## 3. Typing
 
 1. Open the sidebar, click into the chat field and type half a message.
 2. Move the pointer far away and wait a few seconds. Expect: the sidebar stays.
-3. Click on the picture. Expect: it closes. Touch the edge again. Expect: your half-typed text is
-   still in the field.
+3. Click on the picture. Expect: it closes. Rest the pointer on the arrow again. Expect: your
+   half-typed text is still in the field.
 4. Send the message. Expect: the other side receives it.
 
 ## 4. Without the edge

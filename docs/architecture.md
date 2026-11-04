@@ -356,10 +356,14 @@ CPU. The sharer sends at the quality its browser picks; only the host applies th
   sidebar takes the whole width. Tabs stay mounted, so typed text and scroll positions survive a
   switch.
 - **Full screen** takes the workspace (stage and sidebar, not the header). The sidebar is the same
-  element, waiting off-screen and inert; it slides in over the picture when the pointer touches a
-  16 px strip at the right edge and slides out 400 ms after the pointer left. It stays while
-  something in it has focus; a click on the picture closes it. A handle at the edge and the `S` key
-  serve touch screens and a monitor on the right.
+  element, waiting off-screen and inert; it slides in over the picture when the pointer rests on
+  the handle (an arrow, 28 px wide and 96 px high) at the middle of the right edge, and slides out
+  400 ms after the pointer left. The edge as a whole does not open it: a strip along the whole
+  edge did, and opened the sidebar whenever the pointer went to the right to reach a scroll bar
+  or another window. The handle is filled with the accent colour and has a shadow, so that it is found: the
+  highlight has to be there at rest, because the sidebar opens the moment the pointer is on it. The sidebar stays while
+  something in it has focus; a click on the picture closes it. A click on the handle and the `S`
+  key serve touch screens and a monitor on the right.
 - **Only the picture when idle:** after three seconds without a move, key, click or scroll, the
   controls and the mouse pointer fade out (`data-idle` on the workspace; a control joins with the
   classes in `stage-fullscreen.ts`). The pointer resting on the sidebar is not idle. A pointer move

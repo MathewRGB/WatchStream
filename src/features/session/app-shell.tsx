@@ -34,7 +34,7 @@ interface AppShellProps {
  *
  * Full screen takes the workspace (stage and sidebar, not the header). There
  * the sidebar leaves its column and waits off-screen at the right edge until
- * the pointer touches the edge; it is the same element, so what is typed in it
+ * the pointer rests on the handle at the middle of the edge; it is the same element, so what is typed in it
  * and where it scrolled survive. It slides over the picture and does not move it.
  *
  * In full screen, a few seconds without activity leave only the picture: the controls fade out
@@ -115,15 +115,6 @@ export function AppShell({
             {stage}
           </main>
           {floating && (
-            // Touching the right edge reveals the sidebar. It starts below the full-screen button.
-            <div
-              className="absolute top-14 right-0 bottom-0 z-10 w-4"
-              aria-hidden
-              {...hoverProps}
-              data-testid="sidebar-edge"
-            />
-          )}
-          {floating && (
             <>
               {/* Quiet and out of the way: no text, no clicks. It is not hidden when idle; being
                   seen then is its purpose. */}
@@ -144,7 +135,10 @@ export function AppShell({
             </>
           )}
           {floating && (
-            // For touch and for screens where the pointer cannot reach this edge (a second
+            // The way in: the pointer resting on this handle at the middle of the right edge
+            // opens the sidebar, the edge as a whole does not (that opened it by accident). It is
+            // raised from the picture, with a border in the accent colour, so it is found. Also
+            // for touch and for screens where the pointer cannot reach this edge (a second
             // monitor on the right). A real button, so the keyboard reaches it too. It stays in
             // the page while the sidebar covers it, only unseen and inert: a pointer that left
             // it must still be told so, and an element that is gone cannot be told anything. The
@@ -152,7 +146,7 @@ export function AppShell({
             <button
               type="button"
               className={cn(
-                'absolute top-1/2 right-0 z-10 flex h-16 w-5 -translate-y-1/2 items-center justify-center rounded-l-md bg-secondary/70 text-secondary-foreground opacity-60 hover:opacity-100 focus-visible:opacity-100',
+                'absolute top-1/2 right-0 z-10 flex h-24 w-7 -translate-y-1/2 items-center justify-center rounded-l-lg border border-r-0 border-primary bg-primary text-primary-foreground opacity-90 shadow-lg hover:opacity-100 focus-visible:opacity-100',
                 FADE_WHEN_IDLE,
                 peek.open && 'invisible',
               )}
@@ -163,7 +157,7 @@ export function AppShell({
               {...hoverProps}
               data-testid="sidebar-handle"
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-5" />
             </button>
           )}
           {(docked || floating) && (
