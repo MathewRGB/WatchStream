@@ -6,6 +6,7 @@ import { readLinkStats, type LinkStats } from './link-stats';
 import { readReceiveStats, type ReceiveStats } from './receive-stats';
 import { tuneOpus } from './opus';
 import { readPlayoutCounters } from './playout-counters';
+import { connectedPath, type StatsEntry } from './stats-report';
 import type { PlayoutCounters } from '../media/delay-tracker';
 import {
   applyBitrateHints,
@@ -48,15 +49,6 @@ const EMPTY_DIAGNOSTICS: LinkDiagnostics = {
   remote: NO_CANDIDATES,
   path: '',
 };
-
-/** The fields of a WebRTC stats report that the path lookup reads. */
-interface StatsReport extends RTCStats {
-  selectedCandidatePairId?: string;
-  localCandidateId?: string;
-  remoteCandidateId?: string;
-  nominated?: boolean;
-  candidateType?: string;
-}
 
 /**
  * A WebRTC data channel to one remote peer. Signaling is non-trickle: all
@@ -237,7 +229,7 @@ export class PeerLink implements OfferingLink {
       const answer = await this.connection.createAnswer();
       await this.connection.setLocalDescription({
         type: 'answer',
-        sdp: this.withBitrateHints(tuneOpus(answer.sdp ?? '')),
+        sdp: this.shapeLocal(answer.sdp),
       });
       this.emitLocalDescription('answer');
     } else {
@@ -295,6 +287,11 @@ export class PeerLink implements OfferingLink {
     return this.limits ? bitrateHints(this.weakLink, this.limits.maxBitrateBps) : null;
   }
 
+  /** A description this side wrote, tuned for music and with the bitrate floor, before it is set. */
+  private shapeLocal(sdp: string | undefined): string {
+    return this.withBitrateHints(tuneOpus(sdp ?? ''));
+  }
+
   /** The description with the bitrate floor of the weak-link mode (Chromium; others ignore it). */
   private withBitrateHints(sdp: string): string {
     return applyBitrateHints(sdp, this.hints());
@@ -314,7 +311,7 @@ export class PeerLink implements OfferingLink {
 
   /** Reads the browser's statistics with `read`; `null` once the link is closed. */
   private async readStats<T>(
-    read: (reports: Iterable<StatsReport>, now: number) => T | null,
+    read: (reports: Iterable<StatsEntry>, now: number) => T | null,
   ): Promise<T | null> {
     if (this.currentState === 'closed') return null;
     try {
@@ -325,8 +322,8 @@ export class PeerLink implements OfferingLink {
     }
   }
 
-  private async statsReports(): Promise<Map<string, StatsReport>> {
-    return (await this.connection.getStats()) as unknown as Map<string, StatsReport>;
+  private async statsReports(): Promise<Map<string, StatsEntry>> {
+    return (await this.connection.getStats()) as unknown as Map<string, StatsEntry>;
   }
 
   diagnostics(): LinkDiagnostics {
@@ -485,7 +482,7 @@ export class PeerLink implements OfferingLink {
       const offer = await this.connection.createOffer();
       await this.connection.setLocalDescription({
         type: 'offer',
-        sdp: this.withBitrateHints(tuneOpus(offer.sdp ?? '')),
+        sdp: this.shapeLocal(offer.sdp),
       });
       this.emitLocalDescription('offer');
     } catch (error) {
@@ -531,19 +528,10 @@ export class PeerLink implements OfferingLink {
 
   private async recordPath(): Promise<void> {
     try {
-      const stats = await this.statsReports();
-      let pair: StatsReport | undefined;
-      for (const report of stats.values()) {
-        if (report.type === 'transport' && report.selectedCandidatePairId) {
-          pair = stats.get(report.selectedCandidatePairId);
-        }
-      }
-      // Firefox has no transport report with a selected pair.
-      pair ??= [...stats.values()].find((r) => r.type === 'candidate-pair' && r.nominated);
-      if (!pair) return;
-      const kind = (id?: string) => (id && stats.get(id)?.candidateType) || 'unknown';
-      this.path = `${kind(pair.localCandidateId)}/${kind(pair.remoteCandidateId)}`;
-      this.log.info('connected', { path: this.path });
+      const path = connectedPath((await this.statsReports()).values());
+      if (!path) return;
+      this.path = path;
+      this.log.info('connected', { path });
     } catch (error) {
       this.log.debug('could not read the connected path', describeThrown(error));
     }

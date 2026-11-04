@@ -1,4 +1,9 @@
-import { isSelectedPair, statNumber as number, type StatsEntry } from './stats-report';
+import {
+  connectedPath,
+  isSelectedPair,
+  statNumber as number,
+  type StatsEntry,
+} from './stats-report';
 
 /**
  * What the host's load monitor needs to know about one link's picture. Plain counters,
@@ -48,16 +53,8 @@ export function readLinkStats(reports: Iterable<object>, at: number): LinkStats 
   let source: StatsEntry | undefined;
   let remote: StatsEntry | undefined;
   let pair: StatsEntry | undefined;
-  const candidates = new Map<string, string>();
-  for (const item of reports) {
-    const report = item as StatsEntry;
-    if (
-      (report.type === 'local-candidate' || report.type === 'remote-candidate') &&
-      typeof report.id === 'string' &&
-      typeof report.candidateType === 'string'
-    ) {
-      candidates.set(report.id, report.candidateType);
-    }
+  const entries = Array.from(reports, (item) => item as StatsEntry);
+  for (const report of entries) {
     const video = report.kind === 'video';
     if (report.type === 'outbound-rtp' && video) outbound ??= report;
     else if (report.type === 'media-source' && video) source ??= report;
@@ -86,20 +83,6 @@ export function readLinkStats(reports: Iterable<object>, at: number): LinkStats 
     nackCount: number(outbound.nackCount),
     keyFramesEncoded: number(outbound.keyFramesEncoded),
     retransmittedBytes: number(outbound.retransmittedBytesSent),
-    path: pathOf(pair, candidates),
+    path: connectedPath(entries),
   };
-}
-
-/** `local/remote` candidate kinds of the connected pair, or `null` when they cannot be told. */
-function pathOf(
-  pair: StatsEntry | undefined,
-  candidates: ReadonlyMap<string, string>,
-): string | null {
-  const local =
-    typeof pair?.localCandidateId === 'string' ? candidates.get(pair.localCandidateId) : undefined;
-  const remote =
-    typeof pair?.remoteCandidateId === 'string'
-      ? candidates.get(pair.remoteCandidateId)
-      : undefined;
-  return local && remote ? `${local}/${remote}` : null;
 }
