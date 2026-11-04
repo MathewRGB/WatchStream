@@ -9,6 +9,38 @@ affiliation with them.
 
 > Watch a tab, window or screen together, browser to browser. No server, no account, no data collected.
 
+## Detailed description
+
+```
+Watch a tab, window or screen together with friends, browser to browser. No server, no account, no data collected.
+
+A host invites up to twelve viewers, and everyone sees and hears the same thing: YouTube, a film, a game or any video that plays in the host's browser.
+
+WHY WATCHP2PSTREAM
+• No server at all. The picture, the sound and the chat go directly between the browsers. Even the connection setup travels as codes through a messenger you already use.
+• No account and no subscription for viewers. Only the host needs access to the content; a viewer needs the extension and a code.
+• Everyone sees exactly the same picture. The host's picture and sound are sent, not a playback position, so nobody drifts out of step and regional versions of a title do not matter.
+• Works with any video the host can play that has no copy protection, and with a whole window or screen.
+• The host is in control: up to twelve viewers, one invitation per person, removing a viewer, a picture quality from Minimal to 4K, and a load monitor that says when the computer or connection cannot keep up. A viewer can share too, once the host allows it.
+• Private by design. Every connection is encrypted between two browsers.
+
+HOW IT WORKS
+1. Click the toolbar icon. The WatchP2PStream page opens.
+2. Host: choose "Host a session" and send the invitation code to a friend through any messenger.
+3. Viewer: choose "Join a session", paste the code and send the reply code back.
+4. Host: paste the reply code, choose "Share" and pick a tab, window or screen.
+
+Also included: a chat, a full-screen mode with a sliding sidebar, a volume control, settings for weak connections and an optional smoothing buffer for viewers on long routes.
+
+PRIVACY
+WatchP2PStream collects no data and sends nothing to the developer. To connect people on different networks, your browser asks a public STUN server (stun.l.google.com, run by Google) for its public IP address; that server sees IP addresses and nothing else. Invitation and reply codes contain network addresses, so send them only to the person you invite.
+
+LIMITS
+Services with copy protection (Netflix, Disney+, Prime Video, Max) show a black picture when shared. WatchP2PStream does not circumvent that.
+
+Open source (MIT): https://github.com/MathewRGB/WatchStream
+```
+
 ## Privacy summary (for the listing)
 
 WatchP2PStream has no server and collects no data. The picture, the sound and the chat go directly
