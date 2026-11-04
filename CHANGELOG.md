@@ -21,6 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/).
   picture really waits in the browser's buffer, measured once a second, because the browser holds
   back only the picture: the sound would play seconds early. Chromium and Firefox; remembered
   between sessions.
+- The extension logo shows in the window header, left of the title.
 
 ### Fixed
 

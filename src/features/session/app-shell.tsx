@@ -67,6 +67,7 @@ export function AppShell({
   return (
     <div className="flex h-dvh flex-col overflow-hidden" data-testid={testId}>
       <header className="flex h-12 shrink-0 items-center gap-3 border-b px-4">
+        <img src="/icon/48.png" alt="" aria-hidden="true" className="size-6 shrink-0" />
         <h1 className="text-base font-semibold">{title}</h1>
         {status && <div className="min-w-0 truncate text-sm text-muted-foreground">{status}</div>}
         <div className="ml-auto flex items-center gap-2">

@@ -22,6 +22,14 @@ describe('AppShell', () => {
     expect(screen.getByText('the stage')).toBeInTheDocument();
   });
 
+  it('shows the extension logo left of the title', () => {
+    const { container } = render(<AppShell title="WatchP2PStream" stage={<p>stage</p>} />);
+
+    const logo = container.querySelector('header img');
+    expect(logo).toHaveAttribute('src', '/icon/48.png');
+    expect(logo?.nextElementSibling).toBe(screen.getByRole('heading', { name: 'WatchP2PStream' }));
+  });
+
   it('has no sidebar and no toggle without a sidebar', () => {
     render(<AppShell title="WatchP2PStream" stage={<p>the stage</p>} />);
 
