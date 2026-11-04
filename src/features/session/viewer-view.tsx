@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { CandidateSummary } from '@/core/peer/candidates';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { playoutBufferSupported, playoutBufferTarget } from '@/core/media/playout-buffer';
+import { trackSession } from '@/core/session/open-sessions';
 import { ViewerSession } from '@/core/session/viewer-session';
 import { useChatMessages } from '@/hooks/use-chat-messages';
 import { usePlayoutBuffer } from '@/hooks/use-playout-buffer';
@@ -47,12 +48,15 @@ interface Joined {
   /** The reply code was put on the clipboard automatically. */
   copied: boolean;
   candidates: CandidateSummary;
+  /** Forgets the session for the error page once it has ended in the usual way. */
+  forget: () => void;
 }
 
 export function ViewerView({ connector, storage, capture, viewerName, onLeave }: ViewerViewProps) {
   const [joined, setJoined] = useState<Joined | null>(null);
 
   const leave = () => {
+    joined?.forget();
     joined?.session.leave();
     onLeave();
   };
@@ -128,7 +132,8 @@ function JoinForm({ connector, viewerName, onJoined }: JoinFormProps) {
         session.leave();
         return;
       }
-      onJoined({ session, replyCode, candidates, copied });
+      const forget = trackSession(() => session.leave());
+      onJoined({ session, replyCode, candidates, copied, forget });
     } catch (caught) {
       setError(describeError(caught));
       setJoining(false);

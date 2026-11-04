@@ -60,4 +60,33 @@ describe('ErrorBoundary', () => {
       }),
     );
   });
+
+  it('tells the page once, so that it can end the sessions that are still running', () => {
+    const onError = vi.fn();
+
+    render(
+      <ErrorBoundary onError={onError}>
+        <Broken />
+      </ErrorBoundary>,
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps addresses out of the technical details, as it does out of the log', () => {
+    function Leaky(): never {
+      throw new Error('could not reach 203.0.113.7 or 2001:db8::1');
+    }
+
+    render(
+      <ErrorBoundary>
+        <Leaky />
+      </ErrorBoundary>,
+    );
+
+    const text = screen.getByTestId('technical-details-text').textContent ?? '';
+    expect(text).not.toContain('203.0.113.7');
+    expect(text).not.toContain('2001:db8');
+    expect(text).toContain('<address>');
+  });
 });

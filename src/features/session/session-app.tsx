@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PeerConnector } from '@/core/peer/message-link';
 import { HostSession } from '@/core/session/host-session';
+import { trackSession } from '@/core/session/open-sessions';
 import { captureDisplay, type CaptureDisplay } from '@/lib/capture';
 import { readSetting, writeSetting, type SettingsStorage } from '@/lib/settings-storage';
 import { HostView } from './host-view';
@@ -16,7 +17,7 @@ export interface SessionAppProps {
 
 type Screen =
   | { kind: 'start' }
-  | { kind: 'host'; name: string; session: HostSession }
+  | { kind: 'host'; name: string; session: HostSession; forget: () => void }
   | { kind: 'viewer'; name: string };
 
 /** The WatchP2PStream page: switches between start, host and viewer screens. */
@@ -34,11 +35,10 @@ export function SessionApp({ connector, storage, capture = captureDisplay }: Ses
               initialName={readSetting(storage, 'name') ?? ''}
               onHost={(name) => {
                 remember(name);
-                setScreen({
-                  kind: 'host',
-                  name,
-                  session: new HostSession({ hostName: name, connector }),
-                });
+                const session = new HostSession({ hostName: name, connector });
+                // If the interface fails, the error page ends the session (see `ErrorBoundary`).
+                const forget = trackSession(() => session.close());
+                setScreen({ kind: 'host', name, session, forget });
               }}
               onJoin={(name) => {
                 remember(name);
@@ -55,6 +55,7 @@ export function SessionApp({ connector, storage, capture = captureDisplay }: Ses
           hostName={screen.name}
           capture={capture}
           onEnd={() => {
+            screen.forget();
             screen.session.close();
             setScreen({ kind: 'start' });
           }}

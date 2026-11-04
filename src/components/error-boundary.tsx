@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { createLogger, describeThrown } from '@/core/log/logger';
+import { createLogger, describeThrown, scrubMessage } from '@/core/log/logger';
 import { Button } from '@/components/ui/button';
 import { TechnicalDetails } from '@/features/session/technical-details';
 
@@ -7,6 +7,8 @@ const log = createLogger('ui');
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  /** Runs once when the interface failed; the page ends the sessions that are still running. */
+  onError?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -26,6 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       ...describeThrown(error),
       component: info.componentStack?.split('\n')[1]?.trim() ?? 'unknown',
     });
+    this.props.onError?.();
   }
 
   override render() {
@@ -39,7 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             WatchP2PStream stopped working. Any session on this page has ended. Reload the page to
             start again, and send the technical details to the maintainer if it keeps happening.
           </p>
-          <TechnicalDetails details={`Error: ${error.name}: ${error.message}`} />
+          <TechnicalDetails details={`Error: ${error.name}: ${scrubMessage(error.message)}`} />
           <div>
             <Button onClick={() => window.location.reload()} data-testid="reload-button">
               Reload
