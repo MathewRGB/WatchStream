@@ -2,7 +2,7 @@
 
 Watch streams together, browser to browser, without your own media server.
 
-(The repository is still called `WatchStream`; the product is WatchP2PStream.)
+(The repository is still called `WatchStream`; the product is [WatchP2PStream](https://chromewebstore.google.com/detail/watchp2pstream/emeifjnfbagbjomoojfjggaajmlccejo?pli=1).)
 
 WatchP2PStream is a browser extension for Chrome, Brave and Firefox. A host invites up to twelve
 viewers, and everyone watches the same thing: YouTube or any other video that plays in the host's
